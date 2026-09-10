@@ -21,11 +21,13 @@ await fastify.register(cors, {
   methods: ['GET', 'POST', 'PUT', 'DELETE']
 });
 
-// 2. Phục vụ static files từ thư mục uploads (/uploads/images và /uploads/audio)
+// 2. Phục vụ static files từ thư mục uploads (/uploads/images và /uploads/audio) với cache tối ưu
 const uploadsPath = path.resolve(__dirname, '../uploads');
 await fastify.register(fastifyStatic, {
   root: uploadsPath,
-  prefix: '/uploads/'
+  prefix: '/uploads/',
+  maxAge: '7d', // Cache static media trong 7 ngày
+  immutable: true
 });
 
 // 3. Root & Health check route
