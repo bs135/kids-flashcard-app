@@ -16,8 +16,6 @@ backend/data/*.sqlite-shm
 # backend/uploads/images/*
 !backend/uploads/audio/*.mp3
 !backend/uploads/images/*.webp
-!backend/uploads/audio/.gitkeep
-!backend/uploads/images/.gitkeep
 
 # Environment variables
 .env
