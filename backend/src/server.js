@@ -229,11 +229,11 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
       const cleanWord = item.word.trim();
       fastify.log.info(`[Admin Generate] Đang tải media cho: ${cleanWord}`);
 
-      // Sinh ảnh WebP cục bộ theo nguồn image_source
+      // Sinh ảnh WebP cục bộ theo nguồn image_source và thư mục topic_id
       const imageUrl = await downloadAndConvertKidImage(cleanWord, topic_id, image_source);
 
-      // Sinh giọng đọc Edge-TTS MP3 cục bộ
-      const audioUrl = await downloadWordAudio(cleanWord);
+      // Sinh giọng đọc Edge-TTS MP3 cục bộ theo thư mục topic_id
+      const audioUrl = await downloadWordAudio(cleanWord, topic_id);
 
       const cardPayload = {
         topic_id,

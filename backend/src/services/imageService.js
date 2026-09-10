@@ -4,15 +4,16 @@ import { fileURLToPath } from 'url';
 import sharp from 'sharp';
 import dotenv from 'dotenv';
 import { refineImagePromptWithGemini } from './geminiService.js';
+import { slugify } from '../utils/slugify.js';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const imagesDir = path.resolve(__dirname, '../../uploads/images');
+const baseImagesDir = path.resolve(__dirname, '../../uploads/images');
 
-if (!fs.existsSync(imagesDir)) {
-  fs.mkdirSync(imagesDir, { recursive: true });
+if (!fs.existsSync(baseImagesDir)) {
+  fs.mkdirSync(baseImagesDir, { recursive: true });
 }
 
 /**
@@ -40,7 +41,6 @@ export async function searchRealVectorImageUrl(word, category = '') {
         const data = await res.json();
         const results = data.results || [];
         if (results.length > 0) {
-          // Lấy ngẫu nhiên 1 bức ảnh trong kết quả trả về
           const randomPhoto = results[Math.floor(Math.random() * results.length)];
           const photoUrl = randomPhoto?.urls?.regular || randomPhoto?.urls?.small;
           if (photoUrl) return photoUrl;
@@ -64,7 +64,6 @@ export async function searchRealVectorImageUrl(word, category = '') {
         const data = await res.json();
         const photos = data.photos || [];
         if (photos.length > 0) {
-          // Lấy ngẫu nhiên 1 bức ảnh từ Pexels
           const randomPhoto = photos[Math.floor(Math.random() * photos.length)];
           const photoUrl = randomPhoto?.src?.large || randomPhoto?.src?.medium;
           if (photoUrl) return photoUrl;
@@ -140,17 +139,25 @@ async function downloadAndSaveWebp(sourceUrl, destinationFilePath) {
 
 /**
  * 4. Tải và chuyển đổi ảnh cho từ vựng theo nguồn lựa chọn ('ai_refined' | 'unsplash')
+ * Lưu trữ theo thư mục con phân tách theo từng chủ đề: /uploads/images/{topicSlug}/{wordSlug}.webp
  * @param {string} word Từ tiếng Anh
- * @param {string} category Chủ đề
+ * @param {string} topicSlug Chủ đề (VD: 'domestic-animals', 'colors')
  * @param {string} [imageSource='ai_refined'] Nguồn tạo ảnh ('ai_refined' hoặc 'unsplash')
  * @param {boolean} [force=false] Bắt buộc ghi đè file ảnh cũ (bỏ qua cache file trên đĩa)
- * @returns {Promise<string>} Đường dẫn cục bộ /uploads/images/{cleanWord}.webp
+ * @returns {Promise<string>} Đường dẫn cục bộ /uploads/images/{topicSlug}/{wordSlug}.webp
  */
-export async function downloadAndConvertKidImage(word, category = '', imageSource = 'ai_refined', force = false) {
-  const cleanWord = word.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
-  const filename = `${cleanWord}.webp`;
-  const filePath = path.join(imagesDir, filename);
-  const publicUrl = `/uploads/images/${filename}`;
+export async function downloadAndConvertKidImage(word, topicSlug = 'general', imageSource = 'ai_refined', force = false) {
+  const safeTopic = slugify(topicSlug);
+  const safeWord = slugify(word);
+
+  const topicImagesDir = path.join(baseImagesDir, safeTopic);
+  if (!fs.existsSync(topicImagesDir)) {
+    fs.mkdirSync(topicImagesDir, { recursive: true });
+  }
+
+  const filename = `${safeWord}.webp`;
+  const filePath = path.join(topicImagesDir, filename);
+  const publicUrl = `/uploads/images/${safeTopic}/${filename}`;
 
   // NẾU KHÔNG FORCE VÀ FILE ĐÃ TỒN TẠI HỢP LỆ TRÊN ĐĨA -> DÙNG CACHE
   if (!force && fs.existsSync(filePath) && fs.statSync(filePath).size > 1024) {
@@ -161,11 +168,9 @@ export async function downloadAndConvertKidImage(word, category = '', imageSourc
   let sourceImageUrl = '';
 
   if (imageSource === 'unsplash') {
-    // Chế độ Ảnh thật / Vector Unsplash (ngẫu nhiên theo page/result)
-    sourceImageUrl = await searchRealVectorImageUrl(word, category);
+    sourceImageUrl = await searchRealVectorImageUrl(word, safeTopic);
   } else {
-    // Chế độ AI Refined (Gemini Refiner + Pollinations.ai với seed ngẫu nhiên mới)
-    sourceImageUrl = await buildAiRefinedImageUrl(word, category);
+    sourceImageUrl = await buildAiRefinedImageUrl(word, safeTopic);
   }
 
   const success = await downloadAndSaveWebp(sourceImageUrl, filePath);

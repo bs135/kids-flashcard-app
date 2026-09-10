@@ -2,29 +2,38 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
+import { slugify } from '../utils/slugify.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const audioDir = path.resolve(__dirname, '../../uploads/audio');
+const baseAudioDir = path.resolve(__dirname, '../../uploads/audio');
 
-if (!fs.existsSync(audioDir)) {
-  fs.mkdirSync(audioDir, { recursive: true });
+if (!fs.existsSync(baseAudioDir)) {
+  fs.mkdirSync(baseAudioDir, { recursive: true });
 }
 
 /**
  * Sinh file audio mp3 bằng Edge-TTS (giọng trẻ em / tự nhiên en-US-AnaNeural)
- * và lưu trực tiếp về backend/uploads/audio/{cleanWord}.mp3
+ * và lưu trực tiếp về backend/uploads/audio/{topicSlug}/{wordSlug}.mp3
  * @param {string} word Từ tiếng Anh
- * @param {string} [voiceName] Tên giọng đọc Microsoft Edge (mặc định: en-US-AnaNeural)
- * @returns {Promise<string>} Đường dẫn cục bộ dạng /uploads/audio/{cleanWord}.mp3
+ * @param {string} [topicSlug='general'] Slug của chủ đề
+ * @param {string} [voiceName='en-US-AnaNeural'] Tên giọng đọc Microsoft Edge
+ * @returns {Promise<string>} Đường dẫn cục bộ dạng /uploads/audio/{topicSlug}/{wordSlug}.mp3
  */
-export async function downloadWordAudio(word, voiceName = 'en-US-AnaNeural') {
-  const cleanWord = word.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
-  const filename = `${cleanWord}.mp3`;
-  const filePath = path.join(audioDir, filename);
-  const publicUrl = `/uploads/audio/${filename}`;
+export async function downloadWordAudio(word, topicSlug = 'general', voiceName = 'en-US-AnaNeural') {
+  const safeTopic = slugify(topicSlug);
+  const safeWord = slugify(word);
 
-  // Nếu file đã tồn tại và có dung lượng > 0 thì tái sử dụng cache
+  const topicAudioDir = path.join(baseAudioDir, safeTopic);
+  if (!fs.existsSync(topicAudioDir)) {
+    fs.mkdirSync(topicAudioDir, { recursive: true });
+  }
+
+  const filename = `${safeWord}.mp3`;
+  const filePath = path.join(topicAudioDir, filename);
+  const publicUrl = `/uploads/audio/${safeTopic}/${filename}`;
+
+  // Nếu file đã tồn tại và có dung lượng > 500 bytes thì tái sử dụng cache
   if (fs.existsSync(filePath) && fs.statSync(filePath).size > 500) {
     return publicUrl;
   }

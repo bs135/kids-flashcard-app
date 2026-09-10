@@ -160,11 +160,11 @@ async function seedData() {
     const card = rawFlashcards[i];
     console.log(`[${i + 1}/${rawFlashcards.length}] Đang xử lý: "${card.word}" (${card.topic_id})...`);
 
-    // 1. Tải và chuyển đổi ảnh sang WebP
+    // 1. Tải và chuyển đổi ảnh sang WebP theo thư mục topic_id
     const localImageUrl = await downloadAndConvertKidImage(card.word, card.topic_id);
 
-    // 2. Sinh và lưu file audio Edge-TTS MP3
-    const localAudioUrl = await downloadWordAudio(card.word);
+    // 2. Sinh và lưu file audio Edge-TTS MP3 theo thư mục topic_id
+    const localAudioUrl = await downloadWordAudio(card.word, card.topic_id);
 
     // 3. Lưu vào Database SQLite
     insertCard.run({
