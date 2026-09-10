@@ -12,8 +12,10 @@ backend/data/*.sqlite-shm
 *.sqlite
 
 # Media uploads generated dynamically (images & audios)
-backend/uploads/audio/*
-backend/uploads/images/*
+# backend/uploads/audio/*
+# backend/uploads/images/*
+!backend/uploads/audio/*.mp3
+!backend/uploads/images/*.webp
 !backend/uploads/audio/.gitkeep
 !backend/uploads/images/.gitkeep
 
