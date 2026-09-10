@@ -101,8 +101,9 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
       const res = await regenerateCardImage(cardId, imageSource);
       soundEffects.playStar();
 
-      // Cập nhật URL ảnh mới (kèm timestamp để tránh cache trình duyệt hiển thị ảnh cũ)
-      const freshUrl = `${res.card.image_url}?t=${Date.now()}`;
+      // Cập nhật URL ảnh mới với timestamp cache-busting chuẩn
+      const baseCleanUrl = res.card.image_url.split('?')[0];
+      const freshUrl = `${baseCleanUrl}?t=${Date.now()}`;
 
       setGeneratedCards(prevCards =>
         prevCards.map(c => (c.id === cardId ? { ...c, image_url: freshUrl } : c))

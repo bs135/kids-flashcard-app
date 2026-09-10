@@ -17,6 +17,7 @@ if (!fs.existsSync(imagesDir)) {
 
 /**
  * 1. Tìm kiếm và lấy URL ảnh thật/vector chuẩn xác từ Unsplash hoặc Pexels API
+ * Hỗ trợ lấy ngẫu nhiên theo page hoặc chọn ngẫu nhiên trong danh sách kết quả để mỗi lần regenerate ra ảnh mới
  * @param {string} word Từ vựng tiếng Anh
  * @param {string} category Chủ đề
  * @returns {Promise<string|null>} URL hình ảnh
@@ -26,17 +27,23 @@ export async function searchRealVectorImageUrl(word, category = '') {
   const unsplashKey = process.env.UNSPLASH_ACCESS_KEY;
   const pexelsKey = process.env.PEXELS_API_KEY;
 
+  // Chọn trang ngẫu nhiên từ 1 đến 5 để lấy kết quả phong phú
+  const randomPage = Math.floor(Math.random() * 5) + 1;
+
   // A. Thử Unsplash API (nếu có key)
   if (unsplashKey) {
     try {
-      const query = encodeURIComponent(`${cleanWord} cartoon illustration vector`);
-      const url = `https://api.unsplash.com/search/photos?query=${query}&per_page=1&orientation=squarish&client_id=${unsplashKey}`;
+      const query = encodeURIComponent(`${cleanWord} illustration vector`);
+      const url = `https://api.unsplash.com/search/photos?query=${query}&per_page=10&page=${randomPage}&orientation=squarish&client_id=${unsplashKey}`;
       const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
       if (res.ok) {
         const data = await res.json();
-        const photo = data.results?.[0];
-        if (photo?.urls?.regular || photo?.urls?.small) {
-          return photo.urls.regular || photo.urls.small;
+        const results = data.results || [];
+        if (results.length > 0) {
+          // Lấy ngẫu nhiên 1 bức ảnh trong kết quả trả về
+          const randomPhoto = results[Math.floor(Math.random() * results.length)];
+          const photoUrl = randomPhoto?.urls?.regular || randomPhoto?.urls?.small;
+          if (photoUrl) return photoUrl;
         }
       }
     } catch (e) {
@@ -48,16 +55,19 @@ export async function searchRealVectorImageUrl(word, category = '') {
   if (pexelsKey) {
     try {
       const query = encodeURIComponent(`${cleanWord} illustration`);
-      const url = `https://api.pexels.com/v1/search?query=${query}&per_page=1&orientation=square`;
+      const url = `https://api.pexels.com/v1/search?query=${query}&per_page=10&page=${randomPage}&orientation=square`;
       const res = await fetch(url, {
         headers: { Authorization: pexelsKey },
         signal: AbortSignal.timeout(6000)
       });
       if (res.ok) {
         const data = await res.json();
-        const photo = data.photos?.[0];
-        if (photo?.src?.large || photo?.src?.medium) {
-          return photo.src.large || photo.src.medium;
+        const photos = data.photos || [];
+        if (photos.length > 0) {
+          // Lấy ngẫu nhiên 1 bức ảnh từ Pexels
+          const randomPhoto = photos[Math.floor(Math.random() * photos.length)];
+          const photoUrl = randomPhoto?.src?.large || randomPhoto?.src?.medium;
+          if (photoUrl) return photoUrl;
         }
       }
     } catch (e) {
@@ -65,9 +75,9 @@ export async function searchRealVectorImageUrl(word, category = '') {
     }
   }
 
-  // C. Unsplash Public Source Direct Fallback (Không cần API key)
-  // Lấy ảnh định dạng square từ Unsplash Source query
-  return `https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=400&q=80`;
+  // C. Fallback: Nếu không tìm được ảnh từ Unsplash/Pexels, sinh qua Pollinations với seed ngẫu nhiên
+  const fallbackSeed = Math.floor(Math.random() * 1000000);
+  return `https://image.pollinations.ai/prompt/cute%20cartoon%20${encodeURIComponent(cleanWord)}%20vector%20isolated%20white%20background?width=400&height=400&nologo=true&seed=${fallbackSeed}`;
 }
 
 /**
@@ -109,6 +119,7 @@ async function downloadAndSaveWebp(sourceUrl, destinationFilePath) {
 
       const buffer = Buffer.from(await response.arrayBuffer());
 
+      // Ghi đè file ảnh .webp mới
       await sharp(buffer)
         .resize(400, 400, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
         .webp({ quality: 85 })
@@ -132,27 +143,28 @@ async function downloadAndSaveWebp(sourceUrl, destinationFilePath) {
  * @param {string} word Từ tiếng Anh
  * @param {string} category Chủ đề
  * @param {string} [imageSource='ai_refined'] Nguồn tạo ảnh ('ai_refined' hoặc 'unsplash')
- * @param {boolean} [forceOverwrite=false] Ghi đè file ảnh nếu đã tồn tại
+ * @param {boolean} [force=false] Bắt buộc ghi đè file ảnh cũ (bỏ qua cache file trên đĩa)
  * @returns {Promise<string>} Đường dẫn cục bộ /uploads/images/{cleanWord}.webp
  */
-export async function downloadAndConvertKidImage(word, category = '', imageSource = 'ai_refined', forceOverwrite = false) {
+export async function downloadAndConvertKidImage(word, category = '', imageSource = 'ai_refined', force = false) {
   const cleanWord = word.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
   const filename = `${cleanWord}.webp`;
   const filePath = path.join(imagesDir, filename);
   const publicUrl = `/uploads/images/${filename}`;
 
-  // Nếu không yêu cầu ghi đè và file đã tồn tại hợp lệ thì dùng cache
-  if (!forceOverwrite && fs.existsSync(filePath) && fs.statSync(filePath).size > 1024) {
+  // NẾU KHÔNG FORCE VÀ FILE ĐÃ TỒN TẠI HỢP LỆ TRÊN ĐĨA -> DÙNG CACHE
+  if (!force && fs.existsSync(filePath) && fs.statSync(filePath).size > 1024) {
     return publicUrl;
   }
 
+  // Khi force === true hoặc file chưa có: Bắt buộc lấy nguồn ảnh mới và tải ghi đè
   let sourceImageUrl = '';
 
   if (imageSource === 'unsplash') {
-    // Chế độ Ảnh thật / Vector Unsplash
+    // Chế độ Ảnh thật / Vector Unsplash (ngẫu nhiên theo page/result)
     sourceImageUrl = await searchRealVectorImageUrl(word, category);
   } else {
-    // Chế độ AI Refined (Gemini Refiner + Pollinations.ai)
+    // Chế độ AI Refined (Gemini Refiner + Pollinations.ai với seed ngẫu nhiên mới)
     sourceImageUrl = await buildAiRefinedImageUrl(word, category);
   }
 
