@@ -257,10 +257,10 @@ Thứ tự ưu tiên được phân chia thành 5 Giai đoạn (Milestones) đ�
 - [x] **Task 2.4:** Xây dựng trang danh mục chủ đề (Topic Grid/Map) hiển thị thanh tiến trình hoàn thành.
 
 ### 🚩 Milestone 3: Tích Hợp Gemini API & Edge-TTS (Auto-Generate Engine)
-- [ ] **Task 3.1:** Xây dựng Service tích hợp Google Gemini API (`@google/genai` hoặc REST) xử lý dịch nghĩa, tạo phiên âm chuẩn IPA và câu ví dụ theo định dạng JSON.
-- [ ] **Task 3.2:** Tích hợp engine sinh giọng đọc `edge-tts` trên Backend (Node.js) để tự động xuất file `.mp3` chất lượng giọng trẻ em `en-US-AnaNeural`.
-- [ ] **Task 3.3:** Xây dựng pipeline tích hợp ảnh tự động qua `Pollinations.ai` (đồng bộ style cartoon/cute).
-- [ ] **Task 3.4:** Xây dựng giao diện Trang Quản Trị (Admin Page) cho phụ huynh:
+- [x] **Task 3.1:** Xây dựng Service tích hợp Google Gemini API (`@google/genai` hoặc REST) xử lý dịch nghĩa, tạo phiên âm chuẩn IPA và câu ví dụ theo định dạng JSON.
+- [x] **Task 3.2:** Tích hợp engine sinh giọng đọc `edge-tts` trên Backend (Node.js) để tự động xuất file `.mp3` chất lượng giọng trẻ em `en-US-AnaNeural`.
+- [x] **Task 3.3:** Xây dựng pipeline tích hợp ảnh tự động qua `Pollinations.ai` (đồng bộ style cartoon/cute).
+- [x] **Task 3.4:** Xây dựng giao diện Trang Quản Trị (Admin Page) cho phụ huynh:
   - Có cổng khóa bảo vệ trẻ em (*Parental Gate* dạng phép tính đơn giản `3 x 5 = ?`).
   - Khung nhập danh sách từ (textarea: `cat, dog, lion...`) $\rightarrow$ Nút bấm 1-Click Auto Generate $\rightarrow$ Preview và lưu thẻ.
 

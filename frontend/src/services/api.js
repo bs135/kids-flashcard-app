@@ -27,3 +27,32 @@ export async function fetchUserProgress() {
     };
   }
 }
+
+export async function createTopic(topicData) {
+  const res = await fetch(`${API_BASE}/topics`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(topicData)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Không thể tạo chủ đề mới');
+  }
+  return res.json();
+}
+
+export async function generateBatchCards(topicId, words) {
+  const res = await fetch(`${API_BASE}/admin/generate-batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      topic_id: topicId,
+      words: Array.isArray(words) ? words : words.split(/[,;\n]+/).map(w => w.trim()).filter(Boolean)
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Không thể sinh thẻ bằng AI');
+  }
+  return res.json();
+}

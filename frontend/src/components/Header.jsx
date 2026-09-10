@@ -2,7 +2,7 @@ import React from 'react';
 import { Sparkles, Star, Award, Volume2 } from 'lucide-react';
 import { soundEffects } from '../services/soundEffects';
 
-export default function Header({ stars = 0, onBackToMap, currentTopic = null }) {
+export default function Header({ stars = 0, onBackToMap, currentTopic = null, onOpenAdmin }) {
   return (
     <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b-4 border-amber-200 px-4 py-3 shadow-sm">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -42,6 +42,18 @@ export default function Header({ stars = 0, onBackToMap, currentTopic = null }) 
               {stars}
             </span>
           </div>
+
+          {/* Nút Cổng Phụ Huynh / Quản trị */}
+          <button
+            onClick={() => {
+              soundEffects.playPop();
+              if (onOpenAdmin) onOpenAdmin();
+            }}
+            className="p-2 rounded-2xl bg-slate-100 hover:bg-amber-100 border-2 border-slate-200 hover:border-amber-300 text-slate-600 hover:text-amber-700 transition-colors shadow-sm"
+            title="Khu vực phụ huynh"
+          >
+            <span className="text-lg">🔒</span>
+          </button>
         </div>
       </div>
     </header>

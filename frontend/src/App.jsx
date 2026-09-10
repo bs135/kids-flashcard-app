@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import TopicMap from './components/TopicMap';
 import FlashcardViewer from './components/FlashcardViewer';
+import ParentalGateModal from './components/ParentalGateModal';
+import AdminPanel from './components/AdminPanel';
 import { fetchTopics, fetchTopicCards, fetchUserProgress } from './services/api';
 import { soundEffects } from './services/soundEffects';
 
@@ -11,6 +13,10 @@ export default function App() {
   const [currentCards, setCurrentCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stars, setStars] = useState(0);
+
+  // Quản lý trạng thái Admin & Parental Gate
+  const [isParentalGateOpen, setIsParentalGateOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
 
   // Tải dữ liệu ban đầu từ Backend
   useEffect(() => {
@@ -63,6 +69,16 @@ export default function App() {
     });
   };
 
+  // Tải lại danh sách chủ đề khi Admin tạo thêm từ/chủ đề
+  const handleRefreshTopics = async () => {
+    try {
+      const data = await fetchTopics();
+      setTopics(data);
+    } catch (err) {
+      console.error('Lỗi làm mới chủ đề:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Thanh Header trên cùng */}
@@ -70,11 +86,18 @@ export default function App() {
         stars={stars}
         currentTopic={selectedTopic}
         onBackToMap={handleBackToMap}
+        onOpenAdmin={() => setIsParentalGateOpen(true)}
       />
 
       {/* Vùng Nội Dung Chính */}
       <main className="flex-1 flex flex-col justify-center">
-        {loading ? (
+        {isAdminOpen ? (
+          <AdminPanel
+            topics={topics}
+            onBack={() => setIsAdminOpen(false)}
+            onTopicUpdated={handleRefreshTopics}
+          />
+        ) : loading ? (
           <div className="text-center py-20">
             <div className="text-6xl animate-bounce mb-4">🚀</div>
             <p className="text-xl font-bold text-amber-800 font-kids">
@@ -95,6 +118,17 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* Cổng Bảo Vệ Phụ Huynh */}
+      <ParentalGateModal
+        isOpen={isParentalGateOpen}
+        onClose={() => setIsParentalGateOpen(false)}
+        onSuccess={() => {
+          setIsParentalGateOpen(false);
+          setIsAdminOpen(true);
+          setSelectedTopic(null); // Thoát khỏi viewer nếu đang xem
+        }}
+      />
 
       {/* Footer nhỏ nhẹ */}
       <footer className="py-4 text-center text-xs font-semibold text-slate-400">
