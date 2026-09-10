@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html, body {
+    font-family: 'Quicksand', 'Fredoka', system-ui, -apple-system, sans-serif;
+  }
+}
+
 @layer utilities {
   /* Hỗ trợ Perspective cho hiệu ứng lật thẻ 3D */
   .perspective-1000 {

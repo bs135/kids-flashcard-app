@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        kids: ['Fredoka', 'Quicksand', 'sans-serif'],
+        kids: ['Quicksand', 'Fredoka', 'sans-serif'],
       },
       colors: {
         bubble: {
