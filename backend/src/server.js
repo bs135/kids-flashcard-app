@@ -180,6 +180,23 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
     return reply.status(400).send({ error: 'Danh sách từ vựng không được để trống' });
   }
 
+  // Chuẩn hóa và loại bỏ các từ trùng lặp trong input đầu vào (Case-insensitive)
+  const uniqueWordsMap = new Map();
+  for (const rawWord of words) {
+    const trimmed = String(rawWord || '').trim();
+    if (trimmed) {
+      const lower = trimmed.toLowerCase();
+      if (!uniqueWordsMap.has(lower)) {
+        uniqueWordsMap.set(lower, trimmed);
+      }
+    }
+  }
+
+  const sanitizedWords = Array.from(uniqueWordsMap.values());
+  if (sanitizedWords.length === 0) {
+    return reply.status(400).send({ error: 'Không tìm thấy từ vựng hợp lệ' });
+  }
+
   // Kiểm tra xem Topic có tồn tại không
   const topic = db.prepare('SELECT * FROM topics WHERE id = ?').get(topic_id);
   if (!topic) {
@@ -187,14 +204,22 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
   }
 
   try {
-    fastify.log.info(`[Admin Generate] Bắt đầu xử lý ${words.length} từ cho chủ đề "${topic_id}" (Nguồn ảnh: ${image_source})...`);
+    fastify.log.info(`[Admin Generate] Bắt đầu xử lý ${sanitizedWords.length} từ cho chủ đề "${topic_id}" (Nguồn ảnh: ${image_source})...`);
 
     // 1. Gọi Gemini API để sinh dữ liệu ngữ nghĩa & phiên âm
-    const vocabData = await generateVocabularyData(words);
+    const vocabData = await generateVocabularyData(sanitizedWords);
 
-    const insertCard = db.prepare(`
+    // Sử dụng ON CONFLICT(topic_id, word) DO UPDATE SET để tránh bản ghi trùng lặp
+    const upsertCard = db.prepare(`
       INSERT INTO flashcards (topic_id, word, phonetic, meaning_vi, example_en, example_vi, image_url, audio_url, difficulty)
       VALUES (@topic_id, @word, @phonetic, @meaning_vi, @example_en, @example_vi, @image_url, @audio_url, 1)
+      ON CONFLICT(topic_id, word COLLATE NOCASE) DO UPDATE SET
+        phonetic = excluded.phonetic,
+        meaning_vi = excluded.meaning_vi,
+        example_en = excluded.example_en,
+        example_vi = excluded.example_vi,
+        image_url = excluded.image_url,
+        audio_url = excluded.audio_url
     `);
 
     const createdCards = [];
@@ -221,16 +246,18 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
         audio_url: audioUrl
       };
 
-      const info = insertCard.run(cardPayload);
-      createdCards.push({
-        id: info.lastInsertRowid,
-        ...cardPayload
-      });
+      upsertCard.run(cardPayload);
+
+      // Lấy lại bản ghi từ DB để có ID chính xác (dù là tạo mới hay cập nhật)
+      const savedCard = db.prepare('SELECT * FROM flashcards WHERE topic_id = ? AND word = ? COLLATE NOCASE').get(topic_id, cleanWord);
+      if (savedCard) {
+        createdCards.push(savedCard);
+      }
     }
 
     return reply.status(201).send({
       success: true,
-      message: `Đã tạo thành công ${createdCards.length} thẻ flashcards!`,
+      message: `Đã xử lý thành công ${createdCards.length} thẻ flashcards!`,
       topic_id,
       cards: createdCards
     });

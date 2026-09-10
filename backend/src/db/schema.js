@@ -54,9 +54,11 @@ export function initDatabase() {
         audio_url TEXT,
         difficulty INTEGER DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (topic_id) REFERENCES topics (id) ON DELETE CASCADE
+        FOREIGN KEY (topic_id) REFERENCES topics (id) ON DELETE CASCADE,
+        UNIQUE(topic_id, word COLLATE NOCASE)
     );
     CREATE INDEX IF NOT EXISTS idx_flashcards_topic ON flashcards(topic_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_flashcards_unique_word ON flashcards(topic_id, word COLLATE NOCASE);
 
     -- 3. Bảng user_progress (Tiến trình người dùng & Thú cưng)
     CREATE TABLE IF NOT EXISTS user_progress (
