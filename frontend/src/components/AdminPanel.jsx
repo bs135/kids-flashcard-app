@@ -356,10 +356,10 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                       key={card.id || idx}
                       className="flex items-center gap-3 p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200 relative group"
                     >
-                      {/* Vùng ảnh và nút tạo lại ảnh */}
+                      {/* Vùng ảnh và nút tạo lại ảnh (Kèm Cache-busting) */}
                       <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-emerald-300 bg-white flex-shrink-0">
                         <img
-                          src={card.image_url}
+                          src={card.image_url?.includes('?') ? card.image_url : `${card.image_url}?t=${Date.now()}`}
                           alt={card.word}
                           className="w-full h-full object-cover"
                         />

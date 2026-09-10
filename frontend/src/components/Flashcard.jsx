@@ -40,10 +40,10 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
             <span className="text-xl">✨</span>
           </div>
 
-          {/* Hình ảnh minh họa to rõ */}
+          {/* Hình ảnh minh họa to rõ (Kèm Cache-busting) */}
           <div className="relative w-48 h-48 sm:w-56 sm:h-56 my-2 rounded-2xl overflow-hidden border-4 border-amber-100 shadow-inner group">
             <img
-              src={card.image_url}
+              src={card.image_url?.includes('?') ? card.image_url : `${card.image_url}?v=${card.id || ''}`}
               alt={card.word}
               className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-300"
               loading="lazy"

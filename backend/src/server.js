@@ -27,13 +27,13 @@ await fastify.register(cors, {
   methods: ['GET', 'POST', 'PUT', 'DELETE']
 });
 
-// 2. Phục vụ static files từ thư mục uploads (/uploads/images và /uploads/audio) với cache tối ưu
+// 2. Phục vụ static files từ thư mục uploads (/uploads/images và /uploads/audio)
 const uploadsPath = path.resolve(__dirname, '../uploads');
 await fastify.register(fastifyStatic, {
   root: uploadsPath,
   prefix: '/uploads/',
-  maxAge: '7d', // Cache static media trong 7 ngày
-  immutable: true
+  maxAge: '1h', // Cho phép trình duyệt revalidate khi file trên đĩa thay đổi
+  immutable: false
 });
 
 // 3. Root & Health check route
@@ -256,10 +256,12 @@ fastify.post('/api/v1/admin/cards/:id/regenerate-image', async (request, reply) 
     // Tải và chuyển đổi ảnh mới (buộc ghi đè file với forceOverwrite = true)
     const newImageUrl = await downloadAndConvertKidImage(card.word, card.topic_id, imageSource, true);
 
-    // Cập nhật CSDL
+    // Cập nhật CSDL (lưu đường dẫn gốc vào DB)
     db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(newImageUrl, id);
 
     const updatedCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+    // Nối thêm query param t=timestamp để client nhận diện ngay ảnh mới
+    updatedCard.image_url = `${updatedCard.image_url}?t=${Date.now()}`;
 
     return {
       success: true,
