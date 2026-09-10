@@ -66,6 +66,56 @@ Trả về duy nhất một mảng JSON (không có markdown backticks, không k
 }
 
 /**
+ * Gemini Prompt Refiner: Tinh chỉnh mô tả bối cảnh tự nhiên, chi tiết và nghiêm ngặt
+ * phục vụ cho việc sinh ảnh AI hoạt hình cho trẻ em qua Pollinations.ai.
+ * Ví dụ: "Dolphin" -> "a friendly cartoon dolphin swimming happily in blue sparkling ocean water, full body, clean anatomy, smiling, simple white background, no human"
+ */
+export async function refineImagePromptWithGemini(word, category = '') {
+  const apiKey = process.env.GEMINI_API_KEY;
+  const cleanWord = word.trim();
+
+  if (apiKey) {
+    try {
+      const prompt = `
+Bạn là chuyên gia thiết kế hình ảnh hoạt hình 3D Pixar/Disney dành riêng cho flashcard trẻ em.
+Hãy tạo MỘT câu mô tả chi tiết bằng tiếng Anh (prompt) cho từ vựng: "${cleanWord}" (Chủ đề: "${category}").
+
+Yêu cầu nghiêm ngặt:
+1. Phong cách: cute vibrant 3D cartoon Pixar animation style for toddlers and kids.
+2. Mô tả rõ hành động hoặc bối cảnh tự nhiên dễ thương (VD: "a friendly cartoon dolphin swimming gracefully in clear turquoise ocean water, full body, clean anatomy").
+3. Thêm các từ khóa an toàn: "centered, full body, crisp details, simple clean white or soft pastel background, no human, no extra limbs, high quality".
+4. Chỉ trả về duy nhất 1 câu prompt tiếng Anh, không thừa bất kỳ từ nào khác.
+`;
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.4
+          }
+        }),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (text && text.length > 10) {
+          return text.replace(/["\n\r]/g, ' ');
+        }
+      }
+    } catch (err) {
+      console.warn(`[Gemini Prompt Refiner] Lỗi gọi Gemini: ${err.message}, dùng fallback template.`);
+    }
+  }
+
+  // Fallback template khi không có API key
+  return `a cute friendly cartoon ${cleanWord} in natural cheerful scene, 3d pixar style, colorful, full body, centered, simple clean background, no human, crisp details`;
+}
+
+/**
  * Fallback engine tự động tra IPA từ FreeDictionary và sinh câu tiếng Việt đơn giản
  */
 async function fallbackVocabularyFetcher(words) {
@@ -81,7 +131,6 @@ async function fallbackVocabularyFetcher(words) {
     let exampleVi = `Một bé ${wordClean} thật đáng yêu ở đây.`;
 
     try {
-      // Tra Free Dictionary API
       const dictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(wordClean.toLowerCase())}`, {
         signal: AbortSignal.timeout(3000)
       });
@@ -96,7 +145,6 @@ async function fallbackVocabularyFetcher(words) {
           if (p?.text) phonetic = p.text;
         }
 
-        // Tìm câu ví dụ từ definition
         const definitionWithExample = entry?.meanings?.[0]?.definitions?.find(d => d.example);
         if (definitionWithExample?.example) {
           exampleEn = definitionWithExample.example;

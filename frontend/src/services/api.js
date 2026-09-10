@@ -41,18 +41,32 @@ export async function createTopic(topicData) {
   return res.json();
 }
 
-export async function generateBatchCards(topicId, words) {
+export async function generateBatchCards(topicId, words, imageSource = 'ai_refined') {
   const res = await fetch(`${API_BASE}/admin/generate-batch`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       topic_id: topicId,
-      words: Array.isArray(words) ? words : words.split(/[,;\n]+/).map(w => w.trim()).filter(Boolean)
+      words: Array.isArray(words) ? words : words.split(/[,;\n]+/).map(w => w.trim()).filter(Boolean),
+      image_source: imageSource
     })
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || 'Không thể sinh thẻ bằng AI');
+  }
+  return res.json();
+}
+
+export async function regenerateCardImage(cardId, imageSource = 'ai_refined') {
+  const res = await fetch(`${API_BASE}/admin/cards/${cardId}/regenerate-image`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageSource })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Không thể tạo lại ảnh');
   }
   return res.json();
 }

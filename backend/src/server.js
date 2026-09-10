@@ -170,7 +170,7 @@ fastify.post('/api/v1/topics', async (request, reply) => {
 
 // 4.5. API Sinh Flashcards Tự Động Hàng Loạt Bằng AI (Admin)
 fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
-  const { topic_id, words } = request.body || {};
+  const { topic_id, words, image_source = 'ai_refined' } = request.body || {};
 
   if (!topic_id) {
     return reply.status(400).send({ error: 'Vui lòng chọn hoặc cung cấp topic_id' });
@@ -187,7 +187,7 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
   }
 
   try {
-    fastify.log.info(`[Admin Generate] Bắt đầu xử lý ${words.length} từ cho chủ đề "${topic_id}"...`);
+    fastify.log.info(`[Admin Generate] Bắt đầu xử lý ${words.length} từ cho chủ đề "${topic_id}" (Nguồn ảnh: ${image_source})...`);
 
     // 1. Gọi Gemini API để sinh dữ liệu ngữ nghĩa & phiên âm
     const vocabData = await generateVocabularyData(words);
@@ -204,8 +204,8 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
       const cleanWord = item.word.trim();
       fastify.log.info(`[Admin Generate] Đang tải media cho: ${cleanWord}`);
 
-      // Sinh ảnh hoạt hình WebP cục bộ
-      const imageUrl = await downloadAndConvertKidImage(cleanWord, topic_id);
+      // Sinh ảnh WebP cục bộ theo nguồn image_source
+      const imageUrl = await downloadAndConvertKidImage(cleanWord, topic_id, image_source);
 
       // Sinh giọng đọc Edge-TTS MP3 cục bộ
       const audioUrl = await downloadWordAudio(cleanWord);
@@ -237,6 +237,38 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
   } catch (err) {
     fastify.log.error(err);
     return reply.status(500).send({ error: 'Lỗi trong quá trình sinh Flashcards tự động: ' + err.message });
+  }
+});
+
+// 4.6. API Tái Tạo Lại Ảnh Cho Một Thẻ Đơn Lẻ (Admin Regenerate Image)
+fastify.post('/api/v1/admin/cards/:id/regenerate-image', async (request, reply) => {
+  const { id } = request.params;
+  const { imageSource = 'ai_refined' } = request.body || {};
+
+  try {
+    const card = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+    if (!card) {
+      return reply.status(404).send({ error: `Không tìm thấy flashcard với ID ${id}` });
+    }
+
+    fastify.log.info(`[Regenerate Image] Đang tạo lại ảnh cho từ "${card.word}" theo nguồn "${imageSource}"...`);
+
+    // Tải và chuyển đổi ảnh mới (buộc ghi đè file với forceOverwrite = true)
+    const newImageUrl = await downloadAndConvertKidImage(card.word, card.topic_id, imageSource, true);
+
+    // Cập nhật CSDL
+    db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(newImageUrl, id);
+
+    const updatedCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+
+    return {
+      success: true,
+      message: `Đã tạo lại ảnh thành công cho từ "${card.word}"!`,
+      card: updatedCard
+    };
+  } catch (err) {
+    fastify.log.error(err);
+    return reply.status(500).send({ error: 'Lỗi khi tái tạo ảnh: ' + err.message });
   }
 });
 
