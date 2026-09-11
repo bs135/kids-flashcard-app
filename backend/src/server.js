@@ -106,24 +106,50 @@ await fastify.register(fastifyStatic, {
   root: uploadsPath,
   prefix: '/uploads/',
   maxAge: '1h', // Cho phép trình duyệt revalidate khi file trên đĩa thay đổi
-  immutable: false
+  immutable: false,
+  decorateReply: false
 });
 
-// 3. Root & Health check route
-fastify.get('/', async (request, reply) => {
-  return {
-    app: 'Kids English Flashcard Backend API',
-    version: '1.0.0',
-    status: 'running',
-    endpoints: {
-      health: '/health',
-      config: '/api/v1/config',
-      topics: '/api/v1/topics',
-      cards_example: '/api/v1/topics/animals/cards',
-      progress: '/api/v1/progress'
+// 2.1. Phục vụ Frontend SPA build từ thư mục public (khi chạy Production Docker hoặc có thư mục public)
+const publicDir = path.resolve(__dirname, '../public');
+const hasPublicDir = fs.existsSync(publicDir) && fs.existsSync(path.join(publicDir, 'index.html'));
+
+if (hasPublicDir) {
+  fastify.log.info(`[Static Server] Tìm thấy thư mục frontend production tại: ${publicDir}`);
+  await fastify.register(fastifyStatic, {
+    root: publicDir,
+    prefix: '/',
+    decorateReply: true
+  });
+
+  // SPA Fallback: chuyển tiếp tất cả các route không khớp (trừ /api/* và /uploads/*) về index.html
+  fastify.setNotFoundHandler((request, reply) => {
+    const url = request.raw.url || '';
+    if (url.startsWith('/api/') || url.startsWith('/uploads/')) {
+      return reply.status(404).send({
+        error: 'NOT_FOUND',
+        message: `Tài nguyên ${url} không tồn tại trên hệ thống`
+      });
     }
-  };
-});
+    return reply.sendFile('index.html');
+  });
+} else {
+  // 3. Root route cho môi trường Dev khi chưa build public
+  fastify.get('/', async (request, reply) => {
+    return {
+      app: 'Kids English Flashcard Backend API',
+      version: '1.0.0',
+      status: 'running',
+      endpoints: {
+        health: '/health',
+        config: '/api/v1/config',
+        topics: '/api/v1/topics',
+        cards_example: '/api/v1/topics/animals/cards',
+        progress: '/api/v1/progress'
+      }
+    };
+  });
+}
 
 fastify.get('/health', async (request, reply) => {
   return { status: 'ok', timestamp: new Date().toISOString() };

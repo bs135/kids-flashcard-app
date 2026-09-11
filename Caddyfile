@@ -1,0 +1,12 @@
+{
+    email admin@{$DOMAIN_NAME}
+}
+
+{$DOMAIN_NAME} {
+    encode gzip zstd
+
+    reverse_proxy app:3001 {
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}

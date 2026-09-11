@@ -1,0 +1,48 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kids_flashcard_app
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - PORT=3001
+      - HOST=0.0.0.0
+      - NODE_ENV=production
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/uploads:/app/uploads
+    expose:
+      - "3001"
+    networks:
+      - flashcard-network
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: kids_flashcard_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      - DOMAIN_NAME=
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    networks:
+      - flashcard-network
+
+networks:
+  flashcard-network:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:

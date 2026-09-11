@@ -2,6 +2,11 @@
   "name": "kids-flashcard-backend",
   "version": "1.0.0",
   "description": "Fastify backend for Kids Flashcard Web App",
+  "author": "bs135",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bs135/kids-flashcard-app.git"
+  },
   "main": "src/server.js",
   "type": "module",
   "scripts": {
