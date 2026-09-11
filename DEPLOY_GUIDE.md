@@ -104,9 +104,32 @@ FLASHCARD_GENERATE_RATE_LIMIT=5
 ```
 *(Nhấn `Ctrl + O` -> `Enter` để lưu, `Ctrl + X` để thoát nano).*
 
-### 3.4. Khởi chạy hệ thống bằng Docker Compose
+### 3.4. Khởi chạy ứng dụng
+
+#### LỰA CHỌN A: VPS ĐÃ CÓ SẴN NGINX (Khuyến nghị khi máy chủ đang chạy Nginx)
+Nếu VPS của bạn đã cài sẵn Nginx và đang chạy các website khác, chỉ cần chạy container ứng dụng (không chạy Caddy để tránh xung đột cổng 80/443):
+
 ```bash
-docker compose up -d --build
+# 1. Khởi động container ứng dụng (lắng nghe tại 127.0.0.1:3001)
+docker compose up -d --build app
+
+# 2. Tạo cấu hình VirtualHost cho Nginx từ file mẫu:
+sudo cp nginx.conf.example /etc/nginx/sites-available/flashcards.chipfc.com
+sudo ln -s /etc/nginx/sites-available/flashcards.chipfc.com /etc/nginx/sites-enabled/
+
+# 3. Kiểm tra cú pháp và tải lại Nginx
+sudo nginx -t
+sudo systemctl reload nginx
+
+# 4. Tự động cấp chứng chỉ SSL miễn phí qua Certbot
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d flashcards.chipfc.com
+```
+
+#### LỰA CHỌN B: VPS TRẮNG CHƯA CÓ WEB SERVER (Dùng Caddy tự động)
+Nếu VPS hoàn toàn mới và chưa cài web server nào:
+```bash
+docker compose --profile with-caddy up -d --build
 ```
 
 ### 3.5. Kiểm tra trạng thái & Log hoạt động
@@ -116,12 +139,9 @@ docker compose ps
 
 # Xem log thời gian thực của ứng dụng
 docker compose logs -f app
-
-# Xem log phát hành SSL của Caddy
-docker compose logs -f caddy
 ```
 
-Sau khoảng 30–60 giây, truy cập trình duyệt tại `https://flashcards.chipfc.com` để sử dụng ứng dụng với ổ khóa xanh SSL!
+Sau khi hoàn tất, truy cập trình duyệt tại `https://flashcards.chipfc.com` để trải nghiệm ứng dụng!
 
 ---
 

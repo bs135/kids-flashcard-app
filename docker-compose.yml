@@ -15,12 +15,17 @@ services:
     volumes:
       - ./backend/data:/app/data
       - ./backend/uploads:/app/uploads
+    ports:
+      - "127.0.0.1:3001:3001"
     expose:
       - "3001"
     networks:
       - flashcard-network
 
   caddy:
+    profiles:
+      - with-caddy
+      - all
     image: caddy:2-alpine
     container_name: kids_flashcard_caddy
     restart: unless-stopped
