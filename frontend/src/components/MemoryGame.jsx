@@ -214,63 +214,82 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
 
         {/* Lưới các thẻ bài (3x4 hoặc 4x3) */}
         {!isWon ? (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 sm:gap-4 my-auto">
+          <div className="grid grid-cols-[repeat(3,minmax(0,1fr))] sm:grid-cols-[repeat(4,minmax(0,1fr))] gap-3 sm:gap-4 my-auto w-full">
             {gameCards.map((card, index) => {
               const isFlipped = flippedIndices.includes(index) || matchedIds.has(card.cardId);
               const isMatched = matchedIds.has(card.cardId);
 
+              // Tính toán kích thước font chữ và kiểm tra từ đơn / từ ghép
+              const hasSpace = card.word ? card.word.includes(' ') : false;
+              const wordLength = card.word ? card.word.length : 0;
+              const wordFontSize = 
+                wordLength > 10 ? 'text-[11px] sm:text-xs' :
+                wordLength > 7  ? 'text-xs sm:text-sm' :
+                wordLength > 5  ? 'text-xs sm:text-base' :
+                'text-sm sm:text-lg';
+
               return (
-                <motion.div
+                <div
                   key={card.uniqueKey}
-                  whileHover={{ scale: isMatched ? 1 : 1.04 }}
-                  whileTap={{ scale: isMatched ? 1 : 0.96 }}
-                  onClick={() => handleCardClick(index)}
-                  className={`relative h-32 sm:h-36 rounded-2xl cursor-pointer select-none transition-all duration-300 perspective-1000 ${
-                    isMatched ? 'opacity-80' : ''
-                  }`}
+                  className="w-full aspect-[4/5] relative min-w-0 min-h-0 overflow-hidden"
                 >
-                  <div
-                    className={`w-full h-full rounded-2xl border-4 transition-all duration-500 shadow-md flex items-center justify-center p-2 text-center ${
-                      isMatched
-                        ? 'bg-emerald-50 border-emerald-400 shadow-emerald-200 ring-4 ring-emerald-300'
-                        : isFlipped
-                        ? 'bg-white border-amber-400 shadow-amber-200'
-                        : 'bg-gradient-to-br from-amber-400 to-yellow-400 border-amber-300 hover:border-amber-500'
+                  <motion.div
+                    whileHover={{ scale: isMatched ? 1 : 1.03 }}
+                    whileTap={{ scale: isMatched ? 1 : 0.97 }}
+                    onClick={() => handleCardClick(index)}
+                    className={`absolute inset-0 w-full h-full rounded-2xl cursor-pointer select-none transition-shadow duration-300 ${
+                      isMatched ? 'opacity-85' : ''
                     }`}
                   >
-                    {isFlipped ? (
-                      card.type === 'image' ? (
-                        <div className="flex flex-col items-center justify-center animate-fade-in">
-                          <img
-                            src={`${card.image_url}?t=${card.cardId}`}
-                            alt={card.word}
-                            className="w-20 h-20 object-contain drop-shadow-sm rounded-lg"
-                            loading="eager"
-                          />
-                          <span className="text-[10px] font-bold text-slate-400 uppercase mt-1">
-                            Hình Ảnh
-                          </span>
-                        </div>
+                    <div
+                      className={`absolute inset-0 w-full h-full rounded-2xl border-4 transition-all duration-300 shadow-md flex flex-col items-center justify-center p-1 sm:p-2 text-center overflow-hidden box-border ${
+                        isMatched
+                          ? 'bg-emerald-50 border-emerald-400 shadow-emerald-200 ring-4 ring-emerald-300'
+                          : isFlipped
+                          ? 'bg-white border-amber-400 shadow-amber-200'
+                          : 'bg-gradient-to-br from-amber-400 to-yellow-400 border-amber-300 hover:border-amber-500'
+                      }`}
+                    >
+                      {isFlipped ? (
+                        card.type === 'image' ? (
+                          <div className="w-full h-full flex flex-col items-center justify-between py-1 animate-fade-in overflow-hidden">
+                            <div className="flex-1 w-full flex items-center justify-center min-h-0 overflow-hidden p-0.5">
+                              <img
+                                src={`${card.image_url}?t=${card.cardId}`}
+                                alt={card.word}
+                                className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-sm rounded-lg"
+                                loading="eager"
+                              />
+                            </div>
+                            <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase shrink-0">
+                              Hình Ảnh
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="w-full h-full max-w-full flex flex-col items-center justify-between py-1 animate-fade-in overflow-hidden">
+                            <div className="flex-1 w-full max-w-full flex items-center justify-center min-h-0 px-0.5 overflow-hidden">
+                              <span 
+                                className={`w-full ${wordFontSize} font-black text-amber-950 font-kids tracking-tight leading-none text-center ${
+                                  hasSpace ? 'break-normal' : 'whitespace-nowrap'
+                                }`}
+                                title={card.word}
+                              >
+                                {card.word}
+                              </span>
+                            </div>
+                            <span className="text-[9px] sm:text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">
+                              Từ Vựng
+                            </span>
+                          </div>
+                        )
                       ) : (
-                        <div className="flex flex-col items-center justify-center p-1 animate-fade-in">
-                          <span className="text-xl sm:text-2xl font-black text-amber-950 font-kids tracking-wide">
-                            {card.word}
-                          </span>
-                          <span className="text-xs font-semibold text-slate-500 mt-1">
-                            {card.meaning_vi}
-                          </span>
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full mt-2">
-                            Từ Vựng
-                          </span>
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-3xl sm:text-4xl text-amber-950 drop-shadow-sm">❓</span>
                         </div>
-                      )
-                    ) : (
-                      <div className="flex flex-col items-center justify-center">
-                        <span className="text-4xl text-amber-950 drop-shadow-sm">❓</span>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                </div>
               );
             })}
           </div>
