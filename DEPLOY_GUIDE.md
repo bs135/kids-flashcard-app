@@ -88,7 +88,7 @@ nano .env
 Điền các thông tin quan trọng:
 ```ini
 # Tên miền của ứng dụng
-DOMAIN_NAME=flashcards.yourdomain.com
+DOMAIN_NAME=flashcards.chipfc.com
 
 PORT=3001
 HOST=0.0.0.0
@@ -121,7 +121,7 @@ docker compose logs -f app
 docker compose logs -f caddy
 ```
 
-Sau khoảng 30–60 giây, truy cập trình duyệt tại `https://flashcards.yourdomain.com` để sử dụng ứng dụng với ổ khóa xanh SSL!
+Sau khoảng 30–60 giây, truy cập trình duyệt tại `https://flashcards.chipfc.com` để sử dụng ứng dụng với ổ khóa xanh SSL!
 
 ---
 
