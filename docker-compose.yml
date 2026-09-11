@@ -28,8 +28,11 @@ services:
       - "80:80"
       - "443:443"
       - "443:443/udp"
+    env_file:
+      - path: .env
+        required: false
     environment:
-      - DOMAIN_NAME=
+      - DOMAIN_NAME=${DOMAIN_NAME:-flashcards.chipfc.com}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
