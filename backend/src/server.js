@@ -214,7 +214,8 @@ fastify.get('/api/v1/topics/:topicId/cards', async (request, reply) => {
         example_vi, 
         image_url, 
         audio_url, 
-        difficulty
+        difficulty,
+        is_custom
       FROM flashcards 
       WHERE topic_id = ?
       ORDER BY id ASC
@@ -249,83 +250,77 @@ fastify.post('/api/v1/topics', async (request, reply) => {
     return reply.status(400).send({ error: 'Tên tiếng Anh và tiếng Việt là bắt buộc' });
   }
 
-  const topicId = (id || name_en).trim().toLowerCase().replace(/[^a-z0-9]/g, '-');
   try {
-    const insertTopic = db.prepare(`
-      INSERT INTO topics (id, name_en, name_vi, icon, color_theme, display_order)
-      VALUES (?, ?, ?, ?, ?, (SELECT COALESCE(MAX(display_order), 0) + 1 FROM topics))
-      ON CONFLICT(id) DO UPDATE SET
-        name_en = excluded.name_en,
-        name_vi = excluded.name_vi,
-        icon = excluded.icon,
-        color_theme = excluded.color_theme
-    `);
-    insertTopic.run(topicId, name_en, name_vi, icon || '📚', color_theme || 'amber');
+    const topicId = id ? slugify(id) : slugify(name_en);
+    const existingTopic = db.prepare('SELECT * FROM topics WHERE id = ?').get(topicId);
+    if (existingTopic) {
+      return reply.status(409).send({ error: `Chủ đề '${topicId}' đã tồn tại!` });
+    }
 
+    const nextOrder = (db.prepare('SELECT MAX(display_order) as maxOrder FROM topics').get().maxOrder || 0) + 1;
+
+    db.prepare(`
+      INSERT INTO topics (id, name_en, name_vi, icon, color_theme, display_order)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(topicId, name_en.trim(), name_vi.trim(), icon || '🌟', color_theme || 'amber', nextOrder);
+
+    // Tạo luôn tiến trình ban đầu cho chủ đề
     db.prepare(`
       INSERT OR IGNORE INTO topic_progress (topic_id, is_unlocked, cards_learned, quiz_high_score)
       VALUES (?, 1, 0, 0)
     `).run(topicId);
 
     const created = db.prepare('SELECT * FROM topics WHERE id = ?').get(topicId);
-    return reply.status(201).send(created);
+    return reply.status(201).send({ success: true, topic: created });
   } catch (err) {
     fastify.log.error(err);
-    reply.status(500).send({ error: 'Không thể tạo chủ đề' });
+    return reply.status(500).send({ error: 'Lỗi khi tạo chủ đề mới: ' + err.message });
   }
 });
 
-// 4.5. API Sinh Flashcards Tự Động Hàng Loạt Bằng AI (Admin)
+// 4.5. API Tự Động Sinh Flashcards Bằng Gemini + Tải Ảnh Cục Bộ (Admin AI Generator)
 fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
-  // 1. Kiểm tra Feature Flag tạo thẻ AI
+  // 1. Kiểm tra Feature Flag: FLASHCARD_GENERATE_ENABLE
   if (!isFlashcardAiEnabled()) {
     return reply.status(403).send({
       error: 'FEATURE_DISABLED',
-      message: 'Tính năng tự động sinh thẻ bằng AI hiện đang tạm đóng theo cấu hình hệ thống.'
+      message: 'Tính năng tự động sinh thẻ AI hiện đang tạm tắt trên hệ thống.'
     });
   }
 
-  // 2. Kiểm tra Rate Limit
-  const rateInfo = getRateLimitInfo(request);
-  if (rateInfo.isExceeded) {
-    return reply.status(429).send({
-      error: 'QUOTA_EXCEEDED',
-      message: `Hệ thống đã đạt giới hạn tạo thẻ hôm nay (tối đa ${rateInfo.limit} thẻ). Vui lòng quay lại sau!`
-    });
+  const { topic_id, words = [], image_source = 'ai_refined' } = request.body || {};
+
+  if (!topic_id || !Array.isArray(words) || words.length === 0) {
+    return reply.status(400).send({ error: 'topic_id và danh sách từ vựng (words) là bắt buộc' });
   }
 
-  const { topic_id, words, image_source = 'ai_refined' } = request.body || {};
+  // Lọc sạch từ vựng hợp lệ
+  const sanitizedWords = words
+    .map(w => (typeof w === 'string' ? w.trim() : ''))
+    .filter(w => w.length > 0);
 
-  if (!topic_id) {
-    return reply.status(400).send({ error: 'Vui lòng chọn hoặc cung cấp topic_id' });
-  }
-
-  if (!Array.isArray(words) || words.length === 0) {
-    return reply.status(400).send({ error: 'Danh sách từ vựng không được để trống' });
-  }
-
-  // Chuẩn hóa và loại bỏ các từ trùng lặp trong input đầu vào (Case-insensitive)
-  const uniqueWordsMap = new Map();
-  for (const rawWord of words) {
-    const trimmed = String(rawWord || '').trim();
-    if (trimmed) {
-      const lower = trimmed.toLowerCase();
-      if (!uniqueWordsMap.has(lower)) {
-        uniqueWordsMap.set(lower, trimmed);
-      }
-    }
-  }
-
-  const sanitizedWords = Array.from(uniqueWordsMap.values());
   if (sanitizedWords.length === 0) {
-    return reply.status(400).send({ error: 'Không tìm thấy từ vựng hợp lệ' });
+    return reply.status(400).send({ error: 'Không có từ vựng hợp lệ nào để xử lý' });
   }
 
-  // Kiểm tra xem số từ yêu cầu có vượt quota còn lại không (nếu có giới hạn)
-  if (rateInfo.limit > 0 && sanitizedWords.length > rateInfo.remaining) {
+  // 2. Kiểm tra Rate Limit theo IP
+  const rateLimitInfo = getRateLimitInfo(request);
+  if (rateLimitInfo.limit > 0 && rateLimitInfo.remaining <= 0) {
     return reply.status(429).send({
       error: 'QUOTA_EXCEEDED',
-      message: `Hệ thống chỉ còn lại ${rateInfo.remaining} lượt tạo hôm nay, nhưng bạn đang yêu cầu tạo ${sanitizedWords.length} từ. Vui lòng giảm bớt số lượng từ!`
+      message: `Bạn đã đạt giới hạn tối đa ${rateLimitInfo.limit} lượt tạo từ vựng hôm nay. Vui lòng quay lại vào ngày mai!`,
+      limit: rateLimitInfo.limit,
+      remaining: 0
+    });
+  }
+
+  // Nếu số từ gửi lên vượt quá quota còn lại
+  if (rateLimitInfo.limit > 0 && sanitizedWords.length > rateLimitInfo.remaining) {
+    return reply.status(429).send({
+      error: 'QUOTA_EXCEEDED',
+      message: `Số lượng từ yêu cầu (${sanitizedWords.length}) vượt quá hạn ngạch còn lại hôm nay (${rateLimitInfo.remaining} lượt).`,
+      limit: rateLimitInfo.limit,
+      remaining: rateLimitInfo.remaining
     });
   }
 
@@ -343,9 +338,10 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
     const vocabData = await generateVocabularyData(sanitizedWords);
 
     // Sử dụng ON CONFLICT(topic_id, word) DO UPDATE SET để tránh bản ghi trùng lặp
+    // Khi tạo mới từ Admin, luôn gán is_custom = 1
     const upsertCard = db.prepare(`
-      INSERT INTO flashcards (topic_id, word, phonetic, meaning_vi, example_en, example_vi, image_url, audio_url, difficulty)
-      VALUES (@topic_id, @word, @phonetic, @meaning_vi, @example_en, @example_vi, @image_url, @audio_url, 1)
+      INSERT INTO flashcards (topic_id, word, phonetic, meaning_vi, example_en, example_vi, image_url, audio_url, difficulty, is_custom)
+      VALUES (@topic_id, @word, @phonetic, @meaning_vi, @example_en, @example_vi, @image_url, @audio_url, 1, 1)
       ON CONFLICT(topic_id, word COLLATE NOCASE) DO UPDATE SET
         phonetic = excluded.phonetic,
         meaning_vi = excluded.meaning_vi,
@@ -460,17 +456,16 @@ fastify.put('/api/v1/cards/:id', async (request, reply) => {
       return reply.status(404).send({ error: `Không tìm thấy flashcard với ID ${id}` });
     }
 
-    const updatedWord = word !== undefined ? String(word).trim() : card.word;
     const updatedPhonetic = phonetic !== undefined ? String(phonetic).trim() : card.phonetic;
     const updatedMeaningVi = meaning_vi !== undefined ? String(meaning_vi).trim() : card.meaning_vi;
     const updatedExampleEn = example_en !== undefined ? String(example_en).trim() : card.example_en;
     const updatedExampleVi = example_vi !== undefined ? String(example_vi).trim() : card.example_vi;
     const updatedImageUrl = image_url !== undefined ? String(image_url).trim() : card.image_url;
 
+    // Khóa trường word để tránh hỏng liên kết file media (.webp, .mp3)
     db.prepare(`
       UPDATE flashcards 
       SET 
-        word = ?, 
         phonetic = ?, 
         meaning_vi = ?, 
         example_en = ?, 
@@ -478,7 +473,6 @@ fastify.put('/api/v1/cards/:id', async (request, reply) => {
         image_url = ?
       WHERE id = ?
     `).run(
-      updatedWord,
       updatedPhonetic,
       updatedMeaningVi,
       updatedExampleEn,
@@ -555,6 +549,68 @@ fastify.post('/api/v1/cards/:id/upload-image', async (request, reply) => {
   } catch (err) {
     fastify.log.error(err);
     return reply.status(500).send({ error: 'Lỗi khi upload ảnh: ' + err.message });
+  }
+});
+
+// 4.9. API Xóa Thẻ Flashcard (Chỉ cho phép xóa thẻ do người dùng tự tạo is_custom = 1)
+fastify.delete('/api/v1/cards/:id', async (request, reply) => {
+  const { id } = request.params;
+
+  try {
+    const card = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+    if (!card) {
+      return reply.status(404).send({ error: 'NOT_FOUND', message: `Không tìm thấy flashcard với ID ${id}` });
+    }
+
+    // Kiểm tra quyền xóa: Nếu là thẻ mặc định của hệ thống (is_custom === 0), cấm xóa
+    if (!card.is_custom || card.is_custom === 0) {
+      return reply.status(403).send({
+        error: 'FORBIDDEN',
+        message: 'Không thể xóa thẻ từ vựng mặc định của hệ thống!'
+      });
+    }
+
+    // Tiến hành xóa bản ghi trong SQLite
+    db.prepare('DELETE FROM flashcards WHERE id = ?').run(id);
+
+    // Dọn dẹp file ảnh và audio trên đĩa nếu có (tránh rác bộ nhớ)
+    // Lưu ý: Không xóa ảnh placeholder mặc định
+    try {
+      if (card.image_url && !card.image_url.includes('default-placeholder.webp')) {
+        // Tách query param nếu có
+        const cleanImagePath = card.image_url.split('?')[0];
+        if (cleanImagePath.startsWith('/uploads/')) {
+          const relativePath = cleanImagePath.replace('/uploads/', '');
+          const fullDiskPath = path.resolve(__dirname, '../uploads', relativePath);
+          if (fs.existsSync(fullDiskPath)) {
+            fs.unlinkSync(fullDiskPath);
+            fastify.log.info(`[Delete Card] Đã xóa file ảnh cục bộ: ${fullDiskPath}`);
+          }
+        }
+      }
+
+      if (card.audio_url) {
+        const cleanAudioPath = card.audio_url.split('?')[0];
+        if (cleanAudioPath.startsWith('/uploads/')) {
+          const relativePath = cleanAudioPath.replace('/uploads/', '');
+          const fullDiskPath = path.resolve(__dirname, '../uploads', relativePath);
+          if (fs.existsSync(fullDiskPath)) {
+            fs.unlinkSync(fullDiskPath);
+            fastify.log.info(`[Delete Card] Đã xóa file audio cục bộ: ${fullDiskPath}`);
+          }
+        }
+      }
+    } catch (cleanupErr) {
+      fastify.log.warn(`[Delete Card] Lỗi khi dọn dẹp file rác: ${cleanupErr.message}`);
+    }
+
+    return reply.send({
+      success: true,
+      message: 'Đã xóa thẻ thành công'
+    });
+  } catch (err) {
+    fastify.log.error(err);
+    return reply.status(500).send({ error: 'INTERNAL_ERROR', message: 'Lỗi khi xóa thẻ: ' + err.message });
   }
 });
 

@@ -12,6 +12,7 @@ import {
   Image as ImageIcon,
   Wand2,
   Edit3,
+  Trash2,
   Upload,
   X,
   Save,
@@ -26,6 +27,7 @@ import {
   regenerateCardImage,
   fetchTopicCards,
   updateCard,
+  deleteCard,
   uploadCardImage,
   fetchSystemConfig
 } from '../services/api';
@@ -75,6 +77,11 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
   const [editImageUrl, setEditImageUrl] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editModalError, setEditModalError] = useState('');
+
+  // State Modal xác nhận xóa thẻ tự tạo
+  const [deletingCard, setDeletingCard] = useState(null);
+  const [isDeletingCard, setIsDeletingCard] = useState(false);
+  const [deleteModalError, setDeleteModalError] = useState('');
 
   // Upload ảnh thủ công
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -249,8 +256,8 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
     e.preventDefault();
     if (!editingCard?.id) return;
 
-    if (!editWord.trim() || !editMeaningVi.trim()) {
-      setEditModalError('Từ vựng tiếng Anh và nghĩa tiếng Việt không được để trống');
+    if (!editMeaningVi.trim()) {
+      setEditModalError('Nghĩa tiếng Việt của từ không được để trống');
       return;
     }
 
@@ -318,6 +325,43 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
       setEditModalError(err.message || 'Lỗi khi tải ảnh lên');
     } finally {
       setIsUploadingImage(false);
+    }
+  };
+
+  // Mở modal xác nhận xóa thẻ
+  const handleOpenDeleteModal = (card) => {
+    soundEffects.playPop();
+    setDeletingCard(card);
+    setDeleteModalError('');
+  };
+
+  // Đóng modal xóa thẻ
+  const handleCloseDeleteModal = () => {
+    setDeletingCard(null);
+    setDeleteModalError('');
+  };
+
+  // Xác nhận và thực hiện xóa thẻ
+  const handleConfirmDelete = async () => {
+    if (!deletingCard?.id) return;
+
+    try {
+      setIsDeletingCard(true);
+      setDeleteModalError('');
+
+      await deleteCard(deletingCard.id);
+      soundEffects.playStar();
+
+      // Cập nhật danh sách thẻ trên UI ngay lập tức
+      setTopicCards(prev => prev.filter(c => c.id !== deletingCard.id));
+
+      handleCloseDeleteModal();
+      if (onTopicUpdated) onTopicUpdated();
+    } catch (err) {
+      soundEffects.playPop();
+      setDeleteModalError(err.message || 'Lỗi khi xóa thẻ');
+    } finally {
+      setIsDeletingCard(false);
     }
   };
 
@@ -427,8 +471,8 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                     setSelectedTopicId(t.id);
                   }}
                   className={`flex items-center justify-between p-3 rounded-2xl cursor-pointer border-2 transition-all ${selectedTopicId === t.id
-                      ? 'border-amber-400 bg-amber-50 text-amber-900 font-bold shadow-sm'
-                      : 'border-slate-100 hover:bg-slate-50 text-slate-700'
+                    ? 'border-amber-400 bg-amber-50 text-amber-900 font-bold shadow-sm'
+                    : 'border-slate-100 hover:bg-slate-50 text-slate-700'
                     }`}
                 >
                   <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
@@ -467,8 +511,8 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                     </span>
                   ) : sysConfig.rateLimit > 0 ? (
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${sysConfig.remainingQuota > 0
-                        ? 'bg-amber-50 text-amber-800 border-amber-200'
-                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                      ? 'bg-amber-50 text-amber-800 border-amber-200'
+                      : 'bg-rose-50 text-rose-700 border-rose-200'
                       }`}>
                       <Zap className="w-3.5 h-3.5 text-amber-500" />
                       <span>Lượt tạo AI còn lại: {sysConfig.remainingQuota}/{sysConfig.rateLimit}</span>
@@ -486,8 +530,8 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                       setImageSource('ai_refined');
                     }}
                     className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${imageSource === 'ai_refined'
-                        ? 'border-purple-400 bg-purple-50 text-purple-900 shadow-sm'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                      ? 'border-purple-400 bg-purple-50 text-purple-900 shadow-sm'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-600'
                       }`}
                   >
                     <Wand2 className={`w-5 h-5 mt-0.5 ${imageSource === 'ai_refined' ? 'text-purple-600' : 'text-slate-400'}`} />
@@ -503,8 +547,8 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                       setImageSource('unsplash');
                     }}
                     className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${imageSource === 'unsplash'
-                        ? 'border-sky-400 bg-sky-50 text-sky-900 shadow-sm'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                      ? 'border-sky-400 bg-sky-50 text-sky-900 shadow-sm'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-600'
                       }`}
                   >
                     <ImageIcon className={`w-5 h-5 mt-0.5 ${imageSource === 'unsplash' ? 'text-sky-600' : 'text-slate-400'}`} />
@@ -558,8 +602,8 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
               onClick={handleGenerate}
               disabled={isGenerating || !sysConfig.flashcardAiEnabled || (sysConfig.rateLimit > 0 && sysConfig.remainingQuota <= 0)}
               className={`w-full py-3.5 rounded-2xl font-black text-base shadow-bouncy flex items-center justify-center gap-2 transition-all ${isGenerating || !sysConfig.flashcardAiEnabled || (sysConfig.rateLimit > 0 && sysConfig.remainingQuota <= 0)
-                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-amber-400 via-orange-400 to-pink-500 hover:from-amber-500 hover:to-pink-600 text-white active:scale-98'
+                ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-amber-400 via-orange-400 to-pink-500 hover:from-amber-500 hover:to-pink-600 text-white active:scale-98'
                 }`}
             >
               {isGenerating ? (
@@ -638,11 +682,13 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
 
                       {/* Nội dung từ & các nút hành động */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <span className="font-black text-slate-800 text-base truncate">{card.word}</span>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-black text-slate-800 text-base truncate" title={card.word}>
+                            {card.word}
+                          </span>
 
-                          {/* Các nút tương tác: Sửa, Đổi ảnh AI, Nghe */}
-                          <div className="flex items-center gap-1">
+                          {/* Các nút tương tác: Sửa, Xóa/Khóa, Đổi ảnh AI, Nghe */}
+                          <div className="flex items-center gap-1 shrink-0">
                             {/* Nút Chỉnh sửa thủ công */}
                             <button
                               onClick={() => handleOpenEditModal(card)}
@@ -651,6 +697,24 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
+
+                            {/* Thẻ do người dùng tự tạo: Nút Xóa (Trash đỏ); Thẻ hệ thống: Icon Ổ khóa (Lock) */}
+                            {card.is_custom === 1 ? (
+                              <button
+                                onClick={() => handleOpenDeleteModal(card)}
+                                className="p-1.5 rounded-full hover:bg-rose-100 text-rose-600 transition-transform active:scale-90"
+                                title="Xóa thẻ từ vựng này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <div
+                                className="p-1.5 rounded-full text-slate-400 bg-slate-100/80 cursor-default flex items-center justify-center"
+                                title="Thẻ mặc định của hệ thống (không thể xóa)"
+                              >
+                                <Lock className="w-3.5 h-3.5" />
+                              </div>
+                            )}
 
                             {/* Nút Tạo lại ảnh AI (chỉ hiển thị khi imageAiEnabled = true) */}
                             {sysConfig.imageAiEnabled && (
@@ -763,16 +827,23 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
               <form onSubmit={handleSaveCardEdit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Từ tiếng Anh (Word) <span className="text-rose-500">*</span>
+                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>Từ tiếng Anh (Word)</span>
+                      <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+                        <Lock className="w-3 h-3 text-slate-400" />
+                        <span>Đã khóa</span>
+                      </span>
                     </label>
                     <input
                       type="text"
                       value={editWord}
-                      onChange={(e) => setEditWord(e.target.value)}
-                      required
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold text-slate-800 focus:outline-none focus:border-amber-500"
+                      readOnly
+                      disabled
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-100 text-slate-500 font-bold text-sm cursor-not-allowed focus:outline-none select-none"
                     />
+                    <p className="text-[10px] text-slate-400 mt-1 leading-tight">
+                      🔒 Không thể thay đổi từ vựng gốc để đảm bảo đồng bộ tệp hình ảnh và âm thanh.
+                    </p>
                   </div>
 
                   <div>
@@ -861,6 +932,77 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ==================== MODAL XÁC NHẬN XÓA THẺ TỰ TẠO ==================== */}
+      <AnimatePresence>
+        {deletingCard && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border-2 border-rose-100 text-center space-y-4"
+            >
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-500 shadow-sm">
+                <Trash2 className="w-7 h-7" />
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="text-lg font-black text-slate-800 font-kids">
+                  Xác Nhận Xóa Thẻ?
+                </h3>
+                <p className="text-sm text-slate-600">
+                  Bé/Phụ huynh có chắc chắn muốn xóa thẻ từ vựng{' '}
+                  <span className="font-bold text-rose-600 underline decoration-rose-300">
+                    "{deletingCard.word}"
+                  </span>{' '}
+                  không?
+                </p>
+                <p className="text-xs text-slate-400">
+                  Thẻ và các file liên quan sẽ được gỡ bỏ khỏi hệ thống.
+                </p>
+              </div>
+
+              {deleteModalError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-600 flex items-center gap-2 text-left">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{deleteModalError}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleCloseDeleteModal}
+                  disabled={isDeletingCard}
+                  className="flex-1 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors disabled:opacity-50"
+                >
+                  Hủy bỏ
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={isDeletingCard}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-black text-sm rounded-xl shadow-md transition-transform active:scale-95 disabled:opacity-50"
+                >
+                  {isDeletingCard ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Đang xóa...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>Xóa Thẻ</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

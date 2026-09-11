@@ -111,7 +111,18 @@ export async function uploadCardImage(cardId, file) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Không thể tải ảnh lên');
+    throw new Error(err.message || err.error || 'Không thể tải ảnh lên');
+  }
+  return res.json();
+}
+
+export async function deleteCard(cardId) {
+  const res = await fetch(`${API_BASE}/cards/${cardId}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || err.error || 'Không thể xóa thẻ');
   }
   return res.json();
 }

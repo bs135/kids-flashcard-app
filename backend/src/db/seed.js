@@ -1198,8 +1198,8 @@ export async function seedData() {
 
   // 2. Chuẩn bị câu lệnh UPSERT Flashcard để nạp chính xác, tránh trùng lặp
   const upsertCard = db.prepare(`
-    INSERT INTO flashcards (topic_id, word, phonetic, meaning_vi, example_en, example_vi, image_url, audio_url, difficulty)
-    VALUES (@topic_id, @word, @phonetic, @meaning_vi, @example_en, @example_vi, @image_url, @audio_url, @difficulty)
+    INSERT INTO flashcards (topic_id, word, phonetic, meaning_vi, example_en, example_vi, image_url, audio_url, difficulty, is_custom)
+    VALUES (@topic_id, @word, @phonetic, @meaning_vi, @example_en, @example_vi, @image_url, @audio_url, @difficulty, 0)
     ON CONFLICT(topic_id, word COLLATE NOCASE) DO UPDATE SET
       phonetic = excluded.phonetic,
       meaning_vi = excluded.meaning_vi,
@@ -1207,7 +1207,8 @@ export async function seedData() {
       example_vi = excluded.example_vi,
       image_url = excluded.image_url,
       audio_url = excluded.audio_url,
-      difficulty = excluded.difficulty
+      difficulty = excluded.difficulty,
+      is_custom = 0
   `);
 
   console.log(`\n📦 2. Kiểm tra tài nguyên & Nạp ${rawFlashcards.length} thẻ từ vựng vào CSDL...`);

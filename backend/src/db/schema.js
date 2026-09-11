@@ -53,6 +53,7 @@ export function initDatabase() {
         image_url TEXT NOT NULL,
         audio_url TEXT,
         difficulty INTEGER DEFAULT 1,
+        is_custom INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (topic_id) REFERENCES topics (id) ON DELETE CASCADE,
         UNIQUE(topic_id, word COLLATE NOCASE)
@@ -81,6 +82,13 @@ export function initDatabase() {
         FOREIGN KEY (topic_id) REFERENCES topics (id) ON DELETE CASCADE
     );
   `);
+
+  // Migration: Bổ sung cột is_custom nếu bảng đã tồn tại từ trước mà chưa có cột này
+  const columns = db.pragma('table_info(flashcards)');
+  const hasIsCustom = columns.some(col => col.name === 'is_custom');
+  if (!hasIsCustom) {
+    db.exec('ALTER TABLE flashcards ADD COLUMN is_custom INTEGER DEFAULT 0');
+  }
 
   // Tạo user mặc định nếu chưa có
   const checkUser = db.prepare('SELECT id FROM user_progress WHERE id = ?').get('default_kid');
