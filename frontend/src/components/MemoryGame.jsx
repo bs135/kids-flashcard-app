@@ -203,13 +203,16 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
             </span>
           </div>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1, rotate: 15 }}
+            whileTap={{ scale: 0.9, rotate: -180 }}
+            transition={{ type: "spring", stiffness: 300, damping: 15 }}
             onClick={() => initBoard(cardsPool)}
-            className="p-2 rounded-2xl bg-white border-2 border-slate-200 text-slate-600 hover:border-amber-400 hover:text-amber-700 shadow-sm transition-all"
+            className="p-2.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-600 hover:border-amber-400 hover:text-amber-700 shadow-sm cursor-pointer select-none flex items-center justify-center"
             title="Xáo trộn lại"
           >
             <RefreshCw className="w-5 h-5" />
-          </button>
+          </motion.button>
         </div>
 
         {/* Lưới các thẻ bài (3x4 hoặc 4x3) */}
@@ -231,23 +234,23 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
               return (
                 <div
                   key={card.uniqueKey}
-                  className="w-full aspect-[4/5] relative min-w-0 min-h-0 overflow-hidden"
+                  className="w-full aspect-[4/5] relative min-w-0 min-h-0 rounded-2xl overflow-hidden"
                 >
                   <motion.div
-                    whileHover={{ scale: isMatched ? 1 : 1.03 }}
-                    whileTap={{ scale: isMatched ? 1 : 0.97 }}
+                    whileHover={isMatched ? {} : { scale: 1 }}
+                    whileTap={isMatched ? {} : { scale: 0.98 }}
                     onClick={() => handleCardClick(index)}
                     className={`absolute inset-0 w-full h-full rounded-2xl cursor-pointer select-none transition-shadow duration-300 ${
                       isMatched ? 'opacity-85' : ''
                     }`}
                   >
                     <div
-                      className={`absolute inset-0 w-full h-full rounded-2xl border-4 transition-all duration-300 shadow-md flex flex-col items-center justify-center p-1 sm:p-2 text-center overflow-hidden box-border ${
+                      className={`absolute inset-0 w-full h-full rounded-2xl border-4 transition-all duration-300 flex flex-col items-center justify-center p-1 sm:p-2 text-center overflow-hidden box-border ${
                         isMatched
-                          ? 'bg-emerald-50 border-emerald-400 shadow-emerald-200 ring-4 ring-emerald-300'
+                          ? 'bg-emerald-50 border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.6)]'
                           : isFlipped
-                          ? 'bg-white border-amber-400 shadow-amber-200'
-                          : 'bg-gradient-to-br from-amber-400 to-yellow-400 border-amber-300 hover:border-amber-500'
+                          ? 'bg-white border-amber-400 shadow-md'
+                          : 'bg-gradient-to-br from-amber-400 to-yellow-400 border-amber-300 hover:border-amber-500 shadow-sm'
                       }`}
                     >
                       {isFlipped ? (
@@ -261,8 +264,8 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
                                 loading="eager"
                               />
                             </div>
-                            <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase shrink-0">
-                              Hình Ảnh
+                            <span className="text-[9px] sm:text-[10px] font-extrabold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                              HÌNH ẢNH
                             </span>
                           </div>
                         ) : (
@@ -277,8 +280,8 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
                                 {card.word}
                               </span>
                             </div>
-                            <span className="text-[9px] sm:text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">
-                              Từ Vựng
+                            <span className="text-[9px] sm:text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                              TỪ VỰNG
                             </span>
                           </div>
                         )
