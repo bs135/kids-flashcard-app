@@ -21,6 +21,68 @@ const __dirname = path.dirname(__filename);
 // Khởi tạo DB Schema
 initDatabase();
 
+// ----------------------------------------------------
+// FEATURE FLAGS & RATE LIMITING CONFIGURATION
+// ----------------------------------------------------
+// IMAGE_AI_GENERATE_ENABLE: Mặc định false
+const isImageAiEnabled = () => process.env.IMAGE_AI_GENERATE_ENABLE === 'true';
+
+// FLASHCARD_GENERATE_ENABLE: Mặc định true
+const isFlashcardAiEnabled = () => process.env.FLASHCARD_GENERATE_ENABLE !== 'false';
+
+// FLASHCARD_GENERATE_RATE_LIMIT: Mặc định 5 (0 = không giới hạn)
+const getFlashcardRateLimit = () => {
+  const val = parseInt(process.env.FLASHCARD_GENERATE_RATE_LIMIT, 10);
+  return isNaN(val) ? 5 : val;
+};
+
+// In-memory rate limiting map: ip -> { count: number, resetTime: number }
+// Reset sau mỗi 24 giờ (hoặc ngày mới)
+const rateLimitStore = new Map();
+const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function getClientIp(request) {
+  return request.headers['x-forwarded-for']?.split(',')[0]?.trim() || request.ip || '127.0.0.1';
+}
+
+function getRateLimitInfo(request) {
+  const limit = getFlashcardRateLimit();
+  if (limit <= 0) {
+    return { limit: 0, used: 0, remaining: 999999, isExceeded: false };
+  }
+
+  const clientIp = getClientIp(request);
+  const now = Date.now();
+  const record = rateLimitStore.get(clientIp);
+
+  if (!record || now > record.resetTime) {
+    return { limit, used: 0, remaining: limit, isExceeded: false };
+  }
+
+  const remaining = Math.max(0, limit - record.count);
+  return {
+    limit,
+    used: record.count,
+    remaining,
+    isExceeded: remaining <= 0
+  };
+}
+
+function incrementRateLimit(request, amount = 1) {
+  const limit = getFlashcardRateLimit();
+  if (limit <= 0) return;
+
+  const clientIp = getClientIp(request);
+  const now = Date.now();
+  const record = rateLimitStore.get(clientIp);
+
+  if (!record || now > record.resetTime) {
+    rateLimitStore.set(clientIp, { count: amount, resetTime: now + RATE_LIMIT_WINDOW_MS });
+  } else {
+    record.count += amount;
+  }
+}
+
 const fastify = Fastify({
   logger: true
 });
@@ -55,6 +117,7 @@ fastify.get('/', async (request, reply) => {
     status: 'running',
     endpoints: {
       health: '/health',
+      config: '/api/v1/config',
       topics: '/api/v1/topics',
       cards_example: '/api/v1/topics/animals/cards',
       progress: '/api/v1/progress'
@@ -64,6 +127,18 @@ fastify.get('/', async (request, reply) => {
 
 fastify.get('/health', async (request, reply) => {
   return { status: 'ok', timestamp: new Date().toISOString() };
+});
+
+// 3.1. Public Config Route: Cung cấp Feature Flags & Rate Quota cho Frontend
+fastify.get('/api/v1/config', async (request, reply) => {
+  const rateInfo = getRateLimitInfo(request);
+  return {
+    imageAiEnabled: isImageAiEnabled(),
+    flashcardAiEnabled: isFlashcardAiEnabled(),
+    rateLimit: rateInfo.limit,
+    remainingQuota: rateInfo.remaining,
+    usedQuota: rateInfo.used
+  };
 });
 
 // 4. API Endpoints
@@ -202,6 +277,23 @@ fastify.post('/api/v1/topics', async (request, reply) => {
 
 // 4.5. API Sinh Flashcards Tự Động Hàng Loạt Bằng AI (Admin)
 fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
+  // 1. Kiểm tra Feature Flag tạo thẻ AI
+  if (!isFlashcardAiEnabled()) {
+    return reply.status(403).send({
+      error: 'FEATURE_DISABLED',
+      message: 'Tính năng tự động sinh thẻ bằng AI hiện đang tạm đóng theo cấu hình hệ thống.'
+    });
+  }
+
+  // 2. Kiểm tra Rate Limit
+  const rateInfo = getRateLimitInfo(request);
+  if (rateInfo.isExceeded) {
+    return reply.status(429).send({
+      error: 'QUOTA_EXCEEDED',
+      message: `Hệ thống đã đạt giới hạn tạo thẻ hôm nay (tối đa ${rateInfo.limit} thẻ). Vui lòng quay lại sau!`
+    });
+  }
+
   const { topic_id, words, image_source = 'ai_refined' } = request.body || {};
 
   if (!topic_id) {
@@ -229,6 +321,14 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
     return reply.status(400).send({ error: 'Không tìm thấy từ vựng hợp lệ' });
   }
 
+  // Kiểm tra xem số từ yêu cầu có vượt quota còn lại không (nếu có giới hạn)
+  if (rateInfo.limit > 0 && sanitizedWords.length > rateInfo.remaining) {
+    return reply.status(429).send({
+      error: 'QUOTA_EXCEEDED',
+      message: `Hệ thống chỉ còn lại ${rateInfo.remaining} lượt tạo hôm nay, nhưng bạn đang yêu cầu tạo ${sanitizedWords.length} từ. Vui lòng giảm bớt số lượng từ!`
+    });
+  }
+
   // Kiểm tra xem Topic có tồn tại không
   const topic = db.prepare('SELECT * FROM topics WHERE id = ?').get(topic_id);
   if (!topic) {
@@ -236,7 +336,8 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
   }
 
   try {
-    fastify.log.info(`[Admin Generate] Bắt đầu xử lý ${sanitizedWords.length} từ cho chủ đề "${topic_id}" (Nguồn ảnh: ${image_source})...`);
+    const imageAiActive = isImageAiEnabled();
+    fastify.log.info(`[Admin Generate] Bắt đầu xử lý ${sanitizedWords.length} từ cho chủ đề "${topic_id}" (Nguồn ảnh AI bật: ${imageAiActive})...`);
 
     // 1. Gọi Gemini API để sinh dữ liệu ngữ nghĩa & phiên âm
     const vocabData = await generateVocabularyData(sanitizedWords);
@@ -261,8 +362,11 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
       const cleanWord = item.word.trim();
       fastify.log.info(`[Admin Generate] Đang tải media cho: ${cleanWord}`);
 
-      // Sinh ảnh WebP cục bộ theo nguồn image_source và thư mục topic_id
-      const imageUrl = await downloadAndConvertKidImage(cleanWord, topic_id, image_source);
+      // Xử lý ảnh: Nếu IMAGE_AI_GENERATE_ENABLE là true thì mới tải ảnh tự động; nếu false thì gán ảnh mặc định
+      let imageUrl = '/uploads/images/default-placeholder.webp';
+      if (imageAiActive) {
+        imageUrl = await downloadAndConvertKidImage(cleanWord, topic_id, image_source);
+      }
 
       // Sinh giọng đọc Edge-TTS MP3 cục bộ theo thư mục topic_id
       const audioUrl = await downloadWordAudio(cleanWord, topic_id);
@@ -287,11 +391,15 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
       }
     }
 
+    // Tăng bộ đếm Rate Limit theo số thẻ đã tạo thành công
+    incrementRateLimit(request, createdCards.length);
+
     return reply.status(201).send({
       success: true,
       message: `Đã xử lý thành công ${createdCards.length} thẻ flashcards!`,
       topic_id,
-      cards: createdCards
+      cards: createdCards,
+      quotaRemaining: getRateLimitInfo(request).remaining
     });
   } catch (err) {
     fastify.log.error(err);
@@ -301,6 +409,14 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
 
 // 4.6. API Tái Tạo Lại Ảnh Cho Một Thẻ Đơn Lẻ (Admin Regenerate Image)
 fastify.post('/api/v1/admin/cards/:id/regenerate-image', async (request, reply) => {
+  // Kiểm tra Feature Flag tạo ảnh AI
+  if (!isImageAiEnabled()) {
+    return reply.status(403).send({
+      error: 'FEATURE_DISABLED',
+      message: 'Tính năng tạo ảnh AI tự động hiện đang tạm tắt. Vui lòng sử dụng tính năng tải ảnh thủ công từ máy tính.'
+    });
+  }
+
   const { id } = request.params;
   const { imageSource = 'ai_refined' } = request.body || {};
 

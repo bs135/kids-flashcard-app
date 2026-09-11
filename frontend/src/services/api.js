@@ -6,6 +6,23 @@ export async function fetchTopics() {
   return res.json();
 }
 
+export async function fetchSystemConfig() {
+  try {
+    const res = await fetch(`${API_BASE}/config`);
+    if (!res.ok) throw new Error('Không thể tải cấu hình hệ thống');
+    return res.json();
+  } catch (err) {
+    console.warn('Lỗi tải cấu hình, dùng mặc định:', err);
+    return {
+      imageAiEnabled: false,
+      flashcardAiEnabled: true,
+      rateLimit: 5,
+      remainingQuota: 5,
+      usedQuota: 0
+    };
+  }
+}
+
 export async function fetchTopicCards(topicId) {
   const res = await fetch(`${API_BASE}/topics/${topicId}/cards`);
   if (!res.ok) throw new Error(`Không thể tải thẻ của chủ đề ${topicId}`);

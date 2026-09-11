@@ -1,29 +1,49 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, 
-  Plus, 
-  ArrowLeft, 
-  Volume2, 
-  CheckCircle2, 
-  AlertCircle, 
-  Loader2, 
-  RefreshCw, 
-  Image as ImageIcon, 
-  Wand2, 
-  Edit3, 
-  Upload, 
-  X, 
-  Save, 
-  Layers
+import {
+  Sparkles,
+  Plus,
+  ArrowLeft,
+  Volume2,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  RefreshCw,
+  Image as ImageIcon,
+  Wand2,
+  Edit3,
+  Upload,
+  X,
+  Save,
+  Layers,
+  Lock,
+  Zap,
+  Info
 } from 'lucide-react';
-import { createTopic, generateBatchCards, regenerateCardImage, fetchTopicCards, updateCard, uploadCardImage } from '../services/api';
+import {
+  createTopic,
+  generateBatchCards,
+  regenerateCardImage,
+  fetchTopicCards,
+  updateCard,
+  uploadCardImage,
+  fetchSystemConfig
+} from '../services/api';
 import { speakWord } from '../services/speech';
 import { soundEffects } from '../services/soundEffects';
 
 export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
   const [selectedTopicId, setSelectedTopicId] = useState(topics[0]?.id || '');
   const [isCreatingNewTopic, setIsCreatingNewTopic] = useState(false);
+
+  // Cấu hình hệ thống (Feature Flags & Rate Limit Quota)
+  const [sysConfig, setSysConfig] = useState({
+    imageAiEnabled: false,
+    flashcardAiEnabled: true,
+    rateLimit: 5,
+    remainingQuota: 5,
+    usedQuota: 0
+  });
 
   // Form tạo Topic mới
   const [newTopicNameEn, setNewTopicNameEn] = useState('');
@@ -60,6 +80,20 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [previewImageSrc, setPreviewImageSrc] = useState('');
   const fileInputRef = useRef(null);
+
+  // Tải cấu hình hệ thống khi mở trang Admin
+  const loadSystemConfig = async () => {
+    try {
+      const cfg = await fetchSystemConfig();
+      setSysConfig(cfg);
+    } catch (e) {
+      console.warn('Lỗi lấy system config:', e);
+    }
+  };
+
+  useEffect(() => {
+    loadSystemConfig();
+  }, []);
 
   // Tải danh sách thẻ khi chọn chủ đề
   const loadCardsForSelectedTopic = async (topicId) => {
@@ -113,6 +147,11 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
       return;
     }
 
+    if (!sysConfig.flashcardAiEnabled) {
+      setError('Tính năng tự động sinh thẻ bằng AI hiện đang tạm đóng theo cấu hình hệ thống');
+      return;
+    }
+
     const wordsList = wordInput
       .split(/[,;\n]+/)
       .map(w => w.trim())
@@ -123,22 +162,35 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
       return;
     }
 
+    // Kiểm tra quota còn lại nếu có rate limit
+    if (sysConfig.rateLimit > 0 && wordsList.length > sysConfig.remainingQuota) {
+      setError(`Bạn chỉ còn ${sysConfig.remainingQuota} lượt tạo hôm nay, nhưng đã nhập ${wordsList.length} từ. Vui lòng giảm bớt số lượng từ!`);
+      return;
+    }
+
     try {
       setError('');
       setIsGenerating(true);
       const sourceName = imageSource === 'unsplash' ? 'Vector / Thật (Unsplash)' : 'AI Tinh Chỉnh (Gemini + Pollinations)';
-      setProgressMsg(`Đang phân tích và tạo media cho ${wordsList.length} từ [Nguồn: ${sourceName}]...`);
+      setProgressMsg(`Đang phân tích và tạo media cho ${wordsList.length} từ...`);
       soundEffects.playPop();
 
       const result = await generateBatchCards(selectedTopicId, wordsList, imageSource);
       soundEffects.playWin();
       setWordInput('');
       setProgressMsg(`Thành công! Đã tạo và lưu ${result.cards?.length || 0} thẻ vào bộ nhớ.`);
-      await loadCardsForSelectedTopic(selectedTopicId);
+
+      // Làm mới lại quota và danh sách thẻ
+      await Promise.all([
+        loadCardsForSelectedTopic(selectedTopicId),
+        loadSystemConfig()
+      ]);
+
       if (onTopicUpdated) onTopicUpdated();
     } catch (err) {
       setError(err.message || 'Lỗi khi sinh thẻ');
       soundEffects.playPop();
+      loadSystemConfig();
     } finally {
       setIsGenerating(false);
     }
@@ -374,11 +426,10 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                     soundEffects.playPop();
                     setSelectedTopicId(t.id);
                   }}
-                  className={`flex items-center justify-between p-3 rounded-2xl cursor-pointer border-2 transition-all ${
-                    selectedTopicId === t.id
+                  className={`flex items-center justify-between p-3 rounded-2xl cursor-pointer border-2 transition-all ${selectedTopicId === t.id
                       ? 'border-amber-400 bg-amber-50 text-amber-900 font-bold shadow-sm'
                       : 'border-slate-100 hover:bg-slate-50 text-slate-700'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
                     <span className="text-2xl shrink-0">{t.icon}</span>
@@ -401,49 +452,83 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
           {/* KHỐI 1: NHẬP TỪ & SINH AI */}
           <div className="bg-white rounded-3xl p-6 border-2 border-slate-200 shadow-sm space-y-5">
             <div className="space-y-3">
-              <h3 className="text-lg font-bold text-slate-800 font-kids flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500" />
-                <span>2. Tự Động Sinh Thẻ Mới Bằng AI</span>
-              </h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-lg font-bold text-slate-800 font-kids flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  <span>2. Tự Động Sinh Thẻ Mới Bằng AI</span>
+                </h3>
 
-              {/* BỘ CHỌN NGUỒN ẢNH */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div
-                  onClick={() => {
-                    soundEffects.playPop();
-                    setImageSource('ai_refined');
-                  }}
-                  className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
-                    imageSource === 'ai_refined'
-                      ? 'border-purple-400 bg-purple-50 text-purple-900 shadow-sm'
-                      : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                  }`}
-                >
-                  <Wand2 className={`w-5 h-5 mt-0.5 ${imageSource === 'ai_refined' ? 'text-purple-600' : 'text-slate-400'}`} />
-                  <div>
-                    <div className="text-sm font-bold">Ảnh AI Hoạt Hình Tinh Chỉnh</div>
-                    <div className="text-xs text-slate-500">Gemini Prompt Refiner + Pollinations 3D Pixar cute</div>
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => {
-                    soundEffects.playPop();
-                    setImageSource('unsplash');
-                  }}
-                  className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
-                    imageSource === 'unsplash'
-                      ? 'border-sky-400 bg-sky-50 text-sky-900 shadow-sm'
-                      : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                  }`}
-                >
-                  <ImageIcon className={`w-5 h-5 mt-0.5 ${imageSource === 'unsplash' ? 'text-sky-600' : 'text-slate-400'}`} />
-                  <div>
-                    <div className="text-sm font-bold">Ảnh Vector / Đồ Họa Thực</div>
-                    <div className="text-xs text-slate-500">Unsplash & Pexels thư viện vector chuẩn xác 100%</div>
-                  </div>
+                {/* BADGE FEATURE FLAG & RATE LIMIT */}
+                <div className="flex items-center gap-2">
+                  {!sysConfig.flashcardAiEnabled ? (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200">
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Tạm đóng tạo thẻ AI</span>
+                    </span>
+                  ) : sysConfig.rateLimit > 0 ? (
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${sysConfig.remainingQuota > 0
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                      }`}>
+                      <Zap className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Lượt tạo AI còn lại: {sysConfig.remainingQuota}/{sysConfig.rateLimit}</span>
+                    </span>
+                  ) : null}
                 </div>
               </div>
+
+              {/* BỘ CHỌN NGUỒN ẢNH HOẶC THÔNG BÁO CHẾ ĐỘ THỦ CÔNG */}
+              {sysConfig.imageAiEnabled ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div
+                    onClick={() => {
+                      soundEffects.playPop();
+                      setImageSource('ai_refined');
+                    }}
+                    className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${imageSource === 'ai_refined'
+                        ? 'border-purple-400 bg-purple-50 text-purple-900 shadow-sm'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                      }`}
+                  >
+                    <Wand2 className={`w-5 h-5 mt-0.5 ${imageSource === 'ai_refined' ? 'text-purple-600' : 'text-slate-400'}`} />
+                    <div>
+                      <div className="text-sm font-bold">Ảnh AI Hoạt Hình Tinh Chỉnh</div>
+                      <div className="text-xs text-slate-500">Gemini Prompt Refiner + Pollinations 3D Pixar cute</div>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => {
+                      soundEffects.playPop();
+                      setImageSource('unsplash');
+                    }}
+                    className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${imageSource === 'unsplash'
+                        ? 'border-sky-400 bg-sky-50 text-sky-900 shadow-sm'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                      }`}
+                  >
+                    <ImageIcon className={`w-5 h-5 mt-0.5 ${imageSource === 'unsplash' ? 'text-sky-600' : 'text-slate-400'}`} />
+                    <div>
+                      <div className="text-sm font-bold">Ảnh Vector / Đồ Họa Thực</div>
+                      <div className="text-xs text-slate-500">Unsplash & Pexels thư viện vector chuẩn xác 100%</div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3.5 bg-sky-50 border border-sky-200 rounded-2xl flex items-start gap-3">
+                  <div className="p-2 bg-sky-100 text-sky-700 rounded-xl shrink-0">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold text-sky-900 flex items-center gap-1.5">
+                      <span>Tải ảnh từ máy tính (PNG, JPG, WEBP)</span>
+                    </div>
+                    <p className="text-xs text-sky-700 mt-0.5">
+                      💡 Chế độ tải ảnh thủ công để tối ưu tài nguyên. Sau khi hệ thống sinh dữ liệu từ vựng & âm thanh chuẩn bản xứ, bạn có thể bấm nút Sửa (<Edit3 className="w-3 h-3 inline text-amber-700" />) trên từng thẻ để tải ảnh tùy thích từ máy tính!
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <textarea
@@ -451,8 +536,8 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
               placeholder="Ví dụ: dolphin, kangaroo, crocodile, zebra, penguin"
               value={wordInput}
               onChange={(e) => setWordInput(e.target.value)}
-              disabled={isGenerating}
-              className="w-full p-4 rounded-2xl border-2 border-slate-300 focus:border-amber-400 focus:outline-none text-base font-semibold text-slate-800 placeholder-slate-400 resize-none"
+              disabled={isGenerating || !sysConfig.flashcardAiEnabled || (sysConfig.rateLimit > 0 && sysConfig.remainingQuota <= 0)}
+              className="w-full p-4 rounded-2xl border-2 border-slate-300 focus:border-amber-400 focus:outline-none text-base font-semibold text-slate-800 placeholder-slate-400 resize-none disabled:bg-slate-100 disabled:cursor-not-allowed"
             />
 
             {error && (
@@ -471,17 +556,26 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
 
             <button
               onClick={handleGenerate}
-              disabled={isGenerating}
-              className={`w-full py-3.5 rounded-2xl font-black text-base shadow-bouncy flex items-center justify-center gap-2 transition-all ${
-                isGenerating
+              disabled={isGenerating || !sysConfig.flashcardAiEnabled || (sysConfig.rateLimit > 0 && sysConfig.remainingQuota <= 0)}
+              className={`w-full py-3.5 rounded-2xl font-black text-base shadow-bouncy flex items-center justify-center gap-2 transition-all ${isGenerating || !sysConfig.flashcardAiEnabled || (sysConfig.rateLimit > 0 && sysConfig.remainingQuota <= 0)
                   ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
                   : 'bg-gradient-to-r from-amber-400 via-orange-400 to-pink-500 hover:from-amber-500 hover:to-pink-600 text-white active:scale-98'
-              }`}
+                }`}
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   <span>Đang Xử Lý & Tải Media Cục Bộ...</span>
+                </>
+              ) : !sysConfig.flashcardAiEnabled ? (
+                <>
+                  <Lock className="w-5 h-5" />
+                  <span>Tạm Đóng Tạo Thẻ AI</span>
+                </>
+              ) : sysConfig.rateLimit > 0 && sysConfig.remainingQuota <= 0 ? (
+                <>
+                  <Lock className="w-5 h-5" />
+                  <span>Đã Hết Lượt Tạo AI Hôm Nay</span>
                 </>
               ) : (
                 <>
@@ -546,7 +640,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <span className="font-black text-slate-800 text-base truncate">{card.word}</span>
-                          
+
                           {/* Các nút tương tác: Sửa, Đổi ảnh AI, Nghe */}
                           <div className="flex items-center gap-1">
                             {/* Nút Chỉnh sửa thủ công */}
@@ -558,15 +652,17 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
 
-                            {/* Nút Tạo lại ảnh AI */}
-                            <button
-                              onClick={() => handleRegenerateImage(card)}
-                              disabled={isRegenerating}
-                              className="p-1.5 rounded-full hover:bg-purple-200 text-purple-700 transition-transform active:scale-90 disabled:opacity-50"
-                              title="Đổi ảnh mới bằng AI"
-                            >
-                              <RefreshCw className={`w-3.5 h-3.5 ${isRegenerating ? 'animate-spin' : ''}`} />
-                            </button>
+                            {/* Nút Tạo lại ảnh AI (chỉ hiển thị khi imageAiEnabled = true) */}
+                            {sysConfig.imageAiEnabled && (
+                              <button
+                                onClick={() => handleRegenerateImage(card)}
+                                disabled={isRegenerating}
+                                className="p-1.5 rounded-full hover:bg-purple-200 text-purple-700 transition-transform active:scale-90 disabled:opacity-50"
+                                title="Đổi ảnh mới bằng AI"
+                              >
+                                <RefreshCw className={`w-3.5 h-3.5 ${isRegenerating ? 'animate-spin' : ''}`} />
+                              </button>
+                            )}
 
                             {/* Nút Nghe phát âm */}
                             <button
