@@ -87,10 +87,31 @@ fastify.get('/api/v1/topics', async (request, reply) => {
   }
 });
 
-// 4.2. Lấy danh sách flashcards theo Topic ID
+// 4.2. Lấy danh sách flashcards theo Topic ID (hỗ trợ cả topicId = 'all' cho chế độ Khám Phá Tổng Hợp)
 fastify.get('/api/v1/topics/:topicId/cards', async (request, reply) => {
   const { topicId } = request.params;
   try {
+    if (topicId === 'all') {
+      const cards = db.prepare(`
+        SELECT f.*, t.name_en as topic_name_en, t.name_vi as topic_name_vi 
+        FROM flashcards f
+        LEFT JOIN topics t ON f.topic_id = t.id
+        ORDER BY RANDOM()
+      `).all();
+
+      return reply.send({
+        topic: { 
+          id: 'all', 
+          name_en: 'All Topics', 
+          name_vi: 'Tất Cả Từ Vựng', 
+          icon: '🌟',
+          color_theme: 'amber',
+          total_cards: cards.length
+        },
+        cards: cards
+      });
+    }
+
     const topic = db.prepare('SELECT * FROM topics WHERE id = ?').get(topicId);
     if (!topic) {
       return reply.status(404).send({ error: `Topic '${topicId}' not found` });

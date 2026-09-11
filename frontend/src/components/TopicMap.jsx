@@ -75,6 +75,76 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
 
       {/* Lưới các Hòn Đảo Chủ Đề */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        {/* Chủ đề Đặc Biệt: "Tất cả" (Khám phá tổng hợp) */}
+        {(() => {
+          const totalAllCards = topics.reduce((sum, t) => sum + (t.total_cards || 0), 0);
+          const totalLearnedAllCards = topics.reduce((sum, t) => sum + (t.learned_cards || 0), 0);
+          const allProgressPercent = totalAllCards > 0 ? Math.round((totalLearnedAllCards / totalAllCards) * 100) : 0;
+
+          const allTopicObject = {
+            id: 'all',
+            name_en: 'All Topics',
+            name_vi: 'Khám phá tổng hợp',
+            icon: '🌟',
+            color_theme: 'amber',
+            total_cards: totalAllCards
+          };
+
+          return (
+            <motion.div
+              key="special-all-topics"
+              whileHover={{ scale: 1.03, translateY: -4 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                soundEffects.playPop();
+                onSelectTopic(allTopicObject);
+              }}
+              className="relative overflow-hidden rounded-3xl border-4 border-amber-400 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-6 shadow-bouncy transition-all cursor-pointer select-none hover:shadow-xl group"
+            >
+              {/* Huy hiệu nổi bật */}
+              <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-orange-500 text-white text-[10px] sm:text-xs font-black px-3 py-1 rounded-bl-2xl shadow-sm uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="w-3 h-3 animate-spin" />
+                <span>Đặc Biệt</span>
+              </div>
+
+              <div className="flex items-start justify-between">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-400 flex items-center justify-center text-4xl shadow-md mb-4 text-white">
+                  🌟
+                </div>
+                <span className="bg-white/80 text-amber-900 text-xs font-black px-3 py-1.5 rounded-full border border-amber-300 shadow-sm mt-5 sm:mt-0">
+                  {totalAllCards} Từ vựng
+                </span>
+              </div>
+
+              <h3 className="text-2xl font-bold text-slate-800 font-kids mb-1">
+                Tất cả (All Topics)
+              </h3>
+              <p className="text-lg text-slate-600 font-semibold mb-4">
+                Khám phá tổng hợp mọi chủ đề
+              </p>
+
+              {/* Thanh tiến độ tổng hợp */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs font-bold text-slate-500">
+                  <span>Tiến độ tổng hợp</span>
+                  <span>{allProgressPercent}%</span>
+                </div>
+                <div className="w-full h-3.5 bg-white rounded-full overflow-hidden border border-amber-200 p-0.5 shadow-inner">
+                  <div 
+                    className="h-full bg-gradient-to-r from-amber-400 via-yellow-400 to-emerald-400 rounded-full transition-all duration-500"
+                    style={{ width: `${allProgressPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-5 flex items-center justify-end text-sm font-black text-amber-700 gap-1 group-hover:translate-x-1 transition-transform">
+                <span>Ôn tập ngẫu nhiên ngay</span>
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </motion.div>
+          );
+        })()}
+
         {topics.map((topic, index) => {
           const isUnlocked = topic.is_unlocked !== false;
           const totalCards = topic.total_cards || 0;

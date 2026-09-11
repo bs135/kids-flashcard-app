@@ -1,27 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Home, CheckCircle2, RotateCcw, Award } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, CheckCircle2, RotateCcw, Award, Shuffle } from 'lucide-react';
 import Flashcard from './Flashcard';
 import { soundEffects } from '../services/soundEffects';
 
 export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEarnStar }) {
+  // Quản lý bộ 5 thẻ ngẫu nhiên cho mỗi lượt học
+  const [activeCards, setActiveCards] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  const currentCard = cards[currentIndex];
-  const progressPercent = cards.length > 0 ? Math.round(((currentIndex + 1) / cards.length) * 100) : 0;
+  // Hàm chọn ngẫu nhiên 5 thẻ từ nguồn cards
+  const pickRandomCards = (sourceCards) => {
+    if (!sourceCards || sourceCards.length === 0) return [];
+    const shuffled = [...sourceCards].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 5);
+  };
+
+  // Khởi tạo lượt học 5 thẻ khi topic hoặc cards thay đổi
+  useEffect(() => {
+    setActiveCards(pickRandomCards(cards));
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setIsCompleted(false);
+  }, [cards, topic?.id]);
+
+  const currentCard = activeCards[currentIndex];
+  const progressPercent = activeCards.length > 0 ? Math.round(((currentIndex + 1) / activeCards.length) * 100) : 0;
+
+  // Xáo trộn lượt học mới (5 thẻ ngẫu nhiên mới)
+  const handleShuffleNewSession = () => {
+    soundEffects.playPop();
+    setActiveCards(pickRandomCards(cards));
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setIsCompleted(false);
+  };
 
   // Chuyển thẻ tiếp theo
   const handleNext = () => {
     soundEffects.playPop();
     setIsFlipped(false);
 
-    if (currentIndex < cards.length - 1) {
+    if (currentIndex < activeCards.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
-      // Bé đã hoàn thành toàn bộ thẻ trong chủ đề!
+      // Bé đã hoàn thành toàn bộ 5 thẻ trong lượt học!
       triggerCompletion();
     }
   };
@@ -53,36 +79,47 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
   };
 
   const handleRestart = () => {
-    soundEffects.playPop();
-    setIsCompleted(false);
-    setCurrentIndex(0);
-    setIsFlipped(false);
+    handleShuffleNewSession();
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      {/* Thanh điều hướng trên cùng */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-md mx-auto px-4 py-5">
+      {/* Thanh điều hướng trên cùng với khoảng cách cân đối, gọn mắt */}
+      <div className="flex items-center justify-between gap-2.5 sm:gap-3 mb-5">
+        {/* Nút Bản đồ */}
         <button
           onClick={() => {
             soundEffects.playPop();
             onBackToHome();
           }}
-          className="flex items-center gap-1.5 bg-white border-2 border-slate-200 hover:border-amber-400 px-4 py-2 rounded-2xl font-bold text-slate-700 shadow-sm transition-all"
+          className="flex items-center gap-1.5 bg-white border-2 border-slate-200 hover:border-amber-400 px-3 py-1.5 rounded-2xl font-bold text-slate-700 text-sm shadow-sm transition-all hover:scale-105 active:scale-95"
+          title="Về bản đồ chủ đề"
         >
-          <Home className="w-5 h-5 text-amber-500" />
+          <Home className="w-4 h-4 text-amber-500 shrink-0" />
           <span className="hidden sm:inline">Bản đồ</span>
         </button>
 
         {/* Huy hiệu tên chủ đề */}
-        <div className="flex items-center gap-2 bg-amber-100 border-2 border-amber-300 px-4 py-1.5 rounded-2xl text-amber-900 font-bold">
-          <span className="text-xl">{topic?.icon}</span>
-          <span>{topic?.name_en}</span>
+        <div className="flex items-center gap-1.5 bg-amber-100 border-2 border-amber-300 px-3 py-1.5 rounded-2xl text-amber-900 font-bold text-sm max-w-[170px] sm:max-w-[220px] truncate shadow-sm">
+          <span className="text-lg shrink-0">{topic?.icon}</span>
+          <span className="truncate">{topic?.name_en}</span>
         </div>
 
-        {/* Số thứ tự thẻ: VD: 1 / 5 */}
-        <div className="bg-white border-2 border-slate-200 px-3.5 py-1.5 rounded-2xl font-black text-purple-600 text-sm shadow-sm">
-          {currentIndex + 1} / {cards.length}
+        {/* Cụm Nút Xáo trộn & Đếm số thẻ */}
+        <div className="flex items-center gap-2">
+          {/* Nút Xáo trộn / Bắt đầu lại */}
+          <button
+            onClick={handleShuffleNewSession}
+            className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-white border-2 border-slate-200 hover:border-purple-400 text-purple-600 rounded-xl shadow-sm transition-all hover:scale-110 active:scale-95 cursor-pointer"
+            title="Xáo trộn 5 thẻ mới"
+          >
+            <Shuffle className="w-4 h-4" />
+          </button>
+
+          {/* Số thứ tự thẻ: 1 / 5 */}
+          <div className="bg-white border-2 border-slate-200 px-2.5 py-1 sm:py-1.5 rounded-xl font-black text-purple-600 text-xs sm:text-sm shadow-sm whitespace-nowrap">
+            {activeCards.length > 0 ? currentIndex + 1 : 0}/{activeCards.length}
+          </div>
         </div>
       </div>
 
@@ -174,7 +211,7 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
                 onClick={handleNext}
                 className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white py-3.5 rounded-2xl font-black text-base shadow-bouncy active:shadow-bouncy-active transition-all"
               >
-                <span>{currentIndex === cards.length - 1 ? 'Hoàn Thành' : 'Thẻ Tiếp Theo'}</span>
+                <span>{currentIndex === activeCards.length - 1 ? 'Hoàn Thành' : 'Thẻ Tiếp Theo'}</span>
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>

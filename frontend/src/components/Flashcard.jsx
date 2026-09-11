@@ -23,7 +23,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
   };
 
   return (
-    <div className="w-full max-w-sm sm:max-w-md h-[450px] perspective-1000 select-none cursor-pointer mx-auto">
+    <div className="w-full max-w-[340px] sm:max-w-[380px] aspect-[3/4] min-h-[480px] perspective-1000 select-none cursor-pointer mx-auto">
       <motion.div
         onClick={handleCardClick}
         animate={{ rotateY: isFlipped ? 180 : 0 }}
@@ -80,7 +80,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
           {/* Huy hiệu mặt sau */}
           <div className="w-full flex justify-between items-center text-xs font-bold text-sky-700">
             <span className="bg-sky-100 px-3 py-1 rounded-full border border-sky-200">
-              Nghĩa tiếng Việt 🇻🇳
+              Nghĩa tiếng Việt
             </span>
             <button
               onClick={(e) => {
@@ -126,7 +126,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
           {/* Nút Loa Lặp Lại Phát Âm ở mặt sau */}
           <button
             onClick={handleAudioPlay}
-            className="flex items-center gap-2 bg-sky-500 hover:bg-sky-600 text-white font-bold px-6 py-2.5 rounded-full shadow-md transition-transform transform active:scale-95 text-sm"
+            className="mt-4 sm:mt-5 flex items-center gap-2 bg-sky-500 hover:bg-sky-600 text-white font-bold px-6 py-2.5 rounded-full shadow-md transition-transform transform active:scale-95 text-sm"
           >
             <Volume2 className="w-4 h-4" />
             <span>Nghe lại từ "{card.word}"</span>
