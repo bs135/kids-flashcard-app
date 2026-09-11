@@ -127,6 +127,70 @@ class SoundEffects {
       console.warn('Audio effect error:', e);
     }
   }
+
+  // Âm thanh khi ghép đúng / thành công (Ting ting vui tai)
+  playCorrect() {
+    this.playStar();
+  }
+
+  playSuccess() {
+    this.playWin();
+  }
+
+  // Âm thanh khi bấm sai (Buzzer nhẹ / Boing)
+  playWrong() {
+    try {
+      const ctx = this.getAudioContext();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.linearRampToValueAtTime(120, now + 0.2);
+
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } catch (e) {
+      console.warn('Audio effect error:', e);
+    }
+  }
+
+  // Âm thanh khi cho thú cưng Dino ăn (Nhai nhóp nhép vui nhộn nom-nom)
+  playNomNom() {
+    try {
+      const ctx = this.getAudioContext();
+      const now = ctx.currentTime;
+
+      // 2 nốt nhai lặp lại vui nhộn
+      [0, 0.12].forEach((offset, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(idx === 0 ? 550 : 420, now + offset);
+        osc.frequency.exponentialRampToValueAtTime(idx === 0 ? 300 : 250, now + offset + 0.08);
+
+        gain.gain.setValueAtTime(0.3, now + offset);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + offset + 0.08);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.08);
+      });
+    } catch (e) {
+      console.warn('Audio effect error:', e);
+    }
+  }
 }
 
 export const soundEffects = new SoundEffects();
+

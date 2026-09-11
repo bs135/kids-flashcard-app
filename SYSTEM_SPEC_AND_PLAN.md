@@ -265,15 +265,15 @@ Thứ tự ưu tiên được phân chia thành 5 Giai đoạn (Milestones) đ�
   - Khung nhập danh sách từ (textarea: `cat, dog, lion...`) $\rightarrow$ Nút bấm 1-Click Auto Generate $\rightarrow$ Preview và lưu thẻ.
 
 ### 🚩 Milestone 4: Triển Khai Các Tính Năng Gamification (Mini-Games & Pet)
-- [ ] **Task 4.1:** Phát triển Mini-game **"Bong Bóng Từ Vựng" (Bubble Pop Challenge)**:
+- [x] **Task 4.1:** Phát triển Mini-game **"Bong Bóng Từ Vựng" (Bubble Pop Challenge)**:
   - Đồng hồ đếm ngược 60 giây, bóng bay trôi từ dưới lên.
   - Nghe loa phát âm $\rightarrow$ Bấm vỡ bong bóng đúng $\rightarrow$ Hiệu ứng âm thanh nổ pop + cộng sao ⭐.
-- [ ] **Task 4.2:** Phát triển Mini-game **"Lật Thẻ Trí Nhớ" (Memory Matching Game)**:
+- [x] **Task 4.2:** Phát triển Mini-game **"Lật Thẻ Trí Nhớ" (Memory Matching Game)**:
   - Bàn cờ 8–12 thẻ bài ghép đôi giữa Hình ảnh và Từ vựng.
-- [ ] **Task 4.3:** Xây dựng Component **"Bạn Thú Cưng Đồng Hành" (Virtual Pet Widget)**:
+- [x] **Task 4.3:** Xây dựng Component **"Bạn Thú Cưng Đồng Hành" (Virtual Pet Widget)**:
   - Hiển thị linh vật (Khủng long Dino con).
   - Nút "Cho ăn": Dùng sao đổi lấy đồ ăn, thú cưng nhảy múa và tăng cấp độ.
-- [ ] **Task 4.4:** Tích hợp hiệu ứng pháo hoa ăn mừng (`canvas-confetti`) và thư viện âm thanh vui nhộn (`howler.js`).
+- [x] **Task 4.4:** Tích hợp hiệu ứng pháo hoa ăn mừng (`canvas-confetti`) và thư viện âm thanh vui nhộn (`howler.js`).
 
 ### 🚩 Milestone 5: Đóng Gói Docker & Hướng Dẫn Triển Khai VPS Linux (Production Ready)
 - [ ] **Task 5.1:** Viết `Dockerfile` tối ưu hóa cho Frontend (Build tĩnh) và Backend Fastify.

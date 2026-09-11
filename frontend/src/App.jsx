@@ -4,6 +4,9 @@ import TopicMap from './components/TopicMap';
 import FlashcardViewer from './components/FlashcardViewer';
 import ParentalGateModal from './components/ParentalGateModal';
 import AdminPanel from './components/AdminPanel';
+import VirtualPetModal from './components/VirtualPetModal';
+import BubbleQuiz from './components/BubbleQuiz';
+import MemoryGame from './components/MemoryGame';
 import { fetchTopics, fetchTopicCards, fetchUserProgress } from './services/api';
 import { soundEffects } from './services/soundEffects';
 
@@ -12,11 +15,17 @@ export default function App() {
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [currentCards, setCurrentCards] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [stars, setStars] = useState(0);
+  const [stars, setStars] = useState(() => {
+    return parseInt(localStorage.getItem('kids_stars') || '0', 10);
+  });
 
   // Quản lý trạng thái Admin & Parental Gate
   const [isParentalGateOpen, setIsParentalGateOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+
+  // Quản lý trạng thái Thú Cưng Ảo & Mini-Games
+  const [isPetOpen, setIsPetOpen] = useState(false);
+  const [activeGame, setActiveGame] = useState(null); // 'bubble' | 'memory' | null
 
   // Tải dữ liệu ban đầu từ Backend
   useEffect(() => {
@@ -28,7 +37,12 @@ export default function App() {
           fetchUserProgress()
         ]);
         setTopics(topicsData);
-        setStars(progressData.stars || 0);
+        if (progressData && progressData.stars !== undefined) {
+          const storedStars = parseInt(localStorage.getItem('kids_stars') || '0', 10);
+          const initialStars = Math.max(progressData.stars || 0, storedStars);
+          setStars(initialStars);
+          localStorage.setItem('kids_stars', initialStars.toString());
+        }
       } catch (err) {
         console.error('Lỗi khi tải dữ liệu từ máy chủ:', err);
       } finally {
@@ -45,6 +59,7 @@ export default function App() {
       const data = await fetchTopicCards(topic.id);
       setSelectedTopic(topic);
       setCurrentCards(data.cards || []);
+      setActiveGame(null);
     } catch (err) {
       console.error('Lỗi tải thẻ của chủ đề:', err);
       alert('Không thể tải các thẻ của chủ đề này!');
@@ -57,16 +72,22 @@ export default function App() {
   const handleBackToMap = () => {
     setSelectedTopic(null);
     setCurrentCards([]);
+    setActiveGame(null);
   };
 
-  // Cộng sao cho bé khi hoàn thành
-  const handleEarnStar = (amount = 1) => {
-    soundEffects.playStar();
+  // Cộng / Trừ sao cho bé
+  const handleUpdateStars = (amount) => {
     setStars(prev => {
-      const newStars = prev + amount;
+      const newStars = Math.max(0, prev + amount);
       localStorage.setItem('kids_stars', newStars.toString());
       return newStars;
     });
+  };
+
+  // Cộng sao khi học xong thẻ hoặc thắng mini-game
+  const handleEarnStar = (amount = 1) => {
+    soundEffects.playStar();
+    handleUpdateStars(amount);
   };
 
   // Tải lại danh sách chủ đề khi Admin tạo thêm từ/chủ đề
@@ -87,6 +108,11 @@ export default function App() {
         currentTopic={selectedTopic}
         onBackToMap={handleBackToMap}
         onOpenAdmin={() => setIsParentalGateOpen(true)}
+        onOpenPet={() => setIsPetOpen(true)}
+        onOpenGames={() => {
+          setActiveGame(activeGame ? null : 'bubble');
+          setSelectedTopic(null);
+        }}
       />
 
       {/* Vùng Nội Dung Chính */}
@@ -96,6 +122,20 @@ export default function App() {
             topics={topics}
             onBack={() => setIsAdminOpen(false)}
             onTopicUpdated={handleRefreshTopics}
+          />
+        ) : activeGame === 'bubble' ? (
+          <BubbleQuiz
+            topics={topics}
+            initialTopic={selectedTopic}
+            onBack={handleBackToMap}
+            onEarnStar={handleEarnStar}
+          />
+        ) : activeGame === 'memory' ? (
+          <MemoryGame
+            topics={topics}
+            initialTopic={selectedTopic}
+            onBack={handleBackToMap}
+            onEarnStar={handleEarnStar}
           />
         ) : loading ? (
           <div className="text-center py-20">
@@ -115,9 +155,18 @@ export default function App() {
           <TopicMap
             topics={topics}
             onSelectTopic={handleSelectTopic}
+            onSelectGame={(gameType) => setActiveGame(gameType)}
           />
         )}
       </main>
+
+      {/* Modal Thú Cưng Ảo (Dino) */}
+      <VirtualPetModal
+        isOpen={isPetOpen}
+        onClose={() => setIsPetOpen(false)}
+        stars={stars}
+        onUpdateStars={handleUpdateStars}
+      />
 
       {/* Cổng Bảo Vệ Phụ Huynh */}
       <ParentalGateModal
@@ -126,7 +175,8 @@ export default function App() {
         onSuccess={() => {
           setIsParentalGateOpen(false);
           setIsAdminOpen(true);
-          setSelectedTopic(null); // Thoát khỏi viewer nếu đang xem
+          setSelectedTopic(null);
+          setActiveGame(null);
         }}
       />
 

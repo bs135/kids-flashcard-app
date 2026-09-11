@@ -2,9 +2,16 @@ import React from 'react';
 import { Sparkles, Star, Award, Volume2 } from 'lucide-react';
 import { soundEffects } from '../services/soundEffects';
 
-export default function Header({ stars = 0, onBackToMap, currentTopic = null, onOpenAdmin }) {
+export default function Header({ 
+  stars = 0, 
+  onBackToMap, 
+  currentTopic = null, 
+  onOpenAdmin,
+  onOpenPet,
+  onOpenGames
+}) {
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b-4 border-amber-200 px-4 py-3 shadow-sm">
+    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b-4 border-amber-200 px-4 py-3 shadow-sm select-none">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         {/* Logo & Tên ứng dụng */}
         <div 
@@ -27,16 +34,42 @@ export default function Header({ stars = 0, onBackToMap, currentTopic = null, on
           </div>
         </div>
 
-        {/* Thông tin Chủ đề hiện tại & Điểm sao ⭐ */}
-        <div className="flex items-center gap-3">
-          {/* Widget Bạn Thú Cưng Mini */}
-          <div className="flex items-center gap-1.5 bg-emerald-100 border-2 border-emerald-300 px-3 py-1.5 rounded-2xl shadow-sm text-emerald-800 font-bold text-sm">
+        {/* Các nút tương tác: Thú Cưng, Mini Games, Sao Vàng, Khóa Phụ Huynh */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Nút Bạn Thú Cưng Mini (Dino) */}
+          <button
+            onClick={() => {
+              soundEffects.playPop();
+              if (onOpenPet) onOpenPet();
+            }}
+            className="flex items-center gap-1.5 bg-emerald-100 hover:bg-emerald-200 border-2 border-emerald-300 px-3 py-1.5 rounded-2xl shadow-sm text-emerald-800 font-bold text-sm cursor-pointer hover:scale-105 active:scale-95 transition-all"
+            title="Chăm sóc bạn Dino"
+          >
             <span className="text-xl animate-bounce">🦖</span>
-            <span className="hidden sm:inline">Dino Bạn Nhỏ</span>
-          </div>
+            <span className="hidden sm:inline">Thú Cưng</span>
+          </button>
+
+          {/* Nút Mini-Games (Game Hub) */}
+          <button
+            onClick={() => {
+              soundEffects.playPop();
+              if (onOpenGames) onOpenGames();
+            }}
+            className="flex items-center gap-1.5 bg-sky-100 hover:bg-sky-200 border-2 border-sky-300 px-3 py-1.5 rounded-2xl shadow-sm text-sky-800 font-bold text-sm cursor-pointer hover:scale-105 active:scale-95 transition-all"
+            title="Khu trò chơi mini"
+          >
+            <span className="text-xl">🎮</span>
+            <span className="hidden sm:inline">Trò Chơi</span>
+          </button>
 
           {/* Widget Điểm Sao Vàng */}
-          <div className="flex items-center gap-2 bg-gradient-to-r from-amber-100 to-yellow-200 border-2 border-amber-300 px-3.5 py-1.5 rounded-2xl shadow-sm">
+          <div 
+            onClick={() => {
+              soundEffects.playStar();
+            }}
+            className="flex items-center gap-2 bg-gradient-to-r from-amber-100 to-yellow-200 border-2 border-amber-300 px-3.5 py-1.5 rounded-2xl shadow-sm cursor-pointer"
+            title="Tổng số sao vàng của bé"
+          >
             <Star className="w-5 h-5 text-amber-500 fill-amber-400 animate-pulse" />
             <span className="text-base sm:text-lg font-bold text-amber-900 tracking-wide font-kids">
               {stars}
@@ -49,7 +82,7 @@ export default function Header({ stars = 0, onBackToMap, currentTopic = null, on
               soundEffects.playPop();
               if (onOpenAdmin) onOpenAdmin();
             }}
-            className="p-2 rounded-2xl bg-slate-100 hover:bg-amber-100 border-2 border-slate-200 hover:border-amber-300 text-slate-600 hover:text-amber-700 transition-colors shadow-sm"
+            className="p-2 rounded-2xl bg-slate-100 hover:bg-amber-100 border-2 border-slate-200 hover:border-amber-300 text-slate-600 hover:text-amber-700 transition-colors shadow-sm cursor-pointer"
             title="Khu vực phụ huynh"
           >
             <span className="text-lg">🔒</span>
