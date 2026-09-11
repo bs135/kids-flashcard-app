@@ -141,20 +141,33 @@ docker compose ps
 docker compose logs -f app
 ```
 
+### 3.6. Nạp dữ liệu ban đầu (Seed Database)
+Nếu là lần đầu triển khai hoặc database chưa có thẻ nào, hãy chạy lệnh sau để nạp 8 chủ đề và 115 thẻ từ vựng chuẩn (kèm hình ảnh và giọng đọc Edge-TTS):
+```bash
+docker compose exec app npm run seed
+```
+
 Sau khi hoàn tất, truy cập trình duyệt tại `https://flashcards.chipfc.com` để trải nghiệm ứng dụng!
 
 ---
 
 ## 4. Quy Trình Cập Nhật Ứng Dụng Nhanh
 
-Khi bạn có các bản cập nhật mã nguồn mới trên Git, chỉ cần chạy 1 lệnh duy nhất trên VPS:
-```bash
-./deploy.sh
-```
-Script sẽ tự động:
-1. Kéo mã nguồn mới nhất (`git pull`).
-2. Build lại image và cập nhật containers mà không làm mất dữ liệu SQLite và media.
-3. Dọn dẹp cache images thừa (`docker image prune -f`).
+Khi bạn có các bản cập nhật mã nguồn mới trên Git, bạn có thể dùng script `deploy.sh`:
+
+- **Cập nhật code và build lại bình thường:**
+  ```bash
+  ./deploy.sh
+  ```
+  Script sẽ tự động:
+  1. Kéo mã nguồn mới nhất (`git pull`).
+  2. Build lại image và khởi động lại container `app`.
+  3. Dọn dẹp cache images thừa (`docker image prune -f`).
+
+- **Cập nhật code kèm đồng bộ lại 115 thẻ từ vựng seed:**
+  ```bash
+  ./deploy.sh --seed
+  ```
 
 ---
 
