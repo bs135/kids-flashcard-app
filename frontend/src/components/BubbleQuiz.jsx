@@ -109,13 +109,25 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
       'from-emerald-400 to-teal-500 border-emerald-300 shadow-emerald-200'
     ];
 
-    const generatedBubbles = currentOptions.map((card, idx) => ({
-      id: `${card.id}-${Date.now()}-${idx}`,
-      card,
-      color: bubbleColors[idx % bubbleColors.length],
-      xOffset: (idx - (currentOptions.length - 1) / 2) * 120 + (Math.random() * 20 - 10),
-      duration: 5.5 + Math.random() * 2 // Tốc độ trôi vừa phải cho bé
-    }));
+    const generatedBubbles = currentOptions.map((card, idx) => {
+      // Các tham số chuyển động bay ngẫu nhiên độc lập cho từng quả bóng
+      const floatDuration = Number((2.2 + Math.random() * 1.6).toFixed(2)); // 2.2s đến 3.8s
+      const floatDelay = Number((Math.random() * 0.8).toFixed(2));          // 0s đến 0.8s
+      const floatPeakY = Math.floor(-14 - Math.random() * 10);              // -14px đến -24px
+      const floatPeakX = Math.floor(Math.random() * 12 - 6);                // -6px đến +6px
+      const floatRotate = Math.floor(Math.random() * 8 - 4);                // -4deg đến +4deg
+
+      return {
+        id: `${card.id}-${Date.now()}-${idx}`,
+        card,
+        color: bubbleColors[idx % bubbleColors.length],
+        floatDuration,
+        floatDelay,
+        floatPeakY,
+        floatPeakX,
+        floatRotate
+      };
+    });
 
     setBubbles(generatedBubbles);
   };
@@ -261,41 +273,49 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
             </div>
 
             {/* Vùng bay của các Bong Bóng */}
-            <div className="relative flex-1 w-full flex items-center justify-center overflow-hidden min-h-[320px]">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 items-center justify-center">
-                {bubbles.map((b) => (
-                  <motion.div
-                    key={b.id}
-                    animate={
-                      shakingBubbleId === b.id
-                        ? { x: [-10, 10, -10, 10, 0] }
-                        : { y: [0, -15, 0] }
-                    }
-                    transition={{
-                      duration: shakingBubbleId === b.id ? 0.4 : 2.5,
-                      repeat: shakingBubbleId === b.id ? 0 : Infinity,
-                      ease: 'easeInOut'
-                    }}
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.92 }}
-                    onClick={() => handleBubbleClick(b)}
-                    className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br ${b.color} border-4 p-2.5 flex flex-col items-center justify-center shadow-lg cursor-pointer select-none`}
-                  >
-                    {/* Đốm sáng phản chiếu của bong bóng */}
-                    <div className="absolute top-2 left-3 w-5 h-2.5 bg-white/70 rounded-full rotate-[-30deg]" />
+            <div className="relative flex-1 w-full flex items-center justify-center min-h-[320px]">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 items-center justify-center px-6 sm:px-8 py-4">
+                {bubbles.map((b) => {
+                  const isShaking = shakingBubbleId === b.id;
 
-                    {/* Hình ảnh trên bong bóng */}
-                    <img
-                      src={`${b.card.image_url}?t=${b.card.id}`}
-                      alt={b.card.word}
-                      className="w-14 h-14 sm:w-16 sm:h-16 object-contain pointer-events-none drop-shadow-sm rounded-lg"
-                      loading="eager"
-                    />
-                    <span className="text-xs font-black text-white drop-shadow-md mt-1">
-                      {b.card.word}
-                    </span>
-                  </motion.div>
-                ))}
+                  return (
+                    <motion.div
+                      key={b.id}
+                      animate={
+                        isShaking
+                          ? { x: [-8, 8, -6, 6, -3, 3, 0] }
+                          : {
+                              y: [0, b.floatPeakY, 2, 0],
+                              x: [0, b.floatPeakX, -b.floatPeakX / 2, 0],
+                              rotate: [0, b.floatRotate, -b.floatRotate, 0]
+                            }
+                      }
+                      transition={{
+                        duration: isShaking ? 0.45 : b.floatDuration,
+                        delay: isShaking ? 0 : b.floatDelay,
+                        repeat: isShaking ? 0 : Infinity,
+                        ease: 'easeInOut'
+                      }}
+                      whileHover={{ scale: 1.08 }}
+                      whileTap={{ scale: 0.92 }}
+                      onClick={() => handleBubbleClick(b)}
+                      className={`relative w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br ${b.color} border-4 p-3 sm:p-4 flex items-center justify-center shadow-lg cursor-pointer select-none overflow-hidden`}
+                    >
+                      {/* Đốm sáng phản chiếu của bong bóng */}
+                      <div className="absolute top-2.5 left-3.5 w-6 h-3 bg-white/75 rounded-full rotate-[-35deg] pointer-events-none z-10" />
+
+                      {/* Hình ảnh căn giữa tâm quả bóng */}
+                      <div className="w-full h-full flex items-center justify-center p-1">
+                        <img
+                          src={`${b.card.image_url}?t=${b.card.id}`}
+                          alt={b.card.word}
+                          className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-md rounded-xl"
+                          loading="eager"
+                        />
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           </>
