@@ -1,13 +1,17 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
+import multipart from '@fastify/multipart';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import sharp from 'sharp';
 import db, { initDatabase } from './db/schema.js';
 import { generateVocabularyData } from './services/geminiService.js';
 import { downloadAndConvertKidImage } from './services/imageService.js';
 import { downloadWordAudio } from './services/edgeTtsService.js';
+import { slugify } from './utils/slugify.js';
 
 dotenv.config();
 
@@ -25,6 +29,13 @@ const fastify = Fastify({
 await fastify.register(cors, {
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE']
+});
+
+// 1.1. Cấu hình Multipart Upload cho ảnh thủ công
+await fastify.register(multipart, {
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB tối đa
+  }
 });
 
 // 2. Phục vụ static files từ thư mục uploads (/uploads/images và /uploads/audio)
@@ -319,6 +330,115 @@ fastify.post('/api/v1/admin/cards/:id/regenerate-image', async (request, reply) 
   } catch (err) {
     fastify.log.error(err);
     return reply.status(500).send({ error: 'Lỗi khi tái tạo ảnh: ' + err.message });
+  }
+});
+
+// 4.7. API Cập Nhật Thông Tin Thẻ Thủ Công (Admin Edit Flashcard)
+fastify.put('/api/v1/cards/:id', async (request, reply) => {
+  const { id } = request.params;
+  const { word, phonetic, meaning_vi, example_en, example_vi, image_url } = request.body || {};
+
+  try {
+    const card = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+    if (!card) {
+      return reply.status(404).send({ error: `Không tìm thấy flashcard với ID ${id}` });
+    }
+
+    const updatedWord = word !== undefined ? String(word).trim() : card.word;
+    const updatedPhonetic = phonetic !== undefined ? String(phonetic).trim() : card.phonetic;
+    const updatedMeaningVi = meaning_vi !== undefined ? String(meaning_vi).trim() : card.meaning_vi;
+    const updatedExampleEn = example_en !== undefined ? String(example_en).trim() : card.example_en;
+    const updatedExampleVi = example_vi !== undefined ? String(example_vi).trim() : card.example_vi;
+    const updatedImageUrl = image_url !== undefined ? String(image_url).trim() : card.image_url;
+
+    db.prepare(`
+      UPDATE flashcards 
+      SET 
+        word = ?, 
+        phonetic = ?, 
+        meaning_vi = ?, 
+        example_en = ?, 
+        example_vi = ?, 
+        image_url = ?
+      WHERE id = ?
+    `).run(
+      updatedWord,
+      updatedPhonetic,
+      updatedMeaningVi,
+      updatedExampleEn,
+      updatedExampleVi,
+      updatedImageUrl,
+      id
+    );
+
+    const freshCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+    return reply.send({
+      success: true,
+      message: 'Cập nhật thẻ thành công!',
+      card: freshCard
+    });
+  } catch (err) {
+    fastify.log.error(err);
+    return reply.status(500).send({ error: 'Lỗi khi cập nhật thẻ: ' + err.message });
+  }
+});
+
+// 4.8. API Upload Hình Ảnh Thủ Công (Admin Manual Image Upload)
+fastify.post('/api/v1/cards/:id/upload-image', async (request, reply) => {
+  const { id } = request.params;
+
+  try {
+    const card = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+    if (!card) {
+      return reply.status(404).send({ error: `Không tìm thấy flashcard với ID ${id}` });
+    }
+
+    const data = await request.file();
+    if (!data) {
+      return reply.status(400).send({ error: 'Vui lòng chọn một file ảnh để tải lên' });
+    }
+
+    // Đọc toàn bộ nội dung file ảnh vào Buffer
+    const buffer = await data.toBuffer();
+    if (!buffer || buffer.length === 0) {
+      return reply.status(400).send({ error: 'File ảnh không có nội dung' });
+    }
+
+    // Chuẩn bị thư mục đích: backend/uploads/images/{topic_slug}
+    const safeTopic = slugify(card.topic_id || 'general');
+    const safeWord = slugify(card.word);
+    const targetDir = path.resolve(__dirname, `../uploads/images/${safeTopic}`);
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+
+    const filename = `${safeWord}.webp`;
+    const targetFilePath = path.join(targetDir, filename);
+
+    // Chuyển đổi và nén sang định dạng .webp chất lượng 85 bằng Sharp
+    await sharp(buffer)
+      .resize(400, 400, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+      .webp({ quality: 85 })
+      .toFile(targetFilePath);
+
+    // Cập nhật lại trường image_url trong CSDL (lưu path gốc)
+    const basePublicUrl = `/uploads/images/${safeTopic}/${filename}`;
+    db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(basePublicUrl, id);
+
+    const freshCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+    // Kèm query timestamp để trình duyệt load ngay ảnh mới
+    const freshUrlWithTimestamp = `${basePublicUrl}?t=${Date.now()}`;
+    freshCard.image_url = freshUrlWithTimestamp;
+
+    return reply.send({
+      success: true,
+      message: 'Tải và nén ảnh thành công!',
+      image_url: freshUrlWithTimestamp,
+      card: freshCard
+    });
+  } catch (err) {
+    fastify.log.error(err);
+    return reply.status(500).send({ error: 'Lỗi khi upload ảnh: ' + err.message });
   }
 });
 

@@ -70,3 +70,31 @@ export async function regenerateCardImage(cardId, imageSource = 'ai_refined') {
   }
   return res.json();
 }
+
+export async function updateCard(cardId, cardData) {
+  const res = await fetch(`${API_BASE}/cards/${cardId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cardData)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Không thể cập nhật thẻ');
+  }
+  return res.json();
+}
+
+export async function uploadCardImage(cardId, file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${API_BASE}/cards/${cardId}/upload-image`, {
+    method: 'POST',
+    body: formData
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Không thể tải ảnh lên');
+  }
+  return res.json();
+}
