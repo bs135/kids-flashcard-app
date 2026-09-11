@@ -30,19 +30,19 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
             soundEffects.playPop();
             if (onSelectGame) onSelectGame('bubble');
           }}
-          className="bg-gradient-to-r from-sky-400 to-blue-500 rounded-3xl p-4 text-white shadow-lg border-3 border-sky-300 flex items-center justify-between cursor-pointer select-none"
+          className="bg-gradient-to-r from-sky-400 to-blue-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg border-3 border-sky-300 flex items-center justify-between gap-2 sm:gap-3 cursor-pointer select-none"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl shadow-inner">
+          <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl sm:text-3xl shadow-inner">
               🫧
             </div>
-            <div>
-              <div className="text-xs font-black uppercase tracking-wider text-sky-100">Mini Game 1</div>
-              <h4 className="text-xl font-black font-kids">Bong Bóng Từ Vựng</h4>
-              <p className="text-xs text-sky-100 font-medium">Lắng nghe & nổ bóng đúng từ</p>
+            <div className="flex-1 min-w-0 pr-1">
+              <div className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-sky-100">Mini Game 1</div>
+              <h4 className="text-base sm:text-lg lg:text-xl font-black font-kids leading-tight">Bong Bóng Từ Vựng</h4>
+              <p className="text-xs text-sky-100 font-medium leading-normal">Lắng nghe & nổ bóng đúng từ</p>
             </div>
           </div>
-          <div className="bg-white text-sky-700 font-black text-xs px-3 py-1.5 rounded-full shadow-sm">
+          <div className="shrink-0 whitespace-nowrap bg-white text-sky-700 font-black text-xs sm:text-sm px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full shadow-sm">
             Chơi Ngay ➔
           </div>
         </motion.div>
@@ -55,19 +55,19 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
             soundEffects.playPop();
             if (onSelectGame) onSelectGame('memory');
           }}
-          className="bg-gradient-to-r from-amber-400 to-orange-500 rounded-3xl p-4 text-white shadow-lg border-3 border-amber-300 flex items-center justify-between cursor-pointer select-none"
+          className="bg-gradient-to-r from-amber-400 to-orange-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg border-3 border-amber-300 flex items-center justify-between gap-2 sm:gap-3 cursor-pointer select-none"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl shadow-inner">
+          <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl sm:text-3xl shadow-inner">
               🃏
             </div>
-            <div>
-              <div className="text-xs font-black uppercase tracking-wider text-amber-100">Mini Game 2</div>
-              <h4 className="text-xl font-black font-kids">Lật Thẻ Trí Nhớ</h4>
-              <p className="text-xs text-amber-100 font-medium">Ghép đôi ảnh & từ vựng</p>
+            <div className="flex-1 min-w-0 pr-1">
+              <div className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-amber-100">Mini Game 2</div>
+              <h4 className="text-base sm:text-lg lg:text-xl font-black font-kids leading-tight">Lật Thẻ Trí Nhớ</h4>
+              <p className="text-xs text-amber-100 font-medium leading-normal">Ghép đôi ảnh & từ vựng</p>
             </div>
           </div>
-          <div className="bg-white text-amber-800 font-black text-xs px-3 py-1.5 rounded-full shadow-sm">
+          <div className="shrink-0 whitespace-nowrap bg-white text-amber-800 font-black text-xs sm:text-sm px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full shadow-sm">
             Chơi Ngay ➔
           </div>
         </motion.div>
