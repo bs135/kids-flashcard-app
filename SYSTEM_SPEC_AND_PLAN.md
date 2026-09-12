@@ -39,8 +39,8 @@ The system is designed following a lightweight decoupled monolith architecture, 
                     v                                v
 +-------------------------------+  +--------------------------------------+
 |     DATABASE (SQLite File)    |  |       MEDIA STORAGE (Disk Volume)    |
-|   `./backend/data/database.sqlite`  `./backend/uploads/audio/*.mp3`    |
-|   - Topics                    |  |   `./backend/uploads/images/*.webp`  |
+|   `./backend/data/database.sqlite`|  |   `./backend/uploads/seed/` (Git)    |
+|   - Topics                    |  |   `./backend/uploads/user/` (Uploads)|
 |   - Flashcards                |  +--------------------------------------+
 |   - User Progress & Streaks   |
 +-------------------------------+
@@ -67,7 +67,9 @@ kids-flashcard-app/
 └── backend/
     ├── package.json
     ├── .env.example
-    ├── uploads/               # Audio MP3 and WebP images storage
+    ├── uploads/               # Seed media (tracked) & user media (untracked)
+    │   ├── seed/              # System default media (images/ & audio/)
+    │   └── user/              # User-uploaded / generated media (images/ & audio/)
     ├── data/                  # SQLite database file (database.sqlite)
     └── src/
         ├── db/                # Schema, migrations & seed scripts
@@ -189,8 +191,8 @@ All requests and responses use standard JSON formatting. Base route prefix: `/ap
         "meaning_vi": "con mèo",
         "example_en": "The cat is sleeping.",
         "example_vi": "Con mèo đang ngủ.",
-        "image_url": "/uploads/images/cat.webp",
-        "audio_url": "/uploads/audio/cat.mp3"
+        "image_url": "/uploads/seed/images/animals/cat.webp",
+        "audio_url": "/uploads/seed/audio/animals/cat.mp3"
       }
     ]
     ```

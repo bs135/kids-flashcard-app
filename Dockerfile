@@ -37,8 +37,10 @@ COPY backend/ ./
 # Copy compiled frontend from Stage 1 into backend/public for SPA serving
 COPY --from=frontend-builder /build/dist ./public
 
-# Ensure required persistent storage directories exist
-RUN mkdir -p /app/data /app/uploads/images /app/uploads/audio
+# Ensure required persistent storage directories exist (seed and user media)
+RUN mkdir -p /app/data \
+    /app/uploads/seed/images /app/uploads/seed/audio \
+    /app/uploads/user/images /app/uploads/user/audio
 
 EXPOSE 3001
 

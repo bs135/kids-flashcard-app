@@ -101,7 +101,7 @@ await fastify.register(multipart, {
   }
 });
 
-// 2. Serve static files from uploads folder (/uploads/images and /uploads/audio)
+// 2. Serve static files from uploads folder (/uploads/seed/* and /uploads/user/*)
 const uploadsPath = path.resolve(__dirname, '../uploads');
 await fastify.register(fastifyStatic, {
   root: uploadsPath,
