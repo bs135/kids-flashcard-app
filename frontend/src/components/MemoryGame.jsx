@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, Trophy, RefreshCw, ArrowLeft, Volume2, Star } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundEffects } from '../services/soundEffects';
-import { speakWord } from '../services/speech';
+import { speakWord, stopSpeech } from '../services/speech';
 
 export default function MemoryGame({ topics = [], initialTopic = null, onBack, onEarnStar }) {
   const [selectedTopicId, setSelectedTopicId] = useState(() => {
@@ -18,6 +18,13 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
   const [moves, setMoves] = useState(0);
   const [isWon, setIsWon] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
+
+  // Stop any active pronunciation when leaving the game or switching topics
+  useEffect(() => {
+    return () => {
+      stopSpeech();
+    };
+  }, [selectedTopicId]);
 
   // Load cards for selected topic
   useEffect(() => {
@@ -41,6 +48,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
   const initBoard = (pool) => {
     if (!pool || pool.length < 4) return;
 
+    stopSpeech();
     soundEffects.playPop();
     setFlippedIndices([]);
     setMatchedIds(new Set());
@@ -92,7 +100,14 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
     const clickedCard = gameCards[index];
     if (matchedIds.has(clickedCard.cardId)) return;
 
-    soundEffects.playFlip();
+    // If clicking a word/text card: cancel prior speech and pronounce the word immediately
+    if (clickedCard.type === 'word') {
+      stopSpeech();
+      speakWord(clickedCard.word, clickedCard.audio_url);
+    } else {
+      // If clicking an image card: play tactile flip sound effect
+      soundEffects.playFlip();
+    }
 
     const newFlipped = [...flippedIndices, index];
     setFlippedIndices(newFlipped);
@@ -110,6 +125,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
         // Matched!
         setTimeout(() => {
           soundEffects.playCorrect();
+          // Pronounce the matched word to reinforce learning
           speakWord(cardA.word, cardA.audio_url);
 
           setMatchedIds(prev => {
@@ -129,9 +145,11 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
           setIsChecking(false);
         }, 500);
       } else {
-        // Not a match -> shake gently and flip back after 1s
+        // Not a match -> shake gently and flip back after 1.1s
         setTimeout(() => {
           soundEffects.playWrong();
+          // Cancel any lingering pronunciation when cards are flipped face down
+          stopSpeech();
           setFlippedIndices([]);
           setIsChecking(false);
         }, 1100);

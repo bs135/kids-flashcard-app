@@ -4,6 +4,32 @@
 // 3. Automatically selects clear, natural US voice tailored for young children (rate: 0.95)
 
 let cachedVoice = null;
+let currentAudio = null;
+let activeTimeoutId = null;
+
+// Stop any currently playing audio (HTMLAudioElement or Web Speech)
+export function stopSpeech() {
+  if (activeTimeoutId) {
+    clearTimeout(activeTimeoutId);
+    activeTimeoutId = null;
+  }
+  if (currentAudio) {
+    try {
+      currentAudio.onplay = null;
+      currentAudio.onended = null;
+      currentAudio.onerror = null;
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio.src = '';
+    } catch (e) {}
+    currentAudio = null;
+  }
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+    } catch (e) {}
+  }
+}
 
 // Initialize and preload voices
 function initVoices() {
@@ -37,29 +63,58 @@ initVoices();
  */
 export function speakWord(text, audioUrl = null) {
   return new Promise((resolve) => {
+    // Cancel any ongoing pronunciation (HTML5 audio or Web Speech synthesis)
+    stopSpeech();
+
     // 1. If valid local server audio (/uploads/...) is available
     if (audioUrl && audioUrl.startsWith('/uploads/')) {
       const audio = new Audio(audioUrl);
+      currentAudio = audio;
       
       // Limit timeout to 1.2s to prevent hanging on corrupted files
       const timeoutId = setTimeout(() => {
         console.warn(`[Audio] Audio file timed out after 1.2s, falling back to Web Speech.`);
-        audio.pause();
-        audio.src = '';
+        if (currentAudio === audio) {
+          audio.pause();
+          audio.src = '';
+          currentAudio = null;
+        }
+        activeTimeoutId = null;
         speakWithWebSpeech(text, resolve);
       }, 1200);
+      activeTimeoutId = timeoutId;
 
-      audio.onplay = () => clearTimeout(timeoutId);
-      audio.onended = () => resolve(true);
+      audio.onplay = () => {
+        if (activeTimeoutId === timeoutId) {
+          clearTimeout(timeoutId);
+          activeTimeoutId = null;
+        }
+      };
+      audio.onended = () => {
+        if (activeTimeoutId === timeoutId) {
+          clearTimeout(timeoutId);
+          activeTimeoutId = null;
+        }
+        if (currentAudio === audio) currentAudio = null;
+        resolve(true);
+      };
       audio.onerror = () => {
-        clearTimeout(timeoutId);
+        if (activeTimeoutId === timeoutId) {
+          clearTimeout(timeoutId);
+          activeTimeoutId = null;
+        }
+        if (currentAudio === audio) currentAudio = null;
         speakWithWebSpeech(text, resolve);
       };
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
-          clearTimeout(timeoutId);
+          if (activeTimeoutId === timeoutId) {
+            clearTimeout(timeoutId);
+            activeTimeoutId = null;
+          }
+          if (currentAudio === audio) currentAudio = null;
           speakWithWebSpeech(text, resolve);
         });
       }
