@@ -12,6 +12,7 @@ import { generateVocabularyData } from './services/geminiService.js';
 import { downloadAndConvertKidImage } from './services/imageService.js';
 import { downloadWordAudio } from './services/edgeTtsService.js';
 import { slugify } from './utils/slugify.js';
+import { getMediaPath } from './utils/mediaPath.js';
 
 dotenv.config();
 
@@ -385,13 +386,13 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
       fastify.log.info(`[Admin Generate] Downloading media assets for: ${cleanWord}`);
 
       // Image processing: fetch AI image only if IMAGE_AI_GENERATE_ENABLE is true
-      let imageUrl = '/uploads/images/default-placeholder.webp';
+      let imageUrl = '/uploads/seed/images/default-placeholder.webp';
       if (imageAiActive) {
-        imageUrl = await downloadAndConvertKidImage(cleanWord, topic_id, image_source);
+        imageUrl = await downloadAndConvertKidImage(cleanWord, topic_id, image_source, false, 'user');
       }
 
-      // Generate local Edge-TTS MP3 under topic_id directory
-      const audioUrl = await downloadWordAudio(cleanWord, topic_id);
+      // Generate local Edge-TTS MP3 under user scope
+      const audioUrl = await downloadWordAudio(cleanWord, topic_id, 'en-US-AnaNeural', 'user');
 
       const cardPayload = {
         topic_id,
@@ -450,8 +451,11 @@ fastify.post('/api/v1/admin/cards/:id/regenerate-image', async (request, reply) 
 
     fastify.log.info(`[Regenerate Image] Regenerating image for "${card.word}" via "${imageSource}"...`);
 
+    // Determine target scope (preserve seed scope for default cards, user scope for custom cards)
+    const targetScope = card.is_custom === 1 ? 'user' : 'seed';
+
     // Download and convert new image (force overwrite file on disk)
-    const newImageUrl = await downloadAndConvertKidImage(card.word, card.topic_id, imageSource, true);
+    const newImageUrl = await downloadAndConvertKidImage(card.word, card.topic_id, imageSource, true, targetScope);
 
     // Update SQLite database (save canonical relative path)
     db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(newImageUrl, id);
@@ -540,25 +544,28 @@ fastify.post('/api/v1/cards/:id/upload-image', async (request, reply) => {
       return reply.status(400).send({ error: 'Uploaded file is empty' });
     }
 
-    // Prepare target directory: backend/uploads/images/{topic_slug}
+    // Prepare target path using getMediaPath utility (scope: 'user')
     const safeTopic = slugify(card.topic_id || 'general');
-    const safeWord = slugify(card.word);
-    const targetDir = path.resolve(__dirname, `../uploads/images/${safeTopic}`);
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
-    }
+    const mediaInfo = getMediaPath({
+      type: 'image',
+      scope: 'user',
+      topicSlug: safeTopic,
+      word: card.word,
+      ext: 'webp'
+    });
 
-    const filename = `${safeWord}.webp`;
-    const targetFilePath = path.join(targetDir, filename);
+    if (!fs.existsSync(mediaInfo.dirPath)) {
+      fs.mkdirSync(mediaInfo.dirPath, { recursive: true });
+    }
 
     // Convert and compress to .webp with quality 85 using Sharp
     await sharp(buffer)
       .resize(400, 400, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
       .webp({ quality: 85 })
-      .toFile(targetFilePath);
+      .toFile(mediaInfo.filePath);
 
     // Update image_url field in SQLite database (save canonical path)
-    const basePublicUrl = `/uploads/images/${safeTopic}/${filename}`;
+    const basePublicUrl = mediaInfo.publicUrl;
     db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(basePublicUrl, id);
 
     const freshCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);

@@ -11,13 +11,9 @@ backend/data/*.sqlite-shm
 *.db
 *.sqlite
 
-# Media uploads generated dynamically (images & audios)
-# backend/uploads/audio/*
-# backend/uploads/images/*
-!backend/uploads/audio/**/*.mp3
-!backend/uploads/images/**/*.webp
-!backend/uploads/audio/*.mp3
-!backend/uploads/images/*.webp
+# Media uploads: user-created media is ignored, seed media is tracked
+backend/uploads/user/
+!backend/uploads/seed/
 
 # Environment variables
 .env

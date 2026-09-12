@@ -12,11 +12,14 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-// Ensure uploads/ directories exist
+// Ensure uploads/ directory structure exists (seed & user)
 const uploadsDir = path.resolve(__dirname, '../../uploads');
-const audioDir = path.resolve(uploadsDir, 'audio');
-const imagesDir = path.resolve(uploadsDir, 'images');
-[uploadsDir, audioDir, imagesDir].forEach(dir => {
+const seedImagesDir = path.resolve(uploadsDir, 'seed/images');
+const seedAudioDir = path.resolve(uploadsDir, 'seed/audio');
+const userImagesDir = path.resolve(uploadsDir, 'user/images');
+const userAudioDir = path.resolve(uploadsDir, 'user/audio');
+
+[uploadsDir, seedImagesDir, seedAudioDir, userImagesDir, userAudioDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }

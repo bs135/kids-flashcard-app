@@ -3,35 +3,46 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import { slugify } from '../utils/slugify.js';
+import { getMediaPath } from '../utils/mediaPath.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const baseAudioDir = path.resolve(__dirname, '../../uploads/audio');
-
-if (!fs.existsSync(baseAudioDir)) {
-  fs.mkdirSync(baseAudioDir, { recursive: true });
-}
 
 /**
  * Generates an MP3 audio file using Edge-TTS (natural child voice en-US-AnaNeural)
- * and stores it directly at backend/uploads/audio/{topicSlug}/{wordSlug}.mp3
+ * and stores it at:
+ * - Seed scope: /uploads/seed/audio/{wordSlug}.mp3
+ * - User scope: /uploads/user/audio/{wordSlug}.mp3
  * @param {string} word English vocabulary word
- * @param {string} [topicSlug='general'] Topic slug identifier
+ * @param {string} [topicSlug='general'] Topic slug identifier (for logging/metadata)
  * @param {string} [voiceName='en-US-AnaNeural'] Microsoft Edge voice name
- * @returns {Promise<string>} Local relative URL format: /uploads/audio/{topicSlug}/{wordSlug}.mp3
+ * @param {'user'|'seed'} [scope='user'] Target media scope ('user' for custom/runtime, 'seed' for initial seed)
+ * @param {string|null} [userId=null] Optional user ID for multi-tenant isolation
+ * @returns {Promise<string>} Local relative public URL
  */
-export async function downloadWordAudio(word, topicSlug = 'general', voiceName = 'en-US-AnaNeural') {
+export async function downloadWordAudio(
+  word,
+  topicSlug = 'general',
+  voiceName = 'en-US-AnaNeural',
+  scope = 'user',
+  userId = null
+) {
   const safeTopic = slugify(topicSlug);
-  const safeWord = slugify(word);
+  const mediaInfo = getMediaPath({
+    type: 'audio',
+    scope,
+    topicSlug: safeTopic,
+    word,
+    ext: 'mp3',
+    userId
+  });
 
-  const topicAudioDir = path.join(baseAudioDir, safeTopic);
-  if (!fs.existsSync(topicAudioDir)) {
-    fs.mkdirSync(topicAudioDir, { recursive: true });
+  const filePath = mediaInfo.filePath;
+  const publicUrl = mediaInfo.publicUrl;
+
+  if (!fs.existsSync(mediaInfo.dirPath)) {
+    fs.mkdirSync(mediaInfo.dirPath, { recursive: true });
   }
-
-  const filename = `${safeWord}.mp3`;
-  const filePath = path.join(topicAudioDir, filename);
-  const publicUrl = `/uploads/audio/${safeTopic}/${filename}`;
 
   // Reuse cached file if it exists and has size > 500 bytes
   if (fs.existsSync(filePath) && fs.statSync(filePath).size > 500) {

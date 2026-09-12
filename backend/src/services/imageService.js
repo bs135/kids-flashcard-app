@@ -5,16 +5,12 @@ import sharp from 'sharp';
 import dotenv from 'dotenv';
 import { refineImagePromptWithGemini } from './geminiService.js';
 import { slugify } from '../utils/slugify.js';
+import { getMediaPath } from '../utils/mediaPath.js';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const baseImagesDir = path.resolve(__dirname, '../../uploads/images');
-
-if (!fs.existsSync(baseImagesDir)) {
-  fs.mkdirSync(baseImagesDir, { recursive: true });
-}
 
 /**
  * 1. Searches and fetches vector/illustration image URLs from Unsplash or Pexels API
@@ -139,29 +135,42 @@ async function downloadAndSaveWebp(sourceUrl, destinationFilePath) {
 
 /**
  * 4. Downloads and converts image for vocabulary word based on source ('ai_refined' | 'unsplash')
- * Stored in topic subdirectories: /uploads/images/{topicSlug}/{wordSlug}.webp
+ * Stored in topic subdirectories:
+ * - Seed scope: /uploads/seed/images/{topicSlug}/{wordSlug}.webp
+ * - User scope: /uploads/user/images/{topicSlug}/{wordSlug}.webp
  * @param {string} word English vocabulary word
  * @param {string} topicSlug Topic category slug (e.g., 'pets-farm-animals', 'colors')
  * @param {string} [imageSource='ai_refined'] Image generation source ('ai_refined' or 'unsplash')
  * @param {boolean} [force=false] Force overwrite existing file (bypass disk cache)
- * @returns {Promise<string>} Local relative URL /uploads/images/{topicSlug}/{wordSlug}.webp
+ * @param {'user'|'seed'} [scope='user'] Target media scope ('user' for custom/runtime, 'seed' for initial seed)
+ * @param {string|null} [userId=null] Optional user ID for multi-tenant isolation
+ * @returns {Promise<string>} Local relative public URL
  */
-export async function downloadAndConvertKidImage(word, topicSlug = 'general', imageSource = 'ai_refined', force = false) {
+export async function downloadAndConvertKidImage(
+  word,
+  topicSlug = 'general',
+  imageSource = 'ai_refined',
+  force = false,
+  scope = 'user',
+  userId = null
+) {
   const safeTopic = slugify(topicSlug);
-  const safeWord = slugify(word);
+  const mediaInfo = getMediaPath({
+    type: 'image',
+    scope,
+    topicSlug: safeTopic,
+    word,
+    ext: 'webp',
+    userId
+  });
 
-  const topicImagesDir = path.join(baseImagesDir, safeTopic);
-  if (!fs.existsSync(topicImagesDir)) {
-    fs.mkdirSync(topicImagesDir, { recursive: true });
+  if (!fs.existsSync(mediaInfo.dirPath)) {
+    fs.mkdirSync(mediaInfo.dirPath, { recursive: true });
   }
 
-  const filename = `${safeWord}.webp`;
-  const filePath = path.join(topicImagesDir, filename);
-  const publicUrl = `/uploads/images/${safeTopic}/${filename}`;
-
   // IF NOT FORCED AND FILE ALREADY EXISTS VALID ON DISK -> REUSE CACHE
-  if (!force && fs.existsSync(filePath) && fs.statSync(filePath).size > 1024) {
-    return publicUrl;
+  if (!force && fs.existsSync(mediaInfo.filePath) && fs.statSync(mediaInfo.filePath).size > 1024) {
+    return mediaInfo.publicUrl;
   }
 
   // When force === true or file does not exist: fetch new source and overwrite
@@ -173,9 +182,9 @@ export async function downloadAndConvertKidImage(word, topicSlug = 'general', im
     sourceImageUrl = await buildAiRefinedImageUrl(word, safeTopic);
   }
 
-  const success = await downloadAndSaveWebp(sourceImageUrl, filePath);
+  const success = await downloadAndSaveWebp(sourceImageUrl, mediaInfo.filePath);
   if (success) {
-    return publicUrl;
+    return mediaInfo.publicUrl;
   }
 
   // Fallback if local download fails: return online URL

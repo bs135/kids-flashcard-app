@@ -71,8 +71,8 @@ cd kids-flashcard-app
 
 ### 3.2. Grant Permissions and Create Persistent Storage Directories
 ```bash
-# Create directories for SQLite database and local media
-mkdir -p backend/data backend/uploads/images backend/uploads/audio
+# Create directories for SQLite database and local media (seed and user directories)
+mkdir -p backend/data backend/uploads/seed/images backend/uploads/seed/audio backend/uploads/user/images backend/uploads/user/audio
 
 # Make deployment script executable
 chmod +x deploy.sh
@@ -174,7 +174,7 @@ The workflow at `.github/workflows/deploy.yml` is configured so that each time y
 ---
 
 ### 4.2. Manual Deployment via VPS Script
-To update directly on the VPS without pushing code, or to re-seed data:
+To update directly on the VPS without pushing code, synchronize seed cards, or perform a clean database reset:
 
 - **Standard code update and container rebuild:**
   ```bash
@@ -186,20 +186,57 @@ To update directly on the VPS without pushing code, or to re-seed data:
   3. Prunes dangling Docker images (`docker image prune -f`).
   4. Displays container status.
 
-- **Update code and synchronize 115 seed flashcards:**
+- **Update code and synchronize 115 default seed flashcards:**
   ```bash
   ./deploy.sh --seed
   ```
+  Synchronizes database topics and default flashcards without wiping existing progress or user cards.
+
+- **Full clean reset and re-seed from scratch (with automatic backup):**
+  ```bash
+  ./deploy.sh --seed --reset
+  ```
+  When both `--seed` and `--reset` are provided, the script safely:
+  1. Creates an automatic timestamped backup of your SQLite database:
+     `backend/data/database.sqlite.bak_YYYYMMDD_HHMMSS` (including `-wal` and `-shm` files if present).
+  2. Cleans up the old SQLite database files to guarantee a fresh initialization.
+  3. Pulls latest code and rebuilds the `app` container.
+  4. Re-initializes tables and seeds all 115 standard flashcards from scratch using local assets in `backend/uploads/seed/`.
 
 ---
 
-## 5. Backup & Disaster Recovery (Backup & Restore)
+## 5. Media Storage Architecture & Disaster Recovery
 
-Application data is mounted directly to two host directories:
-- `/opt/kids-flashcard-app/backend/data/database.sqlite`: Topics, flashcards, stars, and pet progression.
-- `/opt/kids-flashcard-app/backend/uploads/`: WebP images and Edge-TTS audio files.
+### 5.1. Media Storage Directory Architecture
+The application separates system seed assets from user-generated or uploaded media under `backend/uploads/`:
 
-### 5.1. Regular Backup (Create compressed tar.gz archive)
+```
+backend/uploads/
+├── seed/                              # Default system assets (Tracked by Git)
+│   ├── images/
+│   │   ├── default-placeholder.webp   # System fallback placeholder image
+│   │   └── {topic_slug}/              # Subdirectories by topic (e.g. colors/red.webp, food/chicken.webp)
+│   │       └── {word_slug}.webp
+│   └── audio/                         # Global deduplicated pronunciation audio
+│       └── {word_slug}.mp3            # (e.g. chicken.mp3, orange.mp3)
+│
+└── user/                              # User-generated / uploaded assets (Ignored by Git)
+    ├── images/
+    │   └── {topic_slug}/              # Future-proofed for optional multi-tenant user profiles
+    │       └── {word_slug}.webp
+    └── audio/
+        └── {word_slug}.mp3
+```
+
+- **`seed/`**: Bundled with the repository so new deployments instantly have high-quality WebP images and Edge-TTS audio without querying external APIs.
+- **`user/`**: Isolated for runtime uploads and AI generation. Never overwritten by Git updates.
+
+### 5.2. Persistent Storage Host Mounts
+Application state is mounted directly to host directories in `docker-compose.yml`:
+- `/opt/kids-flashcard-app/backend/data/`: SQLite database files (`database.sqlite`, `-wal`, `-shm`).
+- `/opt/kids-flashcard-app/backend/uploads/`: Both `seed/` and `user/` media files.
+
+### 5.3. Regular Backup (Create compressed tar.gz archive)
 ```bash
 # Create timestamped backup archive
 BACKUP_NAME="backup_flashcards_$(date +%Y%m%d_%H%M%S).tar.gz"
@@ -207,7 +244,7 @@ tar -czvf $BACKUP_NAME backend/data backend/uploads
 echo "Backup created: $BACKUP_NAME"
 ```
 
-### 5.2. Data Restoration
+### 5.4. Data Restoration
 To restore data or migrate to a new VPS:
 ```bash
 # Stop containers before overwriting data

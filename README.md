@@ -68,7 +68,7 @@ kids-flashcard-app/
 │   │   ├── services/         # Gemini AI, Edge-TTS, image processing & Sharp
 │   │   ├── utils/            # Slugify, helpers
 │   │   └── server.js         # Fastify API server & SPA fallback static handler
-│   ├── uploads/              # Local media storage directory (/images, /audio)
+│   ├── uploads/              # Media storage: /seed (Git tracked) & /user (Git ignored)
 │   └── package.json
 ├── frontend/
 │   ├── src/
@@ -142,9 +142,13 @@ docker compose up -d --build
 
 # 3. View live logs
 docker compose logs -f
+
+# 4. Optional: Synchronize seed cards or clean reset
+./deploy.sh --seed           # Sync default cards
+./deploy.sh --seed --reset   # Auto-backup DB, reset & re-seed from scratch
 ```
 
-👉 Check out the complete step-by-step DNS, firewall, and backup guide in [DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md).
+👉 Check out the complete step-by-step DNS, firewall, deployment scripts, and backup guide in [DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md).
 
 ---
 

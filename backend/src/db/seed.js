@@ -5,12 +5,12 @@ import db, { initDatabase } from './schema.js';
 import { downloadAndConvertKidImage } from '../services/imageService.js';
 import { downloadWordAudio } from '../services/edgeTtsService.js';
 import { slugify } from '../utils/slugify.js';
+import { getMediaPath } from '../utils/mediaPath.js';
 
 initDatabase();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const baseUploadsDir = path.resolve(__dirname, '../../uploads');
 
 console.log('🌱 Populating database and verifying media assets for 8 topics and 115 standard cards...');
 
@@ -1153,18 +1153,22 @@ export const rawFlashcards = [
 ];
 
 /**
- * Checks whether a media asset (WebP image / MP3 audio) exists locally on disk
+ * Checks whether a media asset (WebP image / MP3 audio) exists locally in seed directory
  */
 function checkLocalMediaFile(type, topicSlug, wordSlug) {
-  const ext = type === 'image' ? 'webp' : 'mp3';
-  const subFolder = type === 'image' ? 'images' : 'audio';
-  const filePath = path.join(baseUploadsDir, subFolder, topicSlug, `${wordSlug}.${ext}`);
+  const mediaInfo = getMediaPath({
+    type,
+    scope: 'seed',
+    topicSlug,
+    word: wordSlug
+  });
+
   const minSize = type === 'image' ? 1024 : 500;
 
-  if (fs.existsSync(filePath)) {
-    const stat = fs.statSync(filePath);
+  if (fs.existsSync(mediaInfo.filePath)) {
+    const stat = fs.statSync(mediaInfo.filePath);
     if (stat.size > minSize) {
-      return `/uploads/${subFolder}/${topicSlug}/${wordSlug}.${ext}`;
+      return mediaInfo.publicUrl;
     }
   }
   return null;
@@ -1229,7 +1233,7 @@ export async function seedData() {
       reusedImageCount++;
     } else {
       console.log(`[${i + 1}/${rawFlashcards.length}] 🖼️ Downloading image for: "${card.word}" (${topicSlug})...`);
-      imageUrl = await downloadAndConvertKidImage(card.word, topicSlug);
+      imageUrl = await downloadAndConvertKidImage(card.word, topicSlug, 'ai_refined', false, 'seed');
       downloadedImageCount++;
     }
 
@@ -1239,7 +1243,7 @@ export async function seedData() {
       reusedAudioCount++;
     } else {
       console.log(`[${i + 1}/${rawFlashcards.length}] 🔊 Synthesizing TTS audio for: "${card.word}" (${topicSlug})...`);
-      audioUrl = await downloadWordAudio(card.word, topicSlug);
+      audioUrl = await downloadWordAudio(card.word, topicSlug, 'en-US-AnaNeural', 'seed');
       downloadedAudioCount++;
     }
 
