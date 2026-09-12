@@ -182,7 +182,7 @@ export default function App() {
 
       {/* Footer nhỏ nhẹ */}
       <footer className="py-4 text-center text-xs font-semibold text-slate-400">
-        Kids English Flashcard App • Học Vui Mỗi Ngày
+        Kids English Flashcard App • Học Vui Mỗi Ngày • v1.0.0
       </footer>
     </div>
   );
