@@ -1,0 +1,33 @@
+name: Auto Deploy to VPS
+
+# Trigger workflow on push to main branch
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            # 1. Navigate to the project directory on the VPS
+            cd /opt/kids-flashcard-app
+            
+            # 2. Add safe.directory configuration for Git (avoid Git security error)
+            git config --global --add safe.directory /opt/kids-flashcard-app
+            
+            # 3. Run the existing deploy.sh script in the project
+            chmod +x deploy.sh
+            ./deploy.sh
