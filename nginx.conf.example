@@ -1,6 +1,6 @@
 # ==============================================================================
-# Cấu hình Nginx Reverse Proxy cho Kids Flashcard App
-# Đường dẫn lưu trên VPS Ubuntu/Debian: /etc/nginx/sites-available/flashcards.chipfc.com
+# Nginx Reverse Proxy Configuration for Kids Flashcard App
+# Target path on Ubuntu/Debian VPS: /etc/nginx/sites-available/flashcards.chipfc.com
 # ==============================================================================
 
 server {
@@ -8,15 +8,15 @@ server {
     listen [::]:80;
     server_name flashcards.chipfc.com;
 
-    # Cho phép tải file ảnh lên tới 20MB
+    # Allow image file uploads up to 20MB
     client_max_body_size 20M;
 
     location / {
-        # Reverse proxy tới container app đang lắng nghe tại localhost:3001
+        # Reverse proxy to the app container listening on localhost:3001
         proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
 
-        # Cấu hình headers hỗ trợ WebSocket và IP thực tế của client
+        # Header configuration for WebSocket and client real IP support
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
@@ -26,7 +26,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # Thiết lập timeouts cho các tác vụ xử lý AI sinh từ vựng & âm thanh
+        # Timeout settings for AI vocabulary & audio generation tasks
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 120s;

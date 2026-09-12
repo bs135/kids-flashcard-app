@@ -11,7 +11,7 @@ const baseAudioDir = path.resolve(__dirname, '../../uploads/audio');
 
 initDatabase();
 
-console.log('🚚 Bắt đầu di chuyển file media sang cấu trúc thư mục con theo topic...');
+console.log('🚚 Starting media migration to topic-based subdirectories...');
 
 const cards = db.prepare('SELECT id, topic_id, word, image_url, audio_url FROM flashcards').all();
 
@@ -28,7 +28,7 @@ for (const card of cards) {
   const topicSlug = slugify(card.topic_id);
   const wordSlug = slugify(card.word);
 
-  // Tạo thư mục con nếu chưa có
+  // Create subdirectories if they do not exist
   const targetImageDir = path.join(baseImagesDir, topicSlug);
   const targetAudioDir = path.join(baseAudioDir, topicSlug);
   if (!fs.existsSync(targetImageDir)) fs.mkdirSync(targetImageDir, { recursive: true });
@@ -37,7 +37,7 @@ for (const card of cards) {
   let newImageUrl = card.image_url;
   let newAudioUrl = card.audio_url;
 
-  // 1. Di chuyển file ảnh nếu đang ở thư mục gốc /uploads/images/
+  // 1. Move image file if currently located in root /uploads/images/
   if (card.image_url && card.image_url.startsWith('/uploads/images/')) {
     const oldFileName = path.basename(card.image_url.split('?')[0]);
     const oldFilePath = path.join(baseImagesDir, oldFileName);
@@ -50,7 +50,7 @@ for (const card of cards) {
     newImageUrl = `/uploads/images/${topicSlug}/${wordSlug}.webp`;
   }
 
-  // 2. Di chuyển file audio nếu đang ở thư mục gốc /uploads/audio/
+  // 2. Move audio file if currently located in root /uploads/audio/
   if (card.audio_url && card.audio_url.startsWith('/uploads/audio/')) {
     const oldFileName = path.basename(card.audio_url.split('?')[0]);
     const oldFilePath = path.join(baseAudioDir, oldFileName);
@@ -63,7 +63,7 @@ for (const card of cards) {
     newAudioUrl = `/uploads/audio/${topicSlug}/${wordSlug}.mp3`;
   }
 
-  // 3. Cập nhật đường dẫn mới vào CSDL
+  // 3. Update paths in SQLite database
   updateCard.run({
     id: card.id,
     image_url: newImageUrl,
@@ -71,7 +71,7 @@ for (const card of cards) {
   });
 }
 
-console.log(`✅ Đã di chuyển: ${movedImages} ảnh, ${movedAudio} audio vào cấu trúc thư mục con theo topic!`);
-console.log('📋 Dữ liệu sau khi migration:');
+console.log(`✅ Completed migration: ${movedImages} images, ${movedAudio} audio files moved into topic subdirectories.`);
+console.log('📋 Data after migration:');
 const updatedCards = db.prepare('SELECT id, topic_id, word, image_url, audio_url FROM flashcards').all();
 console.log(updatedCards);

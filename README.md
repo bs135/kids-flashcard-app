@@ -10,150 +10,150 @@
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License" />
 </p>
 
-Ứng dụng web học từ vựng tiếng Anh tương tác, trực quan và sinh động dành riêng cho trẻ em (Kids & Toddlers). Kết hợp âm thanh chuẩn bản xứ (Edge-TTS), hình ảnh hoạt hình ngộ nghĩnh, hệ thống thú cưng ảo (Virtual Pet Gamification), các mini-game rèn luyện phản xạ và công cụ quản trị thông minh hỗ trợ sinh thẻ bằng AI (Google Gemini).
+An interactive, visual, and engaging web app for kids and toddlers learning English vocabulary. Featuring natural native audio (Edge-TTS), adorable cartoon illustrations, virtual pet gamification, reflex-building mini-games, and an intelligent AI-assisted admin panel powered by Google Gemini.
 
 ---
 
-## 🚀 Tính Năng Nổi Bật (Key Features)
+## 🚀 Key Features
 
-### 🎨 Dành Cho Bé Học & Chơi (Kid Experience)
-- **Bản Đồ Chủ Đề (Topic Map)**: Giao diện trực quan với 8 chủ đề quen thuộc (Màu sắc, Động vật hoang dã, Thú cưng, Sinh vật biển, Trái cây, Rau củ, Hình dạng, Món ăn) kèm chế độ "Tất Cả Từ Vựng".
-- **Học Thẻ Tương Tác (Flashcard Viewer)**:
-  - Hiệu ứng lật thẻ 3D mượt mà (`Framer Motion`).
-  - Tỉ lệ thẻ bài chuẩn (`aspect ratio`), giao diện bo tròn ngộ nghĩnh.
-  - Mỗi lượt học phân bổ ngẫu nhiên 5 từ vựng, tránh gây quá tải nhận thức cho bé.
-  - Phát âm chuẩn giọng Anh - Mỹ tự nhiên bằng Microsoft Edge-TTS.
-- **Hệ Thống Thú Cưng & Phần Thưởng (Virtual Pet & Stars)**:
-  - Thu thập ngôi sao sau mỗi thẻ học hoặc mini-game.
-  - Cho thú cưng (Khủng long Dino, Mèo Kitty, Cún cưng) ăn để tăng cấp và mở khóa diện mạo mới.
-- **Mini-Game Vui Nhộn**:
-  - 🎈 **Bong Bóng Từ Vựng (Bubble Pop)**: Luyện nghe và bấm nổ bong bóng chứa từ tiếng Anh chính xác.
-  - 🃏 **Lật Thẻ Trí Nhớ (Memory Flip)**: Rèn luyện trí nhớ qua trò chơi ghép cặp từ vựng - hình ảnh.
+### 🎨 Kid Experience
+- **Topic Map**: Visual interface featuring 8 popular themes (Colors, Wild Animals, Pets, Sea Creatures, Fruits, Vegetables, Shapes, Foods) plus an "All Words" exploration mode.
+- **Interactive Flashcard Viewer**:
+  - Smooth 3D card flip animation (`Framer Motion`).
+  - Child-friendly card aspect ratio with rounded, playful aesthetics.
+  - 5 random words per study session to prevent cognitive fatigue.
+  - Natural native American English pronunciation via Microsoft Edge-TTS.
+- **Virtual Pet & Star Rewards**:
+  - Collect stars after each flashcard reviewed or mini-game won.
+  - Feed pets (Dino, Kitty, Puppy) to level them up and unlock fresh appearances.
+- **Engaging Mini-Games**:
+  - 🎈 **Bubble Pop**: Listen to audio prompts and pop the balloon matching the correct English word.
+  - 🃏 **Memory Flip**: Strengthen short-term memory through image-to-word card matching.
 
-### ⚙️ Trang Quản Trị & Công Cụ AI (Admin Panel)
-- **Sinh Thẻ Tự Động Bằng AI**: Nhập danh sách từ vựng bất kỳ, AI (Google Gemini) tự động tạo phiên âm quốc tế (IPA), dịch nghĩa tiếng Việt và đặt câu ví dụ song ngữ chuẩn ngữ cảnh trẻ em.
-- **Kiểm Soát Tính Năng & Bảo Vệ Tài Nguyên (Feature Flags & Rate Limiting)**:
-  - Giới hạn hạn ngạch tạo từ AI theo địa chỉ IP mỗi ngày.
-  - Bật/tắt chế độ tạo ảnh AI hoặc tải ảnh thủ công từ máy tính.
-- **Bảo Vệ Dữ Liệu Gốc (Seed Protection)**:
-  - Bảo vệ tuyệt đối 115 thẻ từ vựng chuẩn ban đầu của hệ thống (chống xóa nhầm).
-  - Khóa trường từ vựng gốc (`Word`) khi sửa thẻ để giữ nguyên tính toàn vẹn của tệp ảnh `.webp` và âm thanh `.mp3`.
-  - Hỗ trợ xóa an toàn các thẻ do người dùng tự tạo kèm dọn dẹp file rác trên ổ đĩa.
-  - Hỗ trợ tải ảnh thủ công từ máy tính (tự động nén và chuyển đổi sang chuẩn `.webp` chất lượng cao với Sharp).
+### ⚙️ Admin Panel & AI Tools
+- **Automated AI Flashcard Generation**: Enter vocabulary lists; Google Gemini automatically generates IPA phonetics, Vietnamese definitions, and kid-appropriate bilingual example sentences.
+- **Feature Flags & Resource Governance**:
+  - IP-based daily rate limiting for AI card generation.
+  - Toggle switches for AI image generation vs. manual uploads.
+- **Seed Data Protection**:
+  - Full protection for the 115 initial seed cards (prevents accidental deletion).
+  - Word field locked on edit to preserve media link integrity (`.webp`, `.mp3`).
+  - Safe deletion of custom user-created flashcards with automatic orphaned disk file cleanup.
+  - Manual image upload support with automatic Sharp compression and conversion to `.webp`.
 
 ---
 
-## 🛠️ Công Nghệ Sử Dụng (Tech Stack)
+## 🛠️ Tech Stack
 
-| Thành phần | Công nghệ | Mục đích |
+| Component | Technology | Purpose |
 | :--- | :--- | :--- |
-| **Frontend** | React 18, Vite 6, Tailwind CSS | Single Page Application tốc độ cao, giao diện hoạt hình chuẩn responsive |
-| **Animation & Audio** | Framer Motion, Canvas-Confetti, Howler.js | Hiệu ứng chuyển động nảy, pháo hoa ăn mừng và âm thanh tương tác |
-| **Icons** | Lucide React | Bộ biểu tượng hiện đại, nhẹ và đồng bộ |
-| **Backend** | Node.js (ESM), Fastify 4 | RESTful API hiệu năng cao, static file serving, rate limiting |
-| **Database** | SQLite (`better-sqlite3`) | Cơ sở dữ liệu nhúng siêu nhanh, bật chế độ WAL Mode |
-| **AI & Media** | Google Gemini API, Microsoft Edge-TTS, Sharp | Sinh ngữ nghĩa bằng AI, tạo giọng đọc bản xứ và nén ảnh WebP |
-| **Deployment** | Docker (Multi-stage), Docker Compose, Caddy 2 | Đóng gói 1 container siêu nhẹ, tự động cấp HTTPS/SSL qua Let's Encrypt |
+| **Frontend** | React 18, Vite 6, Tailwind CSS | High-performance SPA with responsive cartoon UI |
+| **Animation & Audio** | Framer Motion, Canvas-Confetti, Howler.js | Bouncy micro-interactions, celebration confetti, and game sound effects |
+| **Icons** | Lucide React | Clean, consistent, and lightweight icon library |
+| **Backend** | Node.js (ESM), Fastify 4 | High-throughput RESTful API, static file serving, and rate limiting |
+| **Database** | SQLite (`better-sqlite3`) | High-speed embedded SQL database in WAL mode |
+| **AI & Media** | Google Gemini API, Microsoft Edge-TTS, Sharp | Semantic AI generation, native neural speech synthesis, and WebP optimization |
+| **Deployment** | Docker (Multi-stage), Docker Compose, Caddy 2 | Lightweight single-container deployment with automatic Let's Encrypt HTTPS |
 
 ---
 
-## 📂 Cấu Trúc Dự Án (Project Structure)
+## 📂 Project Structure
 
 ```text
 kids-flashcard-app/
 ├── backend/
-│   ├── data/                 # File database SQLite (database.sqlite)
+│   ├── data/                 # SQLite database file (database.sqlite)
 │   ├── src/
-│   │   ├── db/               # Schema, migrations & dữ liệu seed gốc (115 thẻ)
-│   │   ├── services/         # Gemini AI, Edge-TTS, Image processing & Sharp
+│   │   ├── db/               # Schema, migrations & 115 seed flashcards
+│   │   ├── services/         # Gemini AI, Edge-TTS, image processing & Sharp
 │   │   ├── utils/            # Slugify, helpers
 │   │   └── server.js         # Fastify API server & SPA fallback static handler
-│   ├── uploads/              # Thư mục lưu media cục bộ (/images, /audio)
+│   ├── uploads/              # Local media storage directory (/images, /audio)
 │   └── package.json
 ├── frontend/
 │   ├── src/
 │   │   ├── components/       # Flashcard, FlashcardViewer, TopicMap, AdminPanel, MiniGames
-│   │   ├── services/         # API Client, Sound Effects, Speech synthesis
+│   │   ├── services/         # API client, sound effects, speech synthesis
 │   │   ├── App.jsx           # Root layout & navigation state
 │   │   └── main.jsx
-│   ├── public/               # Static assets (icon, sounds)
+│   ├── public/               # Static assets (icons, sounds)
 │   └── package.json
-├── Caddyfile                 # Cấu hình Reverse Proxy & SSL tự động
+├── Caddyfile                 # Caddy Reverse Proxy & automated SSL configuration
 ├── Dockerfile                # Multi-stage Docker build (Frontend + Backend)
-├── docker-compose.yml        # Định nghĩa services App + Caddy
-├── deploy.sh                 # Script cập nhật ứng dụng tự động trên VPS
-├── DEPLOY_GUIDE.md           # Hướng dẫn triển khai VPS Linux chi tiết
-└── .env.example              # Mẫu biến môi trường
+├── docker-compose.yml        # Docker service definitions (App + Caddy)
+├── deploy.sh                 # VPS automated deployment & update script
+├── DEPLOY_GUIDE.md           # Production Linux VPS deployment guide
+└── .env.example              # Environment variable template
 ```
 
 ---
 
-## 💻 Cài Đặt & Chạy Cục Bộ (Local Development)
+## 💻 Local Development
 
-### Yêu Cầu Cài Đặt
+### Prerequisites
 - Node.js >= 20.x
 - npm >= 10.x
 
-### 1. Clone Kho Mã Nguồn
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/bs135/kids-flashcard-app.git
 cd kids-flashcard-app
 ```
 
-### 2. Cài Đặt & Chạy Backend
+### 2. Set Up & Run Backend
 ```bash
 cd backend
 npm install
 
-# Tạo file .env và điền GEMINI_API_KEY
+# Copy .env and configure GEMINI_API_KEY
 cp .env.example .env
 
-# Nạp dữ liệu seed chuẩn (8 chủ đề, 115 thẻ từ vựng)
+# Seed standard data (8 topics, 115 cards)
 npm run seed
 
-# Khởi động Backend server (cổng 3001)
+# Start backend development server (port 3001)
 npm run dev
 ```
 
-### 3. Cài Đặt & Chạy Frontend
-Mở một cửa sổ terminal mới:
+### 3. Set Up & Run Frontend
+In a new terminal window:
 ```bash
 cd frontend
 npm install
 
-# Khởi chạy Vite dev server (cổng 5173)
+# Start Vite dev server (port 5173)
 npm run dev
 ```
 
-Mở trình duyệt tại: `http://localhost:5173`
+Open your browser at: `http://localhost:5173`
 
 ---
 
-## 🐳 Triển Khai Với Docker & Production VPS
+## 🐳 Docker & Production VPS Deployment
 
-Hệ thống đã được đóng gói sẵn sàng cho môi trường Production trên bất kỳ VPS Linux nào (Ubuntu, Debian, CentOS, v.v.):
+The project is container-ready for any Linux VPS distribution (Ubuntu, Debian, etc.):
 
 ```bash
-# 1. Tạo file môi trường
+# 1. Create environment file
 cp .env.example .env
 
-# 2. Khởi chạy toàn bộ hệ thống (App + Caddy HTTPS)
+# 2. Start all services (App + Caddy HTTPS)
 docker compose up -d --build
 
-# 3. Xem log hoạt động
+# 3. View live logs
 docker compose logs -f
 ```
 
-👉 Xem toàn bộ tài liệu hướng dẫn cấu hình DNS, Firewall, Sao lưu dữ liệu tại: [DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md).
+👉 Check out the complete step-by-step DNS, firewall, and backup guide in [DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md).
 
 ---
 
-## 📄 Giấy Phép (License)
+## 📄 License
 
-Dự án được phân phối dưới giấy phép **MIT License**. Mọi đóng góp và mã nguồn đều hoàn toàn mở cho cộng đồng giáo dục.
+This project is licensed under the **MIT License**. Contributions and source code are open to the educational community.
 
 ---
 
 <p align="center">
-  Phát triển với sự tận tâm dành cho việc học tập trực quan của trẻ thơ ❤️
+  Crafted with care for early childhood visual learning ❤️
 </p>

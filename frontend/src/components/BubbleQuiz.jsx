@@ -6,7 +6,7 @@ import { soundEffects } from '../services/soundEffects';
 import { speakWord } from '../services/speech';
 
 export default function BubbleQuiz({ topics = [], initialTopic = null, allCards = [], onBack, onEarnStar }) {
-  // Chủ đề đang chọn
+  // Currently selected topic
   const [selectedTopicId, setSelectedTopicId] = useState(() => {
     if (initialTopic && initialTopic.id) return initialTopic.id;
     return topics[0]?.id || 'colors';
@@ -23,7 +23,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
 
   const timerRef = useRef(null);
 
-  // Tải danh sách thẻ theo chủ đề
+  // Load cards for selected topic
   useEffect(() => {
     async function loadCards() {
       try {
@@ -33,13 +33,13 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
           setCards(data.cards || []);
         }
       } catch (e) {
-        console.error('Lỗi khi tải thẻ cho game bong bóng:', e);
+        console.error('Error loading cards for bubble game:', e);
       }
     }
     loadCards();
   }, [selectedTopicId]);
 
-  // Bắt đầu màn chơi mới
+  // Start new game session
   const startGame = () => {
     soundEffects.playPop();
     setScore(0);
@@ -49,7 +49,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
     pickNextQuestion();
   };
 
-  // Đồng hồ đếm ngược 60 giây
+  // 60-second countdown timer
   useEffect(() => {
     if (isPlaying && timeLeft > 0) {
       timerRef.current = setInterval(() => {
@@ -69,7 +69,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
     };
   }, [isPlaying, timeLeft]);
 
-  // Kết thúc trò chơi
+  // End game session
   const endGame = () => {
     setIsPlaying(false);
     setIsGameOver(true);
@@ -83,23 +83,23 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
     } catch (e) {}
   };
 
-  // Tạo câu hỏi mới và 3-4 quả bóng
+  // Generate new question and 3-4 bubbles
   const pickNextQuestion = () => {
     if (!cards || cards.length === 0) return;
 
-    // Chọn ngẫu nhiên 1 thẻ làm mục tiêu
+    // Pick 1 random card as target
     const randomTarget = cards[Math.floor(Math.random() * cards.length)];
     setTargetCard(randomTarget);
 
-    // Phát âm từ mục tiêu
+    // Speak target word
     speakWord(randomTarget.word, randomTarget.audio_url);
 
-    // Lấy thêm 2-3 lựa chọn sai từ danh sách thẻ
+    // Pick 2-3 distractor choices
     const otherCards = cards.filter(c => c.id !== randomTarget.id);
     const shuffledOthers = [...otherCards].sort(() => 0.5 - Math.random());
     const distractors = shuffledOthers.slice(0, Math.min(3, shuffledOthers.length));
 
-    // Ghép bóng và xáo trộn vị trí
+    // Combine bubbles and shuffle positions
     const currentOptions = [randomTarget, ...distractors].sort(() => 0.5 - Math.random());
 
     const bubbleColors = [
@@ -110,12 +110,12 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
     ];
 
     const generatedBubbles = currentOptions.map((card, idx) => {
-      // Các tham số chuyển động bay ngẫu nhiên độc lập cho từng quả bóng
-      const floatDuration = Number((2.2 + Math.random() * 1.6).toFixed(2)); // 2.2s đến 3.8s
-      const floatDelay = Number((Math.random() * 0.8).toFixed(2));          // 0s đến 0.8s
-      const floatPeakY = Math.floor(-14 - Math.random() * 10);              // -14px đến -24px
-      const floatPeakX = Math.floor(Math.random() * 12 - 6);                // -6px đến +6px
-      const floatRotate = Math.floor(Math.random() * 8 - 4);                // -4deg đến +4deg
+      // Independent random floating animations for each bubble
+      const floatDuration = Number((2.2 + Math.random() * 1.6).toFixed(2)); // 2.2s to 3.8s
+      const floatDelay = Number((Math.random() * 0.8).toFixed(2));          // 0s to 0.8s
+      const floatPeakY = Math.floor(-14 - Math.random() * 10);              // -14px to -24px
+      const floatPeakX = Math.floor(Math.random() * 12 - 6);                // -6px to +6px
+      const floatRotate = Math.floor(Math.random() * 8 - 4);                // -4deg to +4deg
 
       return {
         id: `${card.id}-${Date.now()}-${idx}`,
@@ -132,26 +132,26 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
     setBubbles(generatedBubbles);
   };
 
-  // Xử lý khi bé bấm vào quả bóng
+  // Handle kid clicking a bubble
   const handleBubbleClick = (bubble) => {
     if (!targetCard) return;
 
     if (bubble.card.id === targetCard.id) {
-      // Đúng -> nổ bóng, cộng điểm & thưởng sao
+      // Correct -> pop bubble, increment score & award star
       soundEffects.playPop();
       soundEffects.playCorrect();
       setScore(prev => prev + 10);
       onEarnStar(1);
 
-      // Ẩn bóng đã vỡ
+      // Hide popped bubble
       setBubbles(prev => prev.filter(b => b.id !== bubble.id));
 
-      // Chuyển sang từ tiếp theo sau 0.4s
+      // Switch to next word after 0.4s
       setTimeout(() => {
         pickNextQuestion();
       }, 400);
     } else {
-      // Sai -> rung lắc nhẹ bóng và phát âm thanh buzzer
+      // Wrong -> shake bubble gently and play buzzer
       soundEffects.playWrong();
       setShakingBubbleId(bubble.id);
       setTimeout(() => setShakingBubbleId(null), 500);
@@ -160,7 +160,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 select-none">
-      {/* Thanh Tiêu đề & Điều hướng */}
+      {/* Header & Navigation bar */}
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => {
@@ -173,7 +173,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
           <span>Quay Lại</span>
         </button>
 
-        {/* Bộ chọn chủ đề */}
+        {/* Topic selector */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-slate-500 hidden sm:inline">Chủ đề:</span>
           <select
@@ -195,15 +195,15 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
         </div>
       </div>
 
-      {/* Vùng trò chơi */}
+      {/* Game arena */}
       <div className="relative min-h-[520px] bg-gradient-to-b from-sky-100 via-indigo-50 to-white rounded-3xl border-4 border-sky-300 shadow-bouncy overflow-hidden p-6 flex flex-col justify-between">
-        {/* Mây trang trí nền */}
+        {/* Background decorative clouds */}
         <div className="absolute top-6 left-8 text-4xl opacity-40 animate-pulse pointer-events-none">☁️</div>
         <div className="absolute top-16 right-12 text-5xl opacity-40 animate-pulse pointer-events-none">☁️</div>
 
-        {/* Header Trong Game: Điểm số & Đồng hồ */}
+        {/* In-game header: Score & Timer */}
         <div className="relative z-20 flex items-center justify-between">
-          {/* Điểm số */}
+          {/* Score */}
           <div className="flex items-center gap-2 bg-white/90 border-2 border-amber-300 px-4 py-2 rounded-2xl shadow-sm">
             <Trophy className="w-5 h-5 text-amber-500 fill-amber-400" />
             <span className="text-sm font-extrabold text-amber-900 font-kids">
@@ -211,7 +211,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
             </span>
           </div>
 
-          {/* Đồng hồ đếm ngược 60s */}
+          {/* 60s countdown timer */}
           <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border-2 shadow-sm font-extrabold text-sm ${
             timeLeft <= 10 
               ? 'bg-rose-100 border-rose-300 text-rose-700 animate-bounce' 
@@ -222,7 +222,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
           </div>
         </div>
 
-        {/* Trạng Thái 1: Chưa bắt đầu */}
+        {/* State 1: Not started */}
         {!isPlaying && !isGameOver && (
           <div className="relative z-20 my-auto text-center py-8">
             <div className="w-24 h-24 mx-auto mb-4 rounded-3xl bg-gradient-to-tr from-sky-400 to-blue-500 flex items-center justify-center text-5xl shadow-lg border-4 border-white animate-bounce">
@@ -245,10 +245,10 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
           </div>
         )}
 
-        {/* Trạng Thái 2: Đang Chơi */}
+        {/* State 2: Playing */}
         {isPlaying && targetCard && (
           <>
-            {/* Hộp phát âm từ mục tiêu */}
+            {/* Target word pronunciation box */}
             <div className="relative z-20 text-center my-2">
               <div className="inline-flex items-center gap-3 bg-white/95 border-3 border-sky-300 px-6 py-3 rounded-full shadow-md">
                 <button
@@ -272,7 +272,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
               </div>
             </div>
 
-            {/* Vùng bay của các Bong Bóng */}
+            {/* Bubble floating area */}
             <div className="relative flex-1 w-full flex items-center justify-center min-h-[320px]">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 items-center justify-center px-6 sm:px-8 py-4">
                 {bubbles.map((b) => {
@@ -301,10 +301,10 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
                       onClick={() => handleBubbleClick(b)}
                       className={`relative w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br ${b.color} border-4 p-3 sm:p-4 flex items-center justify-center shadow-lg cursor-pointer select-none overflow-hidden`}
                     >
-                      {/* Đốm sáng phản chiếu của bong bóng */}
+                      {/* Bubble shine highlight reflection */}
                       <div className="absolute top-2.5 left-3.5 w-6 h-3 bg-white/75 rounded-full rotate-[-35deg] pointer-events-none z-10" />
 
-                      {/* Hình ảnh căn giữa tâm quả bóng */}
+                      {/* Center card image */}
                       <div className="w-full h-full flex items-center justify-center p-1">
                         <img
                           src={`${b.card.image_url}?t=${b.card.id}`}
@@ -321,7 +321,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
           </>
         )}
 
-        {/* Trạng Thái 3: Hết Giờ (Game Over) */}
+        {/* State 3: Game Over */}
         {isGameOver && (
           <div className="relative z-20 my-auto text-center py-6 animate-fade-in">
             <div className="text-6xl mb-2 animate-bounce">🏆</div>

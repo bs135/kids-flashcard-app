@@ -1,32 +1,32 @@
 
-# GitHub Actions và SSH
+# GitHub Actions and SSH Deployment Guide
 
-### Bước 1: Tạo cặp khóa SSH (SSH Key Pair) dành riêng cho deploy
-Bạn nên tạo một cặp khóa SSH mới (không dùng chung với các khóa cá nhân khác) để đảm bảo tính bảo mật.
+### Step 1: Generate a Dedicated SSH Key Pair for Deployment
+You should generate a dedicated SSH key pair (separate from your personal keys) for enhanced security.
 
-1. **Truy cập vào VPS của bạn hoặc mở Terminal máy cá nhân và chạy lệnh:**
+1. **Access your VPS or open a local terminal, and run:**
    ```bash
    ssh-keygen -t ed25519 -f ~/.ssh/github_deploy_key -C "github-actions-deploy"
    ```
-   *Khi được hỏi mật khẩu (passphrase), hãy nhấn **Enter** để trống (không đặt mật khẩu).*
+   *When prompted for a passphrase, press **Enter** to leave it empty (no passphrase).*
 
-2. Lệnh này sẽ tạo ra 2 file trong thư mục `~/.ssh/`:
-   * `github_deploy_key` (đây là **Private Key** - tuyệt đối giữ bí mật).
-   * `github_deploy_key.pub` (đây là **Public Key** - dùng để cấu hình trên VPS).
+2. This command generates 2 files in the `~/.ssh/` directory:
+   * `github_deploy_key` (**Private Key** - keep strictly confidential).
+   * `github_deploy_key.pub` (**Public Key** - configured on the VPS).
 
 ---
 
-### Bước 2: Cấu hình Public Key trên VPS
-Bạn cần cấp quyền cho phép bất kỳ ai sở hữu Private Key ở Bước 1 có thể đăng nhập vào VPS.
+### Step 2: Configure the Public Key on the VPS
+Authorize access for anyone authenticating with the Private Key generated in Step 1.
 
-1. Đăng nhập vào VPS bằng quyền root/sudo.
-2. Mở file `authorized_keys` để chỉnh sửa:
+1. Log into your VPS as root or a sudo user.
+2. Open the `authorized_keys` file for editing:
    ```bash
    nano ~/.ssh/authorized_keys
    ```
-3. Copy toàn bộ nội dung của file Public Key (`github_deploy_key.pub` đã tạo ở Bước 1) và paste vào cuối file `authorized_keys`.
-4. Lưu file và thoát (Nhấn `Ctrl + O` -> `Enter` để lưu, `Ctrl + X` để thoát).
-5. Phân quyền chuẩn cho thư mục SSH để tránh lỗi không nhận khóa:
+3. Copy the entire contents of the Public Key file (`github_deploy_key.pub` created in Step 1) and paste it at the end of `authorized_keys`.
+4. Save and exit (`Ctrl + O` -> `Enter` to save, `Ctrl + X` to exit).
+5. Set the proper SSH directory permissions to prevent key authentication issues:
    ```bash
    chmod 700 ~/.ssh
    chmod 600 ~/.ssh/authorized_keys
@@ -34,31 +34,31 @@ Bạn cần cấp quyền cho phép bất kỳ ai sở hữu Private Key ở Bư
 
 ---
 
-### Bước 3: Cấu hình Secrets trên GitHub Repository
-Hãy đưa các thông tin kết nối an toàn vào GitHub để workflow có thể sử dụng mà không bị lộ thông tin nhạy cảm trong mã nguồn.
+### Step 3: Configure Repository Secrets on GitHub
+Store connection credentials safely in GitHub Secrets so the workflow can connect without exposing sensitive credentials in source code.
 
-1. Truy cập vào kho chứa (repository) của bạn trên GitHub.
-2. Đi tới: **Settings** > **Secrets and variables** > **Actions** > Nhấn **New repository secret**.
-3. Thêm lần lượt 3 biến bảo mật sau:
-   * **Tên:** `SSH_HOST`  
-     **Giá trị:** Địa chỉ IP Public của VPS (ví dụ: `123.45.67.89`).
-   * **Tên:** `SSH_USERNAME`  
-     **Giá trị:** Tên user chạy deploy trên VPS (ví dụ: `root` hoặc `ubuntu`).
-   * **Tên:** `SSH_PRIVATE_KEY`  
-     **Giá trị:** Copy toàn bộ nội dung file Private Key (`github_deploy_key` ở Bước 1 - bao gồm cả dòng đầu `-----BEGIN OPENSSH PRIVATE KEY-----` và dòng cuối `-----END OPENSSH PRIVATE KEY-----`).
+1. Go to your GitHub repository.
+2. Navigate to: **Settings** > **Secrets and variables** > **Actions** > Click **New repository secret**.
+3. Add the following 3 secrets:
+   * **Name:** `SSH_HOST`  
+     **Value:** Public IP address of the VPS (e.g., `123.45.67.89`).
+   * **Name:** `SSH_USERNAME`  
+     **Value:** Deployment user on the VPS (e.g., `root` or `ubuntu`).
+   * **Name:** `SSH_PRIVATE_KEY`  
+     **Value:** Full content of the Private Key file (`github_deploy_key` from Step 1 - including the starting `-----BEGIN OPENSSH PRIVATE KEY-----` and ending `-----END OPENSSH PRIVATE KEY-----` lines).
 
 ---
 
-### Bước 4: Tạo file Workflow GitHub Actions trong mã nguồn
-Hãy tạo tệp tin cấu hình tự động hóa trong thư mục mã nguồn cục bộ của bạn.
+### Step 4: Create the GitHub Actions Workflow File
+Ensure the workflow configuration file exists in your repository.
 
-1. Trong thư mục gốc của dự án, tạo thư mục `.github/workflows/` (nếu chưa có).
-2. Tạo file tên là `deploy.yml` với nội dung dưới đây:
+1. In the repository root, create the directory `.github/workflows/` (if it doesn't already exist).
+2. Create or verify `deploy.yml` with the following content:
 
 ```yaml
 name: Auto Deploy to VPS
 
-# Kích hoạt workflow khi có sự kiện push vào nhánh main
+# Trigger workflow on push to main branch
 on:
   push:
     branches:
@@ -80,18 +80,18 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            # 1. Di chuyển vào thư mục dự án trên VPS
+            # 1. Navigate to the project directory on VPS
             cd /opt/kids-flashcard-app
             
-            # 2. Đảm bảo thư mục an toàn cho Git (tránh lỗi bảo mật của Git)
+            # 2. Mark project directory as safe for Git
             git config --global --add safe.directory /opt/kids-flashcard-app
             
-            # 3. Chạy script deploy.sh đã có sẵn trong dự án
+            # 3. Execute deploy.sh
             chmod +x deploy.sh
             ./deploy.sh
 ```
 
-### Bước 5: Kiểm tra và vận hành
-1. Hãy commit file `.github/workflows/deploy.yml` mới tạo này và push lên nhánh `main` của repo GitHub.
-2. Trên giao diện GitHub, chuyển sang tab **Actions**, bạn sẽ thấy một workflow có tên `Auto Deploy to VPS` đang được chạy.
-3. Khi workflow chạy xong (chuyển sang màu xanh ✅), toàn bộ quá trình: kéo code mới nhất từ Git, build lại Docker container ứng dụng, xóa rác image thừa trên VPS của bạn đã hoàn thành hoàn toàn tự động!
+### Step 5: Verification & Operation
+1. Commit and push the `.github/workflows/deploy.yml` file to the `main` branch.
+2. In your GitHub repository, switch to the **Actions** tab; you will see the `Auto Deploy to VPS` workflow running.
+3. Once the workflow completes (marked with a green checkmark ✅), pulling the latest code, rebuilding Docker containers, and pruning old images on your VPS will be completely automated!

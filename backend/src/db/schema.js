@@ -6,13 +6,13 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Đảm bảo thư mục data/ tồn tại
+// Ensure data/ directory exists
 const dataDir = path.resolve(__dirname, '../../data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-// Đảm bảo thư mục uploads/ tồn tại
+// Ensure uploads/ directories exist
 const uploadsDir = path.resolve(__dirname, '../../uploads');
 const audioDir = path.resolve(uploadsDir, 'audio');
 const imagesDir = path.resolve(uploadsDir, 'images');
@@ -25,12 +25,12 @@ const imagesDir = path.resolve(uploadsDir, 'images');
 const dbPath = path.join(dataDir, 'database.sqlite');
 const db = new Database(dbPath);
 
-// Bật WAL mode để tăng tốc độ ghi và đọc đồng thời
+// Enable WAL mode for concurrent read/write throughput
 db.pragma('journal_mode = WAL');
 
 export function initDatabase() {
   db.exec(`
-    -- 1. Bảng topics (Chủ đề)
+    -- 1. topics table
     CREATE TABLE IF NOT EXISTS topics (
         id TEXT PRIMARY KEY,
         name_en TEXT NOT NULL,
@@ -41,7 +41,7 @@ export function initDatabase() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- 2. Bảng flashcards (Thẻ từ vựng)
+    -- 2. flashcards table
     CREATE TABLE IF NOT EXISTS flashcards (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         topic_id TEXT NOT NULL,
@@ -61,7 +61,7 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_flashcards_topic ON flashcards(topic_id);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_flashcards_unique_word ON flashcards(topic_id, word COLLATE NOCASE);
 
-    -- 3. Bảng user_progress (Tiến trình người dùng & Thú cưng)
+    -- 3. user_progress table (User progression & Pet status)
     CREATE TABLE IF NOT EXISTS user_progress (
         id TEXT PRIMARY KEY DEFAULT 'default_kid',
         stars INTEGER DEFAULT 0,
@@ -73,7 +73,7 @@ export function initDatabase() {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- 4. Bảng topic_progress (Tiến trình theo chủ đề)
+    -- 4. topic_progress table (Per-topic progression status)
     CREATE TABLE IF NOT EXISTS topic_progress (
         topic_id TEXT PRIMARY KEY,
         is_unlocked INTEGER DEFAULT 1,
@@ -83,14 +83,14 @@ export function initDatabase() {
     );
   `);
 
-  // Migration: Bổ sung cột is_custom nếu bảng đã tồn tại từ trước mà chưa có cột này
+  // Migration: Add is_custom column if table already exists without it
   const columns = db.pragma('table_info(flashcards)');
   const hasIsCustom = columns.some(col => col.name === 'is_custom');
   if (!hasIsCustom) {
     db.exec('ALTER TABLE flashcards ADD COLUMN is_custom INTEGER DEFAULT 0');
   }
 
-  // Tạo user mặc định nếu chưa có
+  // Create default profile if not already present
   const checkUser = db.prepare('SELECT id FROM user_progress WHERE id = ?').get('default_kid');
   if (!checkUser) {
     db.prepare(`

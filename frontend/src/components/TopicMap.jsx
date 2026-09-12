@@ -6,7 +6,7 @@ import { soundEffects } from '../services/soundEffects';
 export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      {/* Tiêu đề Chào Mừng */}
+      {/* Welcome Title */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 bg-yellow-100 border-2 border-yellow-300 px-4 py-1.5 rounded-full text-yellow-800 font-bold text-sm mb-3 shadow-sm">
           <Compass className="w-4 h-4 text-amber-600 animate-spin" />
@@ -20,9 +20,9 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
         </p>
       </div>
 
-      {/* Banner Khu Vực Mini-Games Vui Nhộn */}
+      {/* Mini-Games Section Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        {/* Game 1: Bong Bóng Từ Vựng */}
+        {/* Game 1: Bubble Pop */}
         <motion.div
           whileHover={{ scale: 1.02, translateY: -2 }}
           whileTap={{ scale: 0.98 }}
@@ -47,7 +47,7 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
           </div>
         </motion.div>
 
-        {/* Game 2: Lật Thẻ Trí Nhớ */}
+        {/* Game 2: Memory Flip */}
         <motion.div
           whileHover={{ scale: 1.02, translateY: -2 }}
           whileTap={{ scale: 0.98 }}
@@ -73,9 +73,9 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
         </motion.div>
       </div>
 
-      {/* Lưới các Hòn Đảo Chủ Đề */}
+      {/* Themed Topic Islands Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {/* Chủ đề Đặc Biệt: "Tất cả" (Khám phá tổng hợp) */}
+        {/* Special Topic: "All Words" (All Topics) */}
         {(() => {
           const totalAllCards = topics.reduce((sum, t) => sum + (t.total_cards || 0), 0);
           const totalLearnedAllCards = topics.reduce((sum, t) => sum + (t.learned_cards || 0), 0);
@@ -101,7 +101,7 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
               }}
               className="relative overflow-hidden rounded-3xl border-4 border-amber-400 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-6 shadow-bouncy transition-all cursor-pointer select-none hover:shadow-xl group"
             >
-              {/* Huy hiệu nổi bật */}
+              {/* Highlight badge */}
               <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-orange-500 text-white text-[10px] sm:text-xs font-black px-3 py-1 rounded-bl-2xl shadow-sm uppercase tracking-wider flex items-center gap-1">
                 <Sparkles className="w-3 h-3 animate-spin" />
                 <span>Đặc Biệt</span>
@@ -123,7 +123,7 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
                 Khám phá tổng hợp mọi chủ đề
               </p>
 
-              {/* Thanh tiến độ tổng hợp */}
+              {/* Progress bar */}
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs font-bold text-slate-500">
                   <span>Tiến độ tổng hợp</span>
@@ -191,7 +191,7 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
                 {topic.name_vi}
               </p>
 
-              {/* Thanh tiến độ học tập */}
+              {/* Topic learning progress bar */}
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs font-bold text-slate-500">
                   <span>Tiến độ học</span>

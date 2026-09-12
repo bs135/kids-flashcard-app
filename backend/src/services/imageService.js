@@ -17,21 +17,21 @@ if (!fs.existsSync(baseImagesDir)) {
 }
 
 /**
- * 1. Tìm kiếm và lấy URL ảnh thật/vector chuẩn xác từ Unsplash hoặc Pexels API
- * Hỗ trợ lấy ngẫu nhiên theo page hoặc chọn ngẫu nhiên trong danh sách kết quả để mỗi lần regenerate ra ảnh mới
- * @param {string} word Từ vựng tiếng Anh
- * @param {string} category Chủ đề
- * @returns {Promise<string|null>} URL hình ảnh
+ * 1. Searches and fetches vector/illustration image URLs from Unsplash or Pexels API
+ * Supports randomized pagination and result selection for fresh variations on regeneration
+ * @param {string} word English vocabulary word
+ * @param {string} category Topic category
+ * @returns {Promise<string|null>} Image URL
  */
 export async function searchRealVectorImageUrl(word, category = '') {
   const cleanWord = word.trim().toLowerCase();
   const unsplashKey = process.env.UNSPLASH_ACCESS_KEY;
   const pexelsKey = process.env.PEXELS_API_KEY;
 
-  // Chọn trang ngẫu nhiên từ 1 đến 5 để lấy kết quả phong phú
+  // Pick random page between 1 and 5 for diverse results
   const randomPage = Math.floor(Math.random() * 5) + 1;
 
-  // A. Thử Unsplash API (nếu có key)
+  // A. Try Unsplash API (if key exists)
   if (unsplashKey) {
     try {
       const query = encodeURIComponent(`${cleanWord} illustration vector`);
@@ -47,11 +47,11 @@ export async function searchRealVectorImageUrl(word, category = '') {
         }
       }
     } catch (e) {
-      console.warn(`[Unsplash Search] Thất bại cho "${cleanWord}":`, e.message);
+      console.warn(`[Unsplash Search] Failed for "${cleanWord}":`, e.message);
     }
   }
 
-  // B. Thử Pexels API (nếu có key)
+  // B. Try Pexels API (if key exists)
   if (pexelsKey) {
     try {
       const query = encodeURIComponent(`${cleanWord} illustration`);
@@ -70,17 +70,17 @@ export async function searchRealVectorImageUrl(word, category = '') {
         }
       }
     } catch (e) {
-      console.warn(`[Pexels Search] Thất bại cho "${cleanWord}":`, e.message);
+      console.warn(`[Pexels Search] Failed for "${cleanWord}":`, e.message);
     }
   }
 
-  // C. Fallback: Nếu không tìm được ảnh từ Unsplash/Pexels, sinh qua Pollinations với seed ngẫu nhiên
+  // C. Fallback: If no image found via Unsplash/Pexels, generate via Pollinations with random seed
   const fallbackSeed = Math.floor(Math.random() * 1000000);
   return `https://image.pollinations.ai/prompt/cute%20cartoon%20${encodeURIComponent(cleanWord)}%20vector%20isolated%20white%20background?width=400&height=400&nologo=true&seed=${fallbackSeed}`;
 }
 
 /**
- * 2. Tạo URL Pollinations.ai sử dụng Prompt đã được Gemini tinh chỉnh (AI Refined)
+ * 2. Builds Pollinations.ai URL using Gemini-refined image prompt
  * @param {string} word
  * @param {string} category
  * @returns {Promise<string>}
@@ -93,7 +93,7 @@ export async function buildAiRefinedImageUrl(word, category = '') {
 }
 
 /**
- * 3. Tải ảnh từ URL bất kỳ, resize và chuyển đổi thành định dạng WebP lưu vào đĩa
+ * 3. Downloads an image from a URL, resizes, and converts it to WebP on disk
  * @param {string} sourceUrl
  * @param {string} destinationFilePath
  * @returns {Promise<boolean>}
@@ -118,7 +118,7 @@ async function downloadAndSaveWebp(sourceUrl, destinationFilePath) {
 
       const buffer = Buffer.from(await response.arrayBuffer());
 
-      // Ghi đè file ảnh .webp mới
+      // Write optimized .webp file
       await sharp(buffer)
         .resize(400, 400, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
         .webp({ quality: 85 })
@@ -129,7 +129,7 @@ async function downloadAndSaveWebp(sourceUrl, destinationFilePath) {
       if (attempt < 3) {
         await new Promise(r => setTimeout(r, 1500));
       } else {
-        console.warn(`[ImageService] Không thể lưu webp từ ${sourceUrl}:`, err.message);
+        console.warn(`[ImageService] Unable to save webp from ${sourceUrl}:`, err.message);
         return false;
       }
     }
@@ -138,13 +138,13 @@ async function downloadAndSaveWebp(sourceUrl, destinationFilePath) {
 }
 
 /**
- * 4. Tải và chuyển đổi ảnh cho từ vựng theo nguồn lựa chọn ('ai_refined' | 'unsplash')
- * Lưu trữ theo thư mục con phân tách theo từng chủ đề: /uploads/images/{topicSlug}/{wordSlug}.webp
- * @param {string} word Từ tiếng Anh
- * @param {string} topicSlug Chủ đề (VD: 'domestic-animals', 'colors')
- * @param {string} [imageSource='ai_refined'] Nguồn tạo ảnh ('ai_refined' hoặc 'unsplash')
- * @param {boolean} [force=false] Bắt buộc ghi đè file ảnh cũ (bỏ qua cache file trên đĩa)
- * @returns {Promise<string>} Đường dẫn cục bộ /uploads/images/{topicSlug}/{wordSlug}.webp
+ * 4. Downloads and converts image for vocabulary word based on source ('ai_refined' | 'unsplash')
+ * Stored in topic subdirectories: /uploads/images/{topicSlug}/{wordSlug}.webp
+ * @param {string} word English vocabulary word
+ * @param {string} topicSlug Topic category slug (e.g., 'pets-farm-animals', 'colors')
+ * @param {string} [imageSource='ai_refined'] Image generation source ('ai_refined' or 'unsplash')
+ * @param {boolean} [force=false] Force overwrite existing file (bypass disk cache)
+ * @returns {Promise<string>} Local relative URL /uploads/images/{topicSlug}/{wordSlug}.webp
  */
 export async function downloadAndConvertKidImage(word, topicSlug = 'general', imageSource = 'ai_refined', force = false) {
   const safeTopic = slugify(topicSlug);
@@ -159,12 +159,12 @@ export async function downloadAndConvertKidImage(word, topicSlug = 'general', im
   const filePath = path.join(topicImagesDir, filename);
   const publicUrl = `/uploads/images/${safeTopic}/${filename}`;
 
-  // NẾU KHÔNG FORCE VÀ FILE ĐÃ TỒN TẠI HỢP LỆ TRÊN ĐĨA -> DÙNG CACHE
+  // IF NOT FORCED AND FILE ALREADY EXISTS VALID ON DISK -> REUSE CACHE
   if (!force && fs.existsSync(filePath) && fs.statSync(filePath).size > 1024) {
     return publicUrl;
   }
 
-  // Khi force === true hoặc file chưa có: Bắt buộc lấy nguồn ảnh mới và tải ghi đè
+  // When force === true or file does not exist: fetch new source and overwrite
   let sourceImageUrl = '';
 
   if (imageSource === 'unsplash') {
@@ -178,6 +178,6 @@ export async function downloadAndConvertKidImage(word, topicSlug = 'general', im
     return publicUrl;
   }
 
-  // Fallback nếu không tải được file cục bộ: trả về online URL
+  // Fallback if local download fails: return online URL
   return sourceImageUrl;
 }

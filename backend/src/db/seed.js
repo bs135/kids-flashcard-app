@@ -12,9 +12,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const baseUploadsDir = path.resolve(__dirname, '../../uploads');
 
-console.log('🌱 Đang nạp dữ liệu và kiểm tra (Pre-generation / Cache check) media cho 8 chủ đề và 115 thẻ...');
+console.log('🌱 Populating database and verifying media assets for 8 topics and 115 standard cards...');
 
-// 1. Danh sách 8 chủ đề (Topics) chuẩn hóa theo slug
+// 1. List of 8 standardized topics by slug
 export const topics = [
   {
     id: 'colors',
@@ -1153,7 +1153,7 @@ export const rawFlashcards = [
 ];
 
 /**
- * Kiểm tra xem tệp media (ảnh webp / audio mp3) đã có trên đĩa cứng chưa
+ * Checks whether a media asset (WebP image / MP3 audio) exists locally on disk
  */
 function checkLocalMediaFile(type, topicSlug, wordSlug) {
   const ext = type === 'image' ? 'webp' : 'mp3';
@@ -1171,9 +1171,9 @@ function checkLocalMediaFile(type, topicSlug, wordSlug) {
 }
 
 export async function seedData() {
-  console.log(`\n📌 1. Nạp và đồng bộ ${topics.length} Chủ Đề (Topics) vào CSDL SQLite...`);
+  console.log(`\n📌 1. Populating and synchronizing ${topics.length} topics in SQLite database...`);
 
-  // 1. Chèn danh mục chủ đề
+  // 1. Insert topics
   const insertTopic = db.prepare(`
     INSERT INTO topics (id, name_en, name_vi, icon, color_theme, display_order)
     VALUES (@id, @name_en, @name_vi, @icon, @color_theme, @display_order)
@@ -1194,9 +1194,9 @@ export async function seedData() {
     insertTopic.run(topic);
     insertTopicProgress.run(topic.id);
   }
-  console.log(`✅ Đã đồng bộ ${topics.length} chủ đề thành công.`);
+  console.log(`✅ Synchronized ${topics.length} topics successfully.`);
 
-  // 2. Chuẩn bị câu lệnh UPSERT Flashcard để nạp chính xác, tránh trùng lặp
+  // 2. Prepare UPSERT statement to prevent duplicates
   const upsertCard = db.prepare(`
     INSERT INTO flashcards (topic_id, word, phonetic, meaning_vi, example_en, example_vi, image_url, audio_url, difficulty, is_custom)
     VALUES (@topic_id, @word, @phonetic, @meaning_vi, @example_en, @example_vi, @image_url, @audio_url, @difficulty, 0)
@@ -1211,7 +1211,7 @@ export async function seedData() {
       is_custom = 0
   `);
 
-  console.log(`\n📦 2. Kiểm tra tài nguyên & Nạp ${rawFlashcards.length} thẻ từ vựng vào CSDL...`);
+  console.log(`\n📦 2. Verifying media assets & populating ${rawFlashcards.length} vocabulary cards...`);
 
   let reusedImageCount = 0;
   let downloadedImageCount = 0;
@@ -1223,27 +1223,27 @@ export async function seedData() {
     const topicSlug = slugify(card.topic_id);
     const wordSlug = slugify(card.word);
 
-    // A. Kiểm tra và tối ưu tải File Hình ảnh (.webp)
+    // A. Check and fetch image file (.webp)
     let imageUrl = checkLocalMediaFile('image', topicSlug, wordSlug);
     if (imageUrl) {
       reusedImageCount++;
     } else {
-      console.log(`[${i + 1}/${rawFlashcards.length}] 🖼️ Tải mới ảnh cho: "${card.word}" (${topicSlug})...`);
+      console.log(`[${i + 1}/${rawFlashcards.length}] 🖼️ Downloading image for: "${card.word}" (${topicSlug})...`);
       imageUrl = await downloadAndConvertKidImage(card.word, topicSlug);
       downloadedImageCount++;
     }
 
-    // B. Kiểm tra và tối ưu tải File Âm thanh (.mp3)
+    // B. Check and generate audio file (.mp3)
     let audioUrl = checkLocalMediaFile('audio', topicSlug, wordSlug);
     if (audioUrl) {
       reusedAudioCount++;
     } else {
-      console.log(`[${i + 1}/${rawFlashcards.length}] 🔊 Sinh âm thanh TTS mới cho: "${card.word}" (${topicSlug})...`);
+      console.log(`[${i + 1}/${rawFlashcards.length}] 🔊 Synthesizing TTS audio for: "${card.word}" (${topicSlug})...`);
       audioUrl = await downloadWordAudio(card.word, topicSlug);
       downloadedAudioCount++;
     }
 
-    // C. Lưu/Cập nhật vào SQLite
+    // C. Save or update record in SQLite
     upsertCard.run({
       ...card,
       image_url: imageUrl,
@@ -1251,37 +1251,36 @@ export async function seedData() {
     });
 
     if ((i + 1) % 15 === 0 || i + 1 === rawFlashcards.length) {
-      console.log(`   ⏳ Tiến độ: [${i + 1}/${rawFlashcards.length}] từ đã xử lý.`);
+      console.log(`   ⏳ Progress: [${i + 1}/${rawFlashcards.length}] cards processed.`);
     }
   }
 
-  // Dọn dẹp các bản ghi cũ không còn nằm trong danh sách chuẩn (nếu có topic lạ)
+  // Clean up legacy records not belonging to recognized topics
   const validTopicIds = topics.map(t => `'${t.id}'`).join(',');
   db.prepare(`DELETE FROM flashcards WHERE topic_id NOT IN (${validTopicIds})`).run();
   db.prepare(`DELETE FROM topics WHERE id NOT IN (${validTopicIds})`).run();
   db.prepare(`DELETE FROM topic_progress WHERE topic_id NOT IN (${validTopicIds})`).run();
 
-  // 3. Báo cáo thống kê
+  // 3. Statistical summary report
   const totalTopicsInDb = db.prepare('SELECT count(*) as count FROM topics').get().count;
   const totalCardsInDb = db.prepare('SELECT count(*) as count FROM flashcards').get().count;
   const cardsGrouped = db.prepare('SELECT topic_id, count(*) as count FROM flashcards GROUP BY topic_id ORDER BY count DESC').all();
 
   console.log('\n================================================================');
-  console.log('🎉 BÁO CÁO KẾT QUẢ NẠP DỮ LIỆU SEED VÀO SQLITE DATABASE');
+  console.log('🎉 SEED DATA IMPORT & SYNC REPORT');
   console.log('================================================================');
-  console.log(`- Tổng số Chủ đề (Topics) trong DB:   ${totalTopicsInDb}`);
-  console.log(`- Tổng số Thẻ từ vựng (Cards) trong DB: ${totalCardsInDb}`);
-  console.log(`- Hình ảnh: Đã tái sử dụng ${reusedImageCount} file, Sinh mới ${downloadedImageCount} file.`);
-  console.log(`- Âm thanh: Đã tái sử dụng ${reusedAudioCount} file, Sinh mới ${downloadedAudioCount} file.`);
-  console.log('\nChi tiết số lượng thẻ theo từng chủ đề:');
+  console.log(`- Total Topics in DB:       ${totalTopicsInDb}`);
+  console.log(`- Total Flashcards in DB:   ${totalCardsInDb}`);
+  console.log(`- Images: Reused ${reusedImageCount} files, Generated ${downloadedImageCount} new files.`);
+  console.log(`- Audio:  Reused ${reusedAudioCount} files, Generated ${downloadedAudioCount} new files.`);
+  console.log('\nFlashcard breakdown by topic:');
   cardsGrouped.forEach(g => {
-    console.log(`  + ${g.topic_id.padEnd(20)}: ${g.count} thẻ`);
+    console.log(`  + ${g.topic_id.padEnd(20)}: ${g.count} cards`);
   });
   console.log('================================================================\n');
 }
 
 seedData().catch(err => {
-  console.error('❌ Lỗi khi nạp dữ liệu:', err);
+  console.error('❌ Error during seed import:', err);
   process.exit(1);
 });
-

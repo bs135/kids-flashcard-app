@@ -38,7 +38,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
   const [selectedTopicId, setSelectedTopicId] = useState(topics[0]?.id || '');
   const [isCreatingNewTopic, setIsCreatingNewTopic] = useState(false);
 
-  // Cấu hình hệ thống (Feature Flags & Rate Limit Quota)
+  // System configuration (Feature Flags & Rate Limit Quota)
   const [sysConfig, setSysConfig] = useState({
     imageAiEnabled: false,
     flashcardAiEnabled: true,
@@ -47,27 +47,27 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
     usedQuota: 0
   });
 
-  // Form tạo Topic mới
+  // Form for creating new Topic
   const [newTopicNameEn, setNewTopicNameEn] = useState('');
   const [newTopicNameVi, setNewTopicNameVi] = useState('');
   const [newTopicIcon, setNewTopicIcon] = useState('🍎');
   const [newTopicColor, setNewTopicColor] = useState('amber');
 
-  // Input từ vựng và tùy chọn nguồn ảnh
+  // Word input and image source options
   const [wordInput, setWordInput] = useState('');
   const [imageSource, setImageSource] = useState('ai_refined'); // 'ai_refined' | 'unsplash'
   const [isGenerating, setIsGenerating] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
   const [error, setError] = useState('');
 
-  // Danh sách thẻ hiện tại của chủ đề đã chọn
+  // Cards list of currently selected topic
   const [topicCards, setTopicCards] = useState([]);
   const [isLoadingCards, setIsLoadingCards] = useState(false);
 
-  // Loading state cho việc regenerate từng thẻ cụ thể: { [cardId]: boolean }
+  // Loading state for regenerating a specific card: { [cardId]: boolean }
   const [regeneratingCardIds, setRegeneratingCardIds] = useState({});
 
-  // State Modal chỉnh sửa thẻ thủ công
+  // State for manual card editing modal
   const [editingCard, setEditingCard] = useState(null);
   const [editWord, setEditWord] = useState('');
   const [editPhonetic, setEditPhonetic] = useState('');
@@ -78,23 +78,23 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editModalError, setEditModalError] = useState('');
 
-  // State Modal xác nhận xóa thẻ tự tạo
+  // State for custom card deletion confirmation modal
   const [deletingCard, setDeletingCard] = useState(null);
   const [isDeletingCard, setIsDeletingCard] = useState(false);
   const [deleteModalError, setDeleteModalError] = useState('');
 
-  // Upload ảnh thủ công
+  // Manual image upload
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [previewImageSrc, setPreviewImageSrc] = useState('');
   const fileInputRef = useRef(null);
 
-  // Tải cấu hình hệ thống khi mở trang Admin
+  // Fetch system configuration upon loading Admin panel
   const loadSystemConfig = async () => {
     try {
       const cfg = await fetchSystemConfig();
       setSysConfig(cfg);
     } catch (e) {
-      console.warn('Lỗi lấy system config:', e);
+      console.warn('Failed to load system config:', e);
     }
   };
 
@@ -102,7 +102,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
     loadSystemConfig();
   }, []);
 
-  // Tải danh sách thẻ khi chọn chủ đề
+  // Load cards when topic is selected
   const loadCardsForSelectedTopic = async (topicId) => {
     if (!topicId) return;
     try {
@@ -110,7 +110,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
       const res = await fetchTopicCards(topicId);
       setTopicCards(res.cards || []);
     } catch (e) {
-      console.error('Lỗi tải thẻ cho chủ đề:', e);
+      console.error('Error loading cards for topic:', e);
     } finally {
       setIsLoadingCards(false);
     }
@@ -122,7 +122,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
     }
   }, [selectedTopicId]);
 
-  // Xử lý tạo chủ đề mới
+  // Handle creating a new topic
   const handleCreateTopic = async (e) => {
     e.preventDefault();
     if (!newTopicNameEn.trim() || !newTopicNameVi.trim()) {
@@ -147,7 +147,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
     }
   };
 
-  // Xử lý sinh thẻ hàng loạt bằng AI với nguồn ảnh lựa chọn
+  // Handle batch flashcard generation via AI with selected image source
   const handleGenerate = async () => {
     if (!selectedTopicId) {
       setError('Vui lòng chọn một chủ đề');
@@ -169,7 +169,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
       return;
     }
 
-    // Kiểm tra quota còn lại nếu có rate limit
+    // Check remaining quota if rate limit is active
     if (sysConfig.rateLimit > 0 && wordsList.length > sysConfig.remainingQuota) {
       setError(`Bạn chỉ còn ${sysConfig.remainingQuota} lượt tạo hôm nay, nhưng đã nhập ${wordsList.length} từ. Vui lòng giảm bớt số lượng từ!`);
       return;
@@ -187,7 +187,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
       setWordInput('');
       setProgressMsg(`Thành công! Đã tạo và lưu ${result.cards?.length || 0} thẻ vào bộ nhớ.`);
 
-      // Làm mới lại quota và danh sách thẻ
+      // Refresh quota and card list
       await Promise.all([
         loadCardsForSelectedTopic(selectedTopicId),
         loadSystemConfig()
@@ -203,7 +203,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
     }
   };
 
-  // Xử lý tạo lại ảnh cho một thẻ đơn lẻ
+  // Handle regenerating image for a single card
   const handleRegenerateImage = async (card) => {
     if (!card?.id) return;
     const cardId = card.id;
@@ -230,7 +230,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
     }
   };
 
-  // Mở Modal chỉnh sửa thẻ
+  // Open edit modal
   const handleOpenEditModal = (card) => {
     soundEffects.playPop();
     setEditingCard(card);
@@ -244,14 +244,14 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
     setEditModalError('');
   };
 
-  // Đóng Modal chỉnh sửa
+  // Close edit modal
   const handleCloseEditModal = () => {
     setEditingCard(null);
     setPreviewImageSrc('');
     setEditModalError('');
   };
 
-  // Lưu thông tin chỉnh sửa thẻ
+  // Save edited card info
   const handleSaveCardEdit = async (e) => {
     e.preventDefault();
     if (!editingCard?.id) return;
@@ -276,7 +276,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
 
       soundEffects.playStar();
 
-      // Cập nhật state topicCards cục bộ
+      // Update local topicCards state
       setTopicCards(prev =>
         prev.map(c => (c.id === editingCard.id ? { ...c, ...res.card } : c))
       );
@@ -290,19 +290,19 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
     }
   };
 
-  // Upload ảnh thủ công từ máy tính
+  // Upload image manually from device
   const handleManualImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !editingCard?.id) return;
 
-    // Kiểm tra định dạng
+    // Validate image MIME type
     const allowed = ['image/png', 'image/jpeg', 'image/webp'];
     if (!allowed.includes(file.type)) {
       setEditModalError('Vui lòng chọn file ảnh đúng định dạng PNG, JPG, JPEG hoặc WEBP');
       return;
     }
 
-    // Hiển thị preview ngay lập tức
+    // Immediate preview
     const objectUrl = URL.createObjectURL(file);
     setPreviewImageSrc(objectUrl);
 
@@ -314,7 +314,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
       const res = await uploadCardImage(editingCard.id, file);
       soundEffects.playStar();
 
-      // Cập nhật URL ảnh mới
+      // Update image URL
       setEditImageUrl(res.image_url);
       setTopicCards(prev =>
         prev.map(c => (c.id === editingCard.id ? { ...c, image_url: res.image_url } : c))
@@ -328,20 +328,20 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
     }
   };
 
-  // Mở modal xác nhận xóa thẻ
+  // Open delete modal
   const handleOpenDeleteModal = (card) => {
     soundEffects.playPop();
     setDeletingCard(card);
     setDeleteModalError('');
   };
 
-  // Đóng modal xóa thẻ
+  // Close delete modal
   const handleCloseDeleteModal = () => {
     setDeletingCard(null);
     setDeleteModalError('');
   };
 
-  // Xác nhận và thực hiện xóa thẻ
+  // Confirm and execute card deletion
   const handleConfirmDelete = async () => {
     if (!deletingCard?.id) return;
 
@@ -352,7 +352,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
       await deleteCard(deletingCard.id);
       soundEffects.playStar();
 
-      // Cập nhật danh sách thẻ trên UI ngay lập tức
+      // Update card list on UI immediately
       setTopicCards(prev => prev.filter(c => c.id !== deletingCard.id));
 
       handleCloseDeleteModal();
@@ -391,7 +391,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* CỘT TRÁI: CHỌN / TẠO CHỦ ĐỀ */}
+        {/* LEFT COLUMN: SELECT / CREATE TOPIC */}
         <div className="bg-white rounded-3xl p-6 border-2 border-slate-200 shadow-sm h-fit space-y-4">
           <h3 className="text-lg font-bold text-slate-800 font-kids flex items-center justify-between">
             <span>1. Chọn Chủ Đề</span>
@@ -491,9 +491,9 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
           )}
         </div>
 
-        {/* CỘT PHẢI: TẠO THẺ & QUẢN LÝ DANH SÁCH THẺ CỦA CHỦ ĐỀ */}
+        {/* RIGHT COLUMN: GENERATE FLASHCARDS & MANAGE TOPIC CARDS */}
         <div className="lg:col-span-2 space-y-6">
-          {/* KHỐI 1: NHẬP TỪ & SINH AI */}
+          {/* BLOCK 1: WORD INPUT & AI GENERATION */}
           <div className="bg-white rounded-3xl p-6 border-2 border-slate-200 shadow-sm space-y-5">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -502,7 +502,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                   <span>2. Tự Động Sinh Thẻ Mới Bằng AI</span>
                 </h3>
 
-                {/* BADGE FEATURE FLAG & RATE LIMIT */}
+                {/* FEATURE FLAG & RATE LIMIT BADGE */}
                 <div className="flex items-center gap-2">
                   {!sysConfig.flashcardAiEnabled ? (
                     <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200">
@@ -521,7 +521,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                 </div>
               </div>
 
-              {/* BỘ CHỌN NGUỒN ẢNH HOẶC THÔNG BÁO CHẾ ĐỘ THỦ CÔNG */}
+              {/* IMAGE SOURCE SELECTOR OR MANUAL MODE BANNER */}
               {sysConfig.imageAiEnabled ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div
@@ -630,7 +630,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
             </button>
           </div>
 
-          {/* KHỐI 2: DANH SÁCH THẺ CỦA CHỦ ĐỀ VÀ TÍNH NĂNG CHỈNH SỬA / UPLOAD ẢNH */}
+          {/* BLOCK 2: TOPIC CARDS LIST & EDIT / UPLOAD ACTIONS */}
           <div className="bg-white rounded-3xl p-6 border-2 border-slate-200 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-base font-bold text-slate-800 font-kids flex items-center gap-2">
@@ -666,7 +666,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                       key={card.id || idx}
                       className="flex items-center gap-3 p-3 bg-slate-50 hover:bg-amber-50/50 rounded-2xl border border-slate-200 transition-all group"
                     >
-                      {/* Vùng ảnh */}
+                      {/* Image container */}
                       <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-300 bg-white flex-shrink-0">
                         <img
                           src={card.image_url?.includes('?') ? card.image_url : `${card.image_url}?t=${Date.now()}`}
@@ -680,16 +680,16 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                         )}
                       </div>
 
-                      {/* Nội dung từ & các nút hành động */}
+                      {/* Word info and action buttons */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-black text-slate-800 text-base truncate" title={card.word}>
                             {card.word}
                           </span>
 
-                          {/* Các nút tương tác: Sửa, Xóa/Khóa, Đổi ảnh AI, Nghe */}
+                          {/* Action buttons: Edit, Delete/Lock, AI Regenerate, Speak */}
                           <div className="flex items-center gap-1 shrink-0">
-                            {/* Nút Chỉnh sửa thủ công */}
+                            {/* Manual Edit button */}
                             <button
                               onClick={() => handleOpenEditModal(card)}
                               className="p-1.5 rounded-full hover:bg-amber-200 text-amber-800 transition-transform active:scale-90"
@@ -698,7 +698,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
 
-                            {/* Thẻ do người dùng tự tạo: Nút Xóa (Trash đỏ); Thẻ hệ thống: Icon Ổ khóa (Lock) */}
+                            {/* User custom card: Delete button (Trash); System card: Lock icon */}
                             {card.is_custom === 1 ? (
                               <button
                                 onClick={() => handleOpenDeleteModal(card)}
@@ -716,7 +716,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                               </div>
                             )}
 
-                            {/* Nút Tạo lại ảnh AI (chỉ hiển thị khi imageAiEnabled = true) */}
+                            {/* AI Regenerate Image button (only shown when imageAiEnabled = true) */}
                             {sysConfig.imageAiEnabled && (
                               <button
                                 onClick={() => handleRegenerateImage(card)}
@@ -728,7 +728,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                               </button>
                             )}
 
-                            {/* Nút Nghe phát âm */}
+                            {/* Pronunciation button */}
                             <button
                               onClick={() => speakWord(card.word, card.audio_url)}
                               className="p-1.5 rounded-full hover:bg-sky-200 text-sky-700 transition-transform active:scale-90"
@@ -751,7 +751,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
         </div>
       </div>
 
-      {/* ==================== MODAL CHỈNH SỬA THẺ & TẢI ẢNH THỦ CÔNG ==================== */}
+      {/* ==================== MODAL: CARD EDIT & MANUAL IMAGE UPLOAD ==================== */}
       <AnimatePresence>
         {editingCard && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -761,7 +761,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border-4 border-amber-300 max-h-[90vh] overflow-y-auto space-y-5 relative"
             >
-              {/* Nút đóng modal */}
+              {/* Close modal button */}
               <button
                 onClick={handleCloseEditModal}
                 className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
@@ -784,7 +784,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                 </div>
               </div>
 
-              {/* KHU VỰC UPLOAD HÌNH ẢNH THỦ CÔNG */}
+              {/* MANUAL IMAGE UPLOAD SECTION */}
               <div className="bg-slate-50 p-4 rounded-2xl border-2 border-dashed border-slate-300 flex items-center gap-4">
                 <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-amber-300 bg-white shadow-sm flex-shrink-0">
                   <img
@@ -823,7 +823,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                 </div>
               </div>
 
-              {/* FORM CHỈNH SỬA CÁC TRƯỜNG DỮ LIỆU */}
+              {/* FIELD EDITING FORM */}
               <form onSubmit={handleSaveCardEdit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -937,7 +937,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
         )}
       </AnimatePresence>
 
-      {/* ==================== MODAL XÁC NHẬN XÓA THẺ TỰ TẠO ==================== */}
+      {/* ==================== MODAL: CONFIRM DELETE CUSTOM CARD ==================== */}
       <AnimatePresence>
         {deletingCard && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">

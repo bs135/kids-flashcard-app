@@ -2,8 +2,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 /**
- * Service kết nối Gemini API để sinh thông tin Flashcards dành cho trẻ em:
- * Trả về: word, phonetic (IPA), meaning_vi (nghĩa đơn giản), example_en, example_vi
+ * Service connecting to Gemini API to generate kid-tailored flashcard metadata:
+ * Returns: word, phonetic (IPA), meaning_vi (simple definition), example_en, example_vi
  */
 export async function generateVocabularyData(words = []) {
   if (!Array.isArray(words) || words.length === 0) {
@@ -12,21 +12,21 @@ export async function generateVocabularyData(words = []) {
 
   const apiKey = process.env.GEMINI_API_KEY;
 
-  // Nếu có GEMINI_API_KEY, gọi Gemini API 2.0 / 1.5 Flash
+  // If GEMINI_API_KEY is present, query Gemini API
   if (apiKey) {
     try {
       const prompt = `
-Bạn là chuyên gia sư phạm tiếng Anh cho trẻ em mầm non và tiểu học.
-Hãy phân tích danh sách các từ vựng tiếng Anh sau: ${JSON.stringify(words)}.
+You are an expert pedagogical English instructor for preschool and elementary school children.
+Analyze the following English vocabulary word list: ${JSON.stringify(words)}.
 
-Trả về duy nhất một mảng JSON (không có markdown backticks, không kèm văn bản thừa) với cấu trúc từng phần tử:
+Return strictly a JSON array (without markdown backticks or redundant commentary) following this structure:
 [
   {
-    "word": "từ vựng (viết hoa chữ cái đầu)",
-    "phonetic": "phiên âm IPA chuẩn quốc tế (VD: /ˈel.ɪ.fənt/)",
-    "meaning_vi": "nghĩa tiếng Việt ngắn gọn, dễ hiểu, thân thiện nhất cho trẻ em (VD: con voi, màu đỏ, quả chuối)",
-    "example_en": "câu ví dụ tiếng Anh đơn giản, sinh động, dễ thương (tối đa 8 từ)",
-    "example_vi": "dịch câu ví dụ sang tiếng Việt tự nhiên cho bé"
+    "word": "Vocabulary word (Capitalized first letter)",
+    "phonetic": "Standard international IPA phonetics (e.g., /ˈel.ɪ.fənt/)",
+    "meaning_vi": "Concise, simple, kid-friendly Vietnamese definition (e.g., con voi, màu đỏ, quả chuối)",
+    "example_en": "Simple, charming, vivid English example sentence (max 8 words)",
+    "example_vi": "Natural Vietnamese translation of the example sentence for children"
   }
 ]
 `;
@@ -54,21 +54,21 @@ Trả về duy nhất một mảng JSON (không có markdown backticks, không k
           }
         }
       } else {
-        console.warn(`[Gemini API] Request thất bại (HTTP ${response.status}), chuyển sang fallback engine.`);
+        console.warn(`[Gemini API] Request failed (HTTP ${response.status}), falling back to offline dictionary engine.`);
       }
     } catch (apiError) {
-      console.warn(`[Gemini API] Lỗi kết nối (${apiError.message}), chuyển sang fallback dictionary.`);
+      console.warn(`[Gemini API] Connection error (${apiError.message}), falling back to dictionary engine.`);
     }
   }
 
-  // Fallback Engine thông minh (Dictionary + Smart Translation) khi chưa có API Key hoặc mạng lỗi
+  // Fallback Engine (FreeDictionary + Smart Translation) when API key is missing or offline
   return await fallbackVocabularyFetcher(words);
 }
 
 /**
- * Gemini Prompt Refiner: Tinh chỉnh mô tả bối cảnh tự nhiên, chi tiết và nghiêm ngặt
- * phục vụ cho việc sinh ảnh AI hoạt hình cho trẻ em qua Pollinations.ai.
- * Ví dụ: "Dolphin" -> "a friendly cartoon dolphin swimming happily in blue sparkling ocean water, full body, clean anatomy, smiling, simple white background, no human"
+ * Gemini Prompt Refiner: Refines natural, detailed, and strict context descriptions
+ * for child cartoon AI image generation via Pollinations.ai.
+ * Example: "Dolphin" -> "a friendly cartoon dolphin swimming happily in blue sparkling ocean water, full body, clean anatomy, smiling, simple white background, no human"
  */
 export async function refineImagePromptWithGemini(word, category = '') {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -77,14 +77,14 @@ export async function refineImagePromptWithGemini(word, category = '') {
   if (apiKey) {
     try {
       const prompt = `
-Bạn là chuyên gia thiết kế hình ảnh hoạt hình 3D Pixar/Disney dành riêng cho flashcard trẻ em.
-Hãy tạo MỘT câu mô tả chi tiết bằng tiếng Anh (prompt) cho từ vựng: "${cleanWord}" (Chủ đề: "${category}").
+You are a 3D Pixar/Disney style cartoon graphic designer specializing in educational flashcards for children.
+Create ONE detailed English prompt for vocabulary word: "${cleanWord}" (Topic: "${category}").
 
-Yêu cầu nghiêm ngặt:
-1. Phong cách: cute vibrant 3D cartoon Pixar animation style for toddlers and kids.
-2. Mô tả rõ hành động hoặc bối cảnh tự nhiên dễ thương (VD: "a friendly cartoon dolphin swimming gracefully in clear turquoise ocean water, full body, clean anatomy").
-3. Thêm các từ khóa an toàn: "centered, full body, crisp details, simple clean white or soft pastel background, no human, no extra limbs, high quality".
-4. Chỉ trả về duy nhất 1 câu prompt tiếng Anh, không thừa bất kỳ từ nào khác.
+Strict requirements:
+1. Style: cute vibrant 3D cartoon Pixar animation style for toddlers and kids.
+2. Clearly depict natural action or charming context (e.g. "a friendly cartoon dolphin swimming gracefully in clear turquoise ocean water, full body, clean anatomy").
+3. Safety keywords: "centered, full body, crisp details, simple clean white or soft pastel background, no human, no extra limbs, high quality".
+4. Output strictly one single English prompt sentence without extra words.
 `;
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
@@ -107,16 +107,16 @@ Yêu cầu nghiêm ngặt:
         }
       }
     } catch (err) {
-      console.warn(`[Gemini Prompt Refiner] Lỗi gọi Gemini: ${err.message}, dùng fallback template.`);
+      console.warn(`[Gemini Prompt Refiner] Gemini call failed: ${err.message}, using fallback template.`);
     }
   }
 
-  // Fallback template khi không có API key
+  // Fallback template when API key is absent
   return `a cute friendly cartoon ${cleanWord} in natural cheerful scene, 3d pixar style, colorful, full body, centered, simple clean background, no human, crisp details`;
 }
 
 /**
- * Fallback engine tự động tra IPA từ FreeDictionary và sinh câu tiếng Việt đơn giản
+ * Fallback engine querying IPA from FreeDictionary and generating simple Vietnamese sentences
  */
 async function fallbackVocabularyFetcher(words) {
   const results = [];
@@ -152,7 +152,7 @@ async function fallbackVocabularyFetcher(words) {
         }
       }
     } catch (e) {
-      // Bỏ qua lỗi timeout dictionary
+      // Silently skip dictionary timeout errors
     }
 
     results.push({

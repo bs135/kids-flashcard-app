@@ -5,7 +5,7 @@ import confetti from 'canvas-confetti';
 import { soundEffects } from '../services/soundEffects';
 
 export default function VirtualPetModal({ isOpen, onClose, stars = 0, onUpdateStars }) {
-  // Trạng thái thú cưng lưu trữ trong localStorage
+  // Pet state stored in localStorage
   const [petData, setPetData] = useState(() => {
     try {
       const saved = localStorage.getItem('kids_pet_data');
@@ -22,7 +22,7 @@ export default function VirtualPetModal({ isOpen, onClose, stars = 0, onUpdateSt
   const [dinoAction, setDinoAction] = useState('idle'); // 'idle' | 'eating' | 'celebrating'
   const [speechBubble, setSpeechBubble] = useState('Chào bé! Dino đang đói bụng nè~');
 
-  // Lưu petData vào localStorage
+  // Persist petData into localStorage
   useEffect(() => {
     try {
       localStorage.setItem('kids_pet_data', JSON.stringify(petData));
@@ -41,7 +41,7 @@ export default function VirtualPetModal({ isOpen, onClose, stars = 0, onUpdateSt
     } catch (e) {}
   };
 
-  // Xử lý khi cho Dino ăn
+  // Handle feeding Dino
   const handleFeed = (cost, hungerBoost, foodName) => {
     if (stars < cost) {
       soundEffects.playWrong();
@@ -49,11 +49,11 @@ export default function VirtualPetModal({ isOpen, onClose, stars = 0, onUpdateSt
       return;
     }
 
-    // Trừ sao vàng
+    // Deduct stars
     onUpdateStars(-cost);
     soundEffects.playNomNom();
 
-    // Cập nhật chỉ số đói & cấp độ
+    // Update hunger & level
     let newHunger = petData.hunger + hungerBoost;
     let newLevel = petData.level;
     let leveledUp = false;
@@ -99,7 +99,7 @@ export default function VirtualPetModal({ isOpen, onClose, stars = 0, onUpdateSt
         exit={{ scale: 0.85, opacity: 0 }}
         className="relative w-full max-w-md bg-gradient-to-b from-emerald-50 via-teal-50 to-white rounded-3xl border-4 border-emerald-300 shadow-2xl p-6 overflow-hidden select-none"
       >
-        {/* Nút đóng */}
+        {/* Close button */}
         <button
           onClick={() => {
             soundEffects.playPop();
@@ -110,7 +110,7 @@ export default function VirtualPetModal({ isOpen, onClose, stars = 0, onUpdateSt
           <X className="w-5 h-5 stroke-[2.5]" />
         </button>
 
-        {/* Tiêu đề Modal */}
+        {/* Modal title */}
         <div className="text-center mb-2">
           <div className="inline-flex items-center gap-1.5 bg-emerald-100 border border-emerald-300 px-3 py-1 rounded-full text-emerald-800 font-bold text-xs shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
@@ -121,13 +121,13 @@ export default function VirtualPetModal({ isOpen, onClose, stars = 0, onUpdateSt
           </h3>
         </div>
 
-        {/* Bong bóng hội thoại của Dino */}
+        {/* Dino speech bubble */}
         <div className="relative mx-auto my-3 max-w-xs bg-white border-2 border-emerald-300 rounded-2xl p-3 shadow-md text-center text-emerald-900 font-bold text-sm">
           {speechBubble}
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-r-2 border-b-2 border-emerald-300 rotate-45" />
         </div>
 
-        {/* Linh vật Dino hoạt họa */}
+        {/* Dino mascot animation */}
         <div className="relative flex flex-col items-center justify-center py-4">
           <div className="absolute w-44 h-44 rounded-full bg-emerald-200/50 filter blur-xl animate-pulse" />
           <motion.div
@@ -157,7 +157,7 @@ export default function VirtualPetModal({ isOpen, onClose, stars = 0, onUpdateSt
           </div>
         </div>
 
-        {/* Thanh Chỉ Số: Độ No & Hạnh Phúc */}
+        {/* Status bars: Hunger & Happiness */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl border-2 border-emerald-200 p-3.5 space-y-2.5 shadow-sm mb-4">
           <div>
             <div className="flex justify-between items-center text-xs font-bold text-slate-600 mb-1">
@@ -191,7 +191,7 @@ export default function VirtualPetModal({ isOpen, onClose, stars = 0, onUpdateSt
           </div>
         </div>
 
-        {/* Menu Thức Ăn */}
+        {/* Feeding menu */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-black text-slate-700 uppercase tracking-wider">

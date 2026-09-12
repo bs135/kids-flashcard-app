@@ -19,7 +19,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
   const [isWon, setIsWon] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
-  // Tải danh sách thẻ theo chủ đề
+  // Load cards for selected topic
   useEffect(() => {
     async function loadTopicCards() {
       try {
@@ -31,13 +31,13 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
           initBoard(list);
         }
       } catch (e) {
-        console.error('Lỗi khi tải thẻ cho Memory Game:', e);
+        console.error('Error loading cards for Memory Game:', e);
       }
     }
     loadTopicCards();
   }, [selectedTopicId]);
 
-  // Khởi tạo bàn cờ (chọn 4-6 cặp = 8 hoặc 12 thẻ)
+  // Initialize board (pick 4-6 pairs = 8 or 12 cards)
   const initBoard = (pool) => {
     if (!pool || pool.length < 4) return;
 
@@ -48,15 +48,15 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
     setIsWon(false);
     setIsChecking(false);
 
-    // Chọn ngẫu nhiên 6 thẻ (hoặc tối đa số thẻ có sẵn)
+    // Pick 6 random cards (or maximum available)
     const shuffledPool = [...pool].sort(() => 0.5 - Math.random());
     const pairCount = Math.min(6, shuffledPool.length);
     const selectedPairs = shuffledPool.slice(0, pairCount);
 
-    // Mỗi thẻ nhân đôi: 1 thẻ Hình Ảnh và 1 thẻ Từ Vựng
+    // Duplicate each card into: 1 Image card and 1 Word card
     const board = [];
     selectedPairs.forEach((item) => {
-      // Thẻ Hình Ảnh
+      // Image Card
       board.push({
         uniqueKey: `${item.id}-image`,
         cardId: item.id,
@@ -67,7 +67,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
         audio_url: item.audio_url
       });
 
-      // Thẻ Từ Vựng
+      // Word Card
       board.push({
         uniqueKey: `${item.id}-word`,
         cardId: item.id,
@@ -79,12 +79,12 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
       });
     });
 
-    // Xáo trộn vị trí các thẻ trên bàn cờ
+    // Shuffle cards on board
     const shuffledBoard = board.sort(() => 0.5 - Math.random());
     setGameCards(shuffledBoard);
   };
 
-  // Xử lý khi bé lật 1 thẻ
+  // Handle kid clicking a card
   const handleCardClick = (index) => {
     if (isChecking) return;
     if (flippedIndices.includes(index)) return;
@@ -97,7 +97,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
     const newFlipped = [...flippedIndices, index];
     setFlippedIndices(newFlipped);
 
-    // Nếu đã lật đủ 2 thẻ -> kiểm tra cặp trùng khớp
+    // If 2 cards are flipped -> check for match
     if (newFlipped.length === 2) {
       setMoves(prev => prev + 1);
       setIsChecking(true);
@@ -107,7 +107,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
       const cardB = gameCards[secondIdx];
 
       if (cardA.cardId === cardB.cardId && cardA.type !== cardB.type) {
-        // Ghép đúng!
+        // Matched!
         setTimeout(() => {
           soundEffects.playCorrect();
           speakWord(cardA.word, cardA.audio_url);
@@ -116,7 +116,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
             const next = new Set(prev);
             next.add(cardA.cardId);
 
-            // Kiểm tra chiến thắng (hoàn thành tất cả các cặp)
+            // Check victory condition (all pairs matched)
             if (next.size === gameCards.length / 2) {
               setTimeout(() => {
                 handleWinGame();
@@ -129,7 +129,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
           setIsChecking(false);
         }, 500);
       } else {
-        // Ghép sai -> rung lắc nhẹ và úp lại sau 1s
+        // Not a match -> shake gently and flip back after 1s
         setTimeout(() => {
           soundEffects.playWrong();
           setFlippedIndices([]);
@@ -139,11 +139,11 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
     }
   };
 
-  // Xử lý khi thắng màn
+  // Handle victory
   const handleWinGame = () => {
     setIsWon(true);
     soundEffects.playWin();
-    onEarnStar(5); // Thưởng lớn +5 Sao Vàng
+    onEarnStar(5); // Big reward: +5 Stars
     try {
       confetti({
         particleCount: 100,
@@ -155,7 +155,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 select-none">
-      {/* Thanh Tiêu đề & Điều hướng */}
+      {/* Header & Navigation bar */}
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => {
@@ -168,7 +168,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
           <span>Quay Lại</span>
         </button>
 
-        {/* Bộ chọn chủ đề */}
+        {/* Topic selector */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-slate-500 hidden sm:inline">Chủ đề:</span>
           <select
@@ -185,9 +185,9 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
         </div>
       </div>
 
-      {/* Vùng Bàn Cờ Thẻ Trí Nhớ */}
+      {/* Memory game board arena */}
       <div className="relative min-h-[520px] bg-gradient-to-b from-amber-50 via-orange-50 to-white rounded-3xl border-4 border-amber-300 shadow-bouncy overflow-hidden p-6 flex flex-col justify-between">
-        {/* Header Trong Game */}
+        {/* In-game header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 bg-white/90 border-2 border-amber-300 px-4 py-1.5 rounded-2xl shadow-sm">
             <span className="text-lg">🎯</span>
@@ -215,14 +215,14 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
           </motion.button>
         </div>
 
-        {/* Lưới các thẻ bài (3x4 hoặc 4x3) */}
+        {/* Card grid (3x4 or 4x3) */}
         {!isWon ? (
           <div className="grid grid-cols-[repeat(3,minmax(0,1fr))] sm:grid-cols-[repeat(4,minmax(0,1fr))] gap-3 sm:gap-4 my-auto w-full">
             {gameCards.map((card, index) => {
               const isFlipped = flippedIndices.includes(index) || matchedIds.has(card.cardId);
               const isMatched = matchedIds.has(card.cardId);
 
-              // Tính toán kích thước font chữ và kiểm tra từ đơn / từ ghép
+              // Calculate font size and check compound words
               const hasSpace = card.word ? card.word.includes(' ') : false;
               const wordLength = card.word ? card.word.length : 0;
               const wordFontSize = 
@@ -297,7 +297,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
             })}
           </div>
         ) : (
-          /* Màn chúc mừng chiến thắng */
+          /* Victory celebration screen */
           <div className="relative z-20 my-auto text-center py-8 animate-fade-in">
             <div className="text-7xl mb-3 animate-bounce">🎉</div>
             <h3 className="text-3xl sm:text-4xl font-black text-slate-800 font-kids mb-2">

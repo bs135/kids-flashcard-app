@@ -2,9 +2,9 @@ import db, { initDatabase } from './schema.js';
 
 initDatabase();
 
-console.log('🧹 Đang quét và dọn dẹp các thẻ flashcard bị trùng lặp...');
+console.log('🧹 Scanning and cleaning duplicate flashcard entries...');
 
-// Tìm và xóa các bản ghi trùng lặp (giữ lại bản ghi có ID lớn nhất)
+// Find and delete duplicate records (retaining the record with the highest ID)
 const cleanupResult = db.prepare(`
   DELETE FROM flashcards 
   WHERE id NOT IN (
@@ -14,8 +14,8 @@ const cleanupResult = db.prepare(`
   )
 `).run();
 
-console.log(`✅ Đã xóa ${cleanupResult.changes} thẻ bị trùng lặp!`);
+console.log(`✅ Removed ${cleanupResult.changes} duplicate cards.`);
 
-// Kiểm tra lại danh sách hiện tại
+// Inspect remaining list
 const remaining = db.prepare('SELECT id, topic_id, word FROM flashcards ORDER BY topic_id, id').all();
-console.log('📋 Danh sách thẻ sau khi dọn dẹp:', remaining);
+console.log('📋 Remaining flashcards after cleanup:', remaining);

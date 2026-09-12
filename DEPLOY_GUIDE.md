@@ -1,58 +1,58 @@
-# Hướng Dẫn Triển Khai Kids Flashcard App Lên VPS Linux (Production Ready)
+# Kids Flashcard App Linux VPS Deployment Guide (Production Ready)
 
-Tài liệu này hướng dẫn từng bước thiết lập và vận hành hệ thống **Kids Flashcard App** trên máy chủ ảo VPS (Ubuntu 22.04 LTS / 24.04 LTS) sử dụng **Docker**, **Docker Compose** và **Caddy Server** (Tự động cấp và gia hạn chứng chỉ bảo mật HTTPS/SSL qua Let's Encrypt).
-
----
-
-## 1. Yêu Cầu Hệ Thống & Chuẩn Bị Tên Miền
-
-### 1.1. Cấu hình VPS tối thiểu
-- **Hệ điều hành**: Ubuntu 22.04 LTS hoặc Ubuntu 24.04 LTS (x86_64 hoặc ARM64).
-- **RAM**: Tối thiểu 1GB (Khuyến nghị 2GB trở lên).
-- **Dung lượng đĩa**: Tối thiểu 10GB SSD trống.
-
-### 1.2. Trỏ bản ghi DNS
-Đăng nhập vào trang quản lý Domain (Cloudflare, Namecheap, v.v.) và thêm bản ghi DNS:
-- **Loại**: `A`
-- **Tên**: `flashcards` (hoặc `@` nếu dùng domain gốc)
-- **Giá trị**: `<Địa chỉ IP Public của VPS>`
-- **Proxy status**: DNS only (Tắt Cloudflare Proxy lúc đầu để Caddy dễ dàng cấp phát chứng chỉ SSL).
+This guide provides step-by-step instructions to set up and run the **Kids Flashcard App** on a Linux VPS (Ubuntu 22.04 LTS / 24.04 LTS) using **Docker**, **Docker Compose**, and **Caddy Server** (automatic HTTPS/SSL certificates via Let's Encrypt), or with an existing **Host Nginx**.
 
 ---
 
-## 2. Cài Đặt Docker & Cấu Hình Tường Lửa Trên VPS
+## 1. System Requirements & Domain Preparation
 
-Kết nối SSH vào VPS với quyền `root` hoặc `sudo`:
+### 1.1. Minimum VPS Requirements
+- **Operating System**: Ubuntu 22.04 LTS or Ubuntu 24.04 LTS (x86_64 or ARM64).
+- **RAM**: Minimum 1GB (2GB or more recommended).
+- **Disk Space**: Minimum 10GB free SSD storage.
+
+### 1.2. Configure DNS Records
+Log into your DNS provider (Cloudflare, Namecheap, etc.) and add an `A` record:
+- **Type**: `A`
+- **Name**: `flashcards` (or `@` for apex domain)
+- **Value**: `<Your_VPS_Public_IP>`
+- **Proxy status**: DNS only (Turn off Cloudflare Proxy initially so Caddy/Certbot can easily issue the SSL certificate).
+
+---
+
+## 2. Install Docker & Configure Firewall on VPS
+
+Connect to your VPS via SSH as `root` or a `sudo` user:
 ```bash
-ssh root@<IP_CUA_VPS>
+ssh root@<YOUR_VPS_IP>
 ```
 
-### 2.1. Cập nhật hệ thống
+### 2.1. Update System Packages
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y curl git ufw
 ```
 
-### 2.2. Cài đặt Docker Engine & Docker Compose chính thức
+### 2.2. Install Official Docker Engine & Docker Compose
 ```bash
-# Tải script cài đặt tự động từ Docker
+# Download official Docker installation script
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 
-# Thêm người dùng hiện tại vào nhóm docker (nếu không dùng tài khoản root)
+# Add current user to docker group (if not using root)
 sudo usermod -aG docker $USER
 
-# Kiểm tra phiên bản Docker & Docker Compose
+# Verify Docker and Docker Compose versions
 docker --version
 docker compose version
 ```
 
-### 2.3. Cấu hình tường lửa UFW
-Cho phép các cổng cần thiết và kích hoạt UFW:
+### 2.3. Configure UFW Firewall
+Allow required ports and enable UFW:
 ```bash
-sudo ufw allow 22/tcp     # Cổng SSH
-sudo ufw allow 80/tcp     # HTTP (Caddy xác thực Let's Encrypt)
-sudo ufw allow 443/tcp    # HTTPS bảo mật
+sudo ufw allow 22/tcp     # SSH port
+sudo ufw allow 80/tcp     # HTTP (Let's Encrypt verification)
+sudo ufw allow 443/tcp    # HTTPS secure traffic
 sudo ufw allow 443/udp    # HTTP/3 (QUIC)
 sudo ufw enable
 sudo ufw status
@@ -60,41 +60,41 @@ sudo ufw status
 
 ---
 
-## 3. Triển Khai Ứng Dụng (Deployment)
+## 3. Application Deployment
 
-### 3.1. Clone mã nguồn
+### 3.1. Clone the Source Code
 ```bash
 cd /opt
 git clone https://github.com/bs135/kids-flashcard-app.git
 cd kids-flashcard-app
 ```
 
-### 3.2. Cấp quyền và tạo các thư mục dữ liệu bền vững
+### 3.2. Grant Permissions and Create Persistent Storage Directories
 ```bash
-# Tạo các thư mục lưu database và media cục bộ
+# Create directories for SQLite database and local media
 mkdir -p backend/data backend/uploads/images backend/uploads/audio
 
-# Phân quyền cho script cập nhật
+# Make deployment script executable
 chmod +x deploy.sh
 ```
 
-### 3.3. Thiết lập biến môi trường (.env)
-Tạo file `.env` từ mẫu `.env.example`:
+### 3.3. Configure Environment Variables (.env)
+Create the `.env` file from the example `.env.example`:
 ```bash
 cp .env.example .env
 nano .env
 ```
 
-Điền các thông tin quan trọng:
+Configure the following variables:
 ```ini
-# Tên miền của ứng dụng
+# Application Domain Name
 DOMAIN_NAME=flashcards.chipfc.com
 
 PORT=3001
 HOST=0.0.0.0
 NODE_ENV=production
 
-# Khóa API Gemini (bắt buộc để sinh flashcard)
+# Gemini API Key (required for flashcard generation)
 GEMINI_API_KEY=AIzaSy...
 
 # Feature Flags & Rate Limiting
@@ -102,120 +102,120 @@ IMAGE_AI_GENERATE_ENABLE=false
 FLASHCARD_GENERATE_ENABLE=true
 FLASHCARD_GENERATE_RATE_LIMIT=5
 ```
-*(Nhấn `Ctrl + O` -> `Enter` để lưu, `Ctrl + X` để thoát nano).*
+*(Press `Ctrl + O` -> `Enter` to save, `Ctrl + X` to exit nano).*
 
-### 3.4. Khởi chạy ứng dụng
+### 3.4. Launch the Application
 
-#### LỰA CHỌN A: VPS ĐÃ CÓ SẴN NGINX (Khuyến nghị khi máy chủ đang chạy Nginx)
-Nếu VPS của bạn đã cài sẵn Nginx và đang chạy các website khác, chỉ cần chạy container ứng dụng (không chạy Caddy để tránh xung đột cổng 80/443):
+#### OPTION A: VPS ALREADY HAS NGINX INSTALLED (Recommended when server is running Nginx)
+If your VPS already has Nginx installed and is running other websites, run only the application container (do not run Caddy to prevent port 80/443 conflicts):
 
 ```bash
-# 1. Khởi động container ứng dụng (lắng nghe tại 127.0.0.1:3001)
+# 1. Start application container (bound to 127.0.0.1:3001)
 docker compose up -d --build app
 
-# 2. Tạo cấu hình VirtualHost cho Nginx từ file mẫu:
+# 2. Configure VirtualHost for Nginx using the provided template:
 sudo cp nginx.conf.example /etc/nginx/sites-available/flashcards.chipfc.com
 sudo ln -s /etc/nginx/sites-available/flashcards.chipfc.com /etc/nginx/sites-enabled/
 
-# 3. Kiểm tra cú pháp và tải lại Nginx
+# 3. Test syntax and reload Nginx
 sudo nginx -t
 sudo systemctl reload nginx
 
-# 4. Tự động cấp chứng chỉ SSL miễn phí qua Certbot
+# 4. Issue free SSL certificate via Certbot
 sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d flashcards.chipfc.com
 ```
 
-#### LỰA CHỌN B: VPS TRẮNG CHƯA CÓ WEB SERVER (Dùng Caddy tự động)
-Nếu VPS hoàn toàn mới và chưa cài web server nào:
+#### OPTION B: CLEAN VPS WITHOUT WEB SERVER (Automatic Caddy Setup)
+If the VPS is clean and has no web server installed:
 ```bash
 docker compose --profile with-caddy up -d --build
 ```
 
-### 3.5. Kiểm tra trạng thái & Log hoạt động
+### 3.5. Verify Status & Logs
 ```bash
-# Xem trạng thái các containers
+# View container status
 docker compose ps
 
-# Xem log thời gian thực của ứng dụng
+# View real-time application logs
 docker compose logs -f app
 ```
 
-### 3.6. Nạp dữ liệu ban đầu (Seed Database)
-Nếu là lần đầu triển khai hoặc database chưa có thẻ nào, hãy chạy lệnh sau để nạp 8 chủ đề và 115 thẻ từ vựng chuẩn (kèm hình ảnh và giọng đọc Edge-TTS):
+### 3.6. Populate Initial Seed Data (Seed Database)
+If this is the first deployment or the database contains no cards yet, run the following command to populate 8 standard topics and 115 vocabulary cards (with WebP images and Edge-TTS audio):
 ```bash
 docker compose exec app npm run seed
 ```
 
-Sau khi hoàn tất, truy cập trình duyệt tại `https://flashcards.chipfc.com` để trải nghiệm ứng dụng!
+Once completed, open your browser and navigate to `https://flashcards.chipfc.com` to explore the app!
 
 ---
 
-## 4. Quy Trình Cập Nhật & Tự Động Triển Khai (CI/CD Auto-Deploy)
+## 4. Update & Automated Deployment Workflow (CI/CD Auto-Deploy)
 
-Hệ thống hỗ trợ cả hai phương thức cập nhật: **Tự động qua GitHub Actions (CI/CD)** và **Thủ công qua bash script trên VPS**.
+The system supports two update methods: **Automated via GitHub Actions (CI/CD)** and **Manual via bash script on the VPS**.
 
-### 4.1. Tự động triển khai qua GitHub Actions (Khuyến nghị)
-Workflow tại `.github/workflows/deploy.yml` được cấu hình để mỗi khi bạn `git push` lên nhánh `main`, GitHub Actions sẽ tự động SSH vào VPS và kích hoạt script `./deploy.sh`.
+### 4.1. Automated Deployment via GitHub Actions (Recommended)
+The workflow at `.github/workflows/deploy.yml` is configured so that each time you `git push` to the `main` branch, GitHub Actions automatically SSHs into the VPS and executes `./deploy.sh`.
 
-#### Các bước thiết lập GitHub Secrets:
-1. Vào repository trên GitHub: **Settings** ➔ **Secrets and variables** ➔ **Actions** ➔ Bấm **New repository secret**.
-2. Thêm 3 Secrets sau:
-   - `SSH_HOST`: Địa chỉ IP Public của VPS (ví dụ: `123.45.67.89`).
-   - `SSH_USERNAME`: Tên người dùng SSH (thường là `root` hoặc user có quyền sudo/docker).
-   - `SSH_PRIVATE_KEY`: Nội dung Private Key SSH (`id_rsa` hoặc `id_ed25519`) dùng để đăng nhập vào VPS.
-     > **Lưu ý:** Copy toàn bộ nội dung file private key, bao gồm cả các dòng `-----BEGIN OPENSSH PRIVATE KEY-----` và `-----END OPENSSH PRIVATE KEY-----`. Đảm bảo Public Key tương ứng đã được thêm vào file `~/.ssh/authorized_keys` trên VPS.
+#### Setup Steps for GitHub Secrets:
+1. Go to your GitHub repository: **Settings** ➔ **Secrets and variables** ➔ **Actions** ➔ Click **New repository secret**.
+2. Add the following 3 Secrets:
+   - `SSH_HOST`: VPS Public IP address (e.g., `123.45.67.89`).
+   - `SSH_USERNAME`: SSH username (typically `root` or a user with sudo/docker permissions).
+   - `SSH_PRIVATE_KEY`: Content of your private SSH key (`id_rsa` or `id_ed25519`) used to connect to the VPS.
+     > **Note:** Copy the entire private key content, including `-----BEGIN OPENSSH PRIVATE KEY-----` and `-----END OPENSSH PRIVATE KEY-----`. Ensure the matching public key is added to `~/.ssh/authorized_keys` on the VPS.
 
-3. **Cách thức hoạt động:**
-   - Mỗi lần bạn chạy `git push origin main`, GitHub Actions sẽ tự động chạy job `Auto Deploy to VPS`.
-   - Script tự động cấu hình `safe.directory` cho Git, cấp quyền thực thi và chạy `./deploy.sh`.
-   - Bạn có thể theo dõi tiến độ deploy trực tiếp tại tab **Actions** trên GitHub.
+3. **How it works:**
+   - Every time code is pushed to `main`, GitHub Actions runs the `Auto Deploy to VPS` job.
+   - The script sets `safe.directory` for Git, marks `./deploy.sh` as executable, and executes it.
+   - You can monitor progress under the **Actions** tab on GitHub.
 
 ---
 
-### 4.2. Triển khai thủ công bằng script trên VPS
-Nếu bạn muốn chủ động cập nhật trực tiếp trên VPS mà không cần push code hoặc muốn kèm nạp lại thẻ seed:
+### 4.2. Manual Deployment via VPS Script
+To update directly on the VPS without pushing code, or to re-seed data:
 
-- **Cập nhật code và build lại bình thường:**
+- **Standard code update and container rebuild:**
   ```bash
   ./deploy.sh
   ```
-  Script sẽ tự động:
-  1. Kéo mã nguồn mới nhất (`git pull origin main`).
-  2. Build lại image và khởi động lại container `app`.
-  3. Dọn dẹp cache images thừa (`docker image prune -f`).
-  4. Hiển thị trạng thái container.
+  The script automatically:
+  1. Pulls the latest source code (`git pull origin main`).
+  2. Rebuilds images and restarts the `app` container.
+  3. Prunes dangling Docker images (`docker image prune -f`).
+  4. Displays container status.
 
-- **Cập nhật code kèm đồng bộ lại 115 thẻ từ vựng seed:**
+- **Update code and synchronize 115 seed flashcards:**
   ```bash
   ./deploy.sh --seed
   ```
 
 ---
 
-## 5. Sao Lưu & Phục Hồi Dữ Liệu (Backup & Restore)
+## 5. Backup & Disaster Recovery (Backup & Restore)
 
-Dữ liệu của ứng dụng được mount trực tiếp tại hai thư mục trên VPS:
-- `/opt/kids-flashcard-app/backend/data/database.sqlite`: Chứa toàn bộ chủ đề, flashcard, điểm sao, thú cưng.
-- `/opt/kids-flashcard-app/backend/uploads/`: Chứa hình ảnh WebP và tệp âm thanh Edge-TTS.
+Application data is mounted directly to two host directories:
+- `/opt/kids-flashcard-app/backend/data/database.sqlite`: Topics, flashcards, stars, and pet progression.
+- `/opt/kids-flashcard-app/backend/uploads/`: WebP images and Edge-TTS audio files.
 
-### 5.1. Sao lưu định kỳ (Tạo file nén tar.gz)
+### 5.1. Regular Backup (Create compressed tar.gz archive)
 ```bash
-# Tạo bản sao lưu với timestamp ngày giờ
+# Create timestamped backup archive
 BACKUP_NAME="backup_flashcards_$(date +%Y%m%d_%H%M%S).tar.gz"
 tar -czvf $BACKUP_NAME backend/data backend/uploads
-echo "Đã tạo bản sao lưu: $BACKUP_NAME"
+echo "Backup created: $BACKUP_NAME"
 ```
 
-### 5.2. Phục hồi dữ liệu
-Khi cần chuyển sang VPS mới hoặc khôi phục dữ liệu:
+### 5.2. Data Restoration
+To restore data or migrate to a new VPS:
 ```bash
-# Dừng container trước khi ghi đè dữ liệu
+# Stop containers before overwriting data
 docker compose down
 
-# Giải nén bản sao lưu đè vào thư mục hiện tại
+# Extract backup archive over the current directory
 tar -xzvf backup_flashcards_xxxx.tar.gz
 
-# Khởi động lại ứng dụng
+# Restart application
 docker compose up -d
 ```

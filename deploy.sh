@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Script Cập Nhật & Tái Triển Khai Ứng Dụng Kids Flashcard
-# Cách dùng:
-#   ./deploy.sh        : Kéo code mới, build & restart container app, dọn rác
-#   ./deploy.sh --seed : Tương tự như trên, kèm nạp lại dữ liệu 115 thẻ seed
+# Update & Redeployment Script for Kids Flashcard App
+# Usage:
+#   ./deploy.sh        : Pull latest code, build & restart app container, cleanup
+#   ./deploy.sh --seed : Same as above, and re-seed 115 default flashcards
 # ==============================================================================
 set -e
 
@@ -14,21 +14,21 @@ for arg in "$@"; do
   fi
 done
 
-echo "🚀 [1/4] Đang kéo mã nguồn mới nhất từ Git..."
+echo "🚀 [1/4] Pulling latest source code from Git..."
 git pull origin main
 
-echo "📦 [2/4] Đang build và khởi động lại container app..."
+echo "📦 [2/4] Building and restarting app container..."
 docker compose up -d --build app
 
 if [ "$SHOULD_SEED" = true ]; then
-  echo "🌱 [Seed] Đang nạp dữ liệu chuẩn (8 chủ đề & 115 thẻ từ vựng)..."
+  echo "🌱 [Seed] Seeding default data (8 topics & 115 flashcards)..."
   docker compose exec app npm run seed
 fi
 
-echo "🧹 [3/4] Đang dọn dẹp các images thừa không dùng..."
+echo "🧹 [3/4] Cleaning up unused Docker images..."
 docker image prune -f
 
-echo "📊 [4/4] Kiểm tra trạng thái containers..."
+echo "📊 [4/4] Checking container status..."
 docker compose ps
 
-echo "✅ Triển khai cập nhật thành công!"
+echo "✅ Deployment completed successfully!"

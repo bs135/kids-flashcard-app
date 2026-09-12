@@ -1,6 +1,6 @@
 import { Howl } from 'howler';
 
-// Sử dụng Web Audio API để tổng hợp các âm thanh game nhẹ nhàng không cần tải file ngoài
+// Uses Web Audio API to synthesize lightweight game audio cues without loading external assets
 class SoundEffects {
   constructor() {
     this.audioCtx = null;
@@ -17,7 +17,7 @@ class SoundEffects {
     return this.audioCtx;
   }
 
-  // Âm thanh khi click/chạm (Pop)
+  // Click/tap sound effect (Pop)
   playPop() {
     try {
       const ctx = this.getAudioContext();
@@ -41,7 +41,7 @@ class SoundEffects {
     }
   }
 
-  // Âm thanh khi lật thẻ (Whoosh)
+  // Card flip sound effect (Whoosh)
   playFlip() {
     try {
       const ctx = this.getAudioContext();
@@ -65,13 +65,13 @@ class SoundEffects {
     }
   }
 
-  // Âm thanh nhận sao vàng / Đúng (Ting - Success)
+  // Star collection / Correct answer sound effect (Ting - Success)
   playStar() {
     try {
       const ctx = this.getAudioContext();
       const now = ctx.currentTime;
       
-      const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 (Hợp âm Đô trưởng)
+      const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 (C Major Chord)
       freqs.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -93,7 +93,7 @@ class SoundEffects {
     }
   }
 
-  // Âm thanh hoàn thành chuỗi bài học (Victory Fanfare)
+  // Lesson completion victory fanfare (Victory Fanfare)
   playWin() {
     try {
       const ctx = this.getAudioContext();
@@ -128,7 +128,7 @@ class SoundEffects {
     }
   }
 
-  // Âm thanh khi ghép đúng / thành công (Ting ting vui tai)
+  // Correct match / successful quiz answer
   playCorrect() {
     this.playStar();
   }
@@ -137,7 +137,7 @@ class SoundEffects {
     this.playWin();
   }
 
-  // Âm thanh khi bấm sai (Buzzer nhẹ / Boing)
+  // Incorrect choice buzzer (Soft buzzer / boing)
   playWrong() {
     try {
       const ctx = this.getAudioContext();
@@ -162,13 +162,13 @@ class SoundEffects {
     }
   }
 
-  // Âm thanh khi cho thú cưng Dino ăn (Nhai nhóp nhép vui nhộn nom-nom)
+  // Virtual Pet feeding sound effect (Playful nom-nom munch)
   playNomNom() {
     try {
       const ctx = this.getAudioContext();
       const now = ctx.currentTime;
 
-      // 2 nốt nhai lặp lại vui nhộn
+      // 2 rhythmic munch notes
       [0, 0.12].forEach((offset, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();

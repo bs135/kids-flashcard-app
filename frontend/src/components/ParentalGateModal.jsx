@@ -9,7 +9,7 @@ export default function ParentalGateModal({ isOpen, onClose, onSuccess }) {
   const [answer, setAnswer] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Sinh câu hỏi toán mới mỗi khi mở modal
+  // Generate a new math problem whenever the modal opens
   useEffect(() => {
     if (isOpen) {
       const a = Math.floor(Math.random() * 5) + 3; // 3 - 7
@@ -45,7 +45,7 @@ export default function ParentalGateModal({ isOpen, onClose, onSuccess }) {
           exit={{ opacity: 0, scale: 0.9 }}
           className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border-4 border-amber-300 relative select-none"
         >
-          {/* Nút đóng */}
+          {/* Close button */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
@@ -65,7 +65,7 @@ export default function ParentalGateModal({ isOpen, onClose, onSuccess }) {
               Khu vực dành riêng cho cha mẹ. Vui lòng giải phép tính đơn giản dưới đây để tiếp tục:
             </p>
 
-            {/* Phép tính bảo vệ */}
+            {/* Protective math question */}
             <div className="py-4 px-6 bg-amber-50 rounded-2xl border-2 border-amber-200 inline-block my-2">
               <span className="text-3xl sm:text-4xl font-black text-amber-900 tracking-wider">
                 {num1} &times; {num2} = ?

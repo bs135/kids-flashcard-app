@@ -11,7 +11,7 @@ const imagesRoot = path.resolve(__dirname, '../../uploads/images');
 initDatabase();
 
 /**
- * Quét đệ quy tìm tất cả file .png trong thư mục
+ * Recursively scans and collects all .png files within a directory
  */
 function getAllPngFiles(dir) {
   let results = [];
@@ -38,13 +38,13 @@ function formatBytes(bytes) {
 }
 
 async function convertPngToWebp() {
-  console.log('🔍 Đang quét đệ quy các file .png trong:', imagesRoot);
+  console.log('🔍 Recursively scanning for .png files in:', imagesRoot);
   const pngFiles = getAllPngFiles(imagesRoot);
 
-  console.log(`📌 Tìm thấy tổng cộng: ${pngFiles.length} file .png.\n`);
+  console.log(`📌 Found a total of: ${pngFiles.length} .png files.\n`);
 
   if (pngFiles.length === 0) {
-    console.log('✨ Không có file .png nào cần chuyển đổi.');
+    console.log('✨ No .png files require conversion.');
     return;
   }
 
@@ -61,22 +61,22 @@ async function convertPngToWebp() {
     const originalSize = fs.statSync(pngPath).size;
     totalOriginalSize += originalSize;
 
-    // Đường dẫn file .webp cùng tên, cùng vị trí
+    // Destination .webp path with same name in same directory
     const webpPath = pngPath.substring(0, pngPath.lastIndexOf('.')) + '.webp';
 
     try {
-      // 1. Chuyển đổi sang WebP bằng sharp với quality: 85
+      // 1. Convert to WebP using sharp with quality: 85
       await sharp(pngPath)
         .webp({ quality: 85 })
         .toFile(webpPath);
 
-      // 2. Kiểm tra xác thực file .webp mới tạo: tồn tại và dung lượng > 0
+      // 2. Validate newly generated .webp file: exists and non-empty
       if (fs.existsSync(webpPath)) {
         const webpSize = fs.statSync(webpPath).size;
         if (webpSize > 0) {
           totalWebpSize += webpSize;
 
-          // Xóa file .png gốc sau khi đã xác thực file webp thành công
+          // Delete original .png file once WebP is verified
           fs.unlinkSync(pngPath);
           successCount++;
 
@@ -91,21 +91,21 @@ async function convertPngToWebp() {
             percent: `${savedPercent}%`
           });
 
-          console.log(`[${i + 1}/${pngFiles.length}] ✅ Đã chuyển đổi: ${relativePath} (${formatBytes(originalSize)} -> ${formatBytes(webpSize)}, giảm ${savedPercent}%)`);
+          console.log(`[${i + 1}/${pngFiles.length}] ✅ Converted: ${relativePath} (${formatBytes(originalSize)} -> ${formatBytes(webpSize)}, reduced by ${savedPercent}%)`);
         } else {
-          throw new Error('File WebP tạo ra có dung lượng 0 byte');
+          throw new Error('Generated WebP file has 0 byte size');
         }
       } else {
-        throw new Error('Không tìm thấy file WebP sau khi xuất');
+        throw new Error('WebP file not found after output');
       }
     } catch (err) {
       failCount++;
-      console.error(`[${i + 1}/${pngFiles.length}] ❌ Lỗi khi xử lý ${relativePath}:`, err.message);
+      console.error(`[${i + 1}/${pngFiles.length}] ❌ Error processing ${relativePath}:`, err.message);
     }
   }
 
-  // 3. Đồng bộ Cơ sở dữ liệu SQLite
-  console.log('\n🗄️ Đang kiểm tra và đồng bộ lại các trường image_url trong CSDL SQLite...');
+  // 3. Synchronize SQLite database
+  console.log('\n🗄️ Checking and synchronizing image_url fields in SQLite database...');
   const allCards = db.prepare('SELECT id, image_url FROM flashcards').all();
   let dbUpdatedCount = 0;
 
@@ -119,26 +119,26 @@ async function convertPngToWebp() {
     }
   }
 
-  console.log(`✅ Đã đồng bộ ${dbUpdatedCount} bản ghi flashcard từ đuôi .png sang .webp trong SQLite.`);
+  console.log(`✅ Synchronized ${dbUpdatedCount} flashcard records from .png to .webp in SQLite.`);
 
-  // 4. Báo cáo kết quả tổng kết
+  // 4. Summary report
   const totalSaved = totalOriginalSize - totalWebpSize;
   const totalSavedPercent = totalOriginalSize > 0 ? ((totalSaved / totalOriginalSize) * 100).toFixed(1) : 0;
 
   console.log('\n================================================================');
-  console.log('🎉 BÁO CÁO KẾT QUẢ CHUYỂN ĐỔI HÌNH ẢNH SANG WEBP');
+  console.log('🎉 WEBP IMAGE CONVERSION SUMMARY REPORT');
   console.log('================================================================');
-  console.log(`- Tổng số file PNG được xử lý: ${pngFiles.length}`);
-  console.log(`- Số file thành công:          ${successCount}`);
-  console.log(`- Số file thất bại:            ${failCount}`);
-  console.log(`- Dung lượng PNG ban đầu:      ${formatBytes(totalOriginalSize)}`);
-  console.log(`- Dung lượng WebP sau nén:     ${formatBytes(totalWebpSize)}`);
-  console.log(`- Dung lượng tiết kiệm được:   ${formatBytes(totalSaved)} (Giảm ${totalSavedPercent}%)`);
-  console.log(`- Số bản ghi CSDL đã đồng bộ:  ${dbUpdatedCount}`);
+  console.log(`- Total PNG files processed: ${pngFiles.length}`);
+  console.log(`- Successfully converted:   ${successCount}`);
+  console.log(`- Failed conversions:       ${failCount}`);
+  console.log(`- Original PNG total size:  ${formatBytes(totalOriginalSize)}`);
+  console.log(`- Compressed WebP total size:${formatBytes(totalWebpSize)}`);
+  console.log(`- Storage saved:            ${formatBytes(totalSaved)} (Reduced by ${totalSavedPercent}%)`);
+  console.log(`- Database records updated: ${dbUpdatedCount}`);
   console.log('================================================================\n');
 }
 
 convertPngToWebp().catch(e => {
-  console.error('Lỗi quy trình:', e);
+  console.error('Conversion process error:', e);
   process.exit(1);
 });

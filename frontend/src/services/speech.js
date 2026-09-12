@@ -1,11 +1,11 @@
-// Service phát âm tiếng Anh cho trẻ em:
-// 1. Khởi tạo & nạp sẵn danh sách voices ngay khi module được load
-// 2. Phát âm ngay lập tức (< 0.2s) bằng Web Speech API chuẩn trình duyệt
-// 3. Tự động tìm giọng đọc US chuẩn, rõ ràng, tốc độ vừa phải cho trẻ (rate 0.95)
+// English pronunciation service for kids:
+// 1. Preload available voices immediately when the module loads
+// 2. Ultra-fast instant playback (< 0.2s) via browser standard Web Speech API
+// 3. Automatically selects clear, natural US voice tailored for young children (rate: 0.95)
 
 let cachedVoice = null;
 
-// Khởi tạo và preload voices
+// Initialize and preload voices
 function initVoices() {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 
@@ -13,7 +13,7 @@ function initVoices() {
     const voices = window.speechSynthesis.getVoices();
     if (!voices || voices.length === 0) return;
 
-    // Ưu tiên chọn giọng đọc tiếng Anh Mỹ tự nhiên
+    // Prefer natural American English voices
     cachedVoice = voices.find(v => 
       v.lang.startsWith('en-US') && 
       (v.name.includes('Natural') || v.name.includes('Online') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Jenny') || v.name.includes('Ava'))
@@ -26,24 +26,24 @@ function initVoices() {
   }
 }
 
-// Gọi khởi tạo ngay
+// Immediately initialize
 initVoices();
 
 /**
- * Phát âm từ tiếng Anh tức thì
- * @param {string} text Từ hoặc câu tiếng Anh cần đọc
- * @param {string|null} audioUrl File audio cục bộ (nếu có và muốn dùng)
+ * Pronounce English word or sentence
+ * @param {string} text Word or sentence to speak
+ * @param {string|null} audioUrl Local audio URL (if available)
  * @returns {Promise<boolean>}
  */
 export function speakWord(text, audioUrl = null) {
   return new Promise((resolve) => {
-    // 1. Nếu là file audio local hợp lệ từ server (/uploads/...) và không phải link bên thứ 3 chậm chạp
+    // 1. If valid local server audio (/uploads/...) is available
     if (audioUrl && audioUrl.startsWith('/uploads/')) {
       const audio = new Audio(audioUrl);
       
-      // Giới hạn timeout 1.2 giây để tránh treo lâu nếu file lỗi
+      // Limit timeout to 1.2s to prevent hanging on corrupted files
       const timeoutId = setTimeout(() => {
-        console.warn(`[Audio] Audio file timeout sau 1.2s, chuyển sang Web Speech.`);
+        console.warn(`[Audio] Audio file timed out after 1.2s, falling back to Web Speech.`);
         audio.pause();
         audio.src = '';
         speakWithWebSpeech(text, resolve);
@@ -66,25 +66,25 @@ export function speakWord(text, audioUrl = null) {
       return;
     }
 
-    // 2. Mặc định phát âm NGAY LẬP TỨC bằng Web Speech API (< 0.2s)
+    // 2. Default to instant Web Speech API playback (< 0.2s)
     speakWithWebSpeech(text, resolve);
   });
 }
 
 function speakWithWebSpeech(text, callback) {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    console.warn('Trình duyệt không hỗ trợ Web Speech API');
+    console.warn('Browser does not support Web Speech API');
     if (callback) callback(false);
     return;
   }
 
-  // Hủy các câu đọc dở trước đó để phát câu mới ngay lập tức
+  // Cancel prior utterances to pronounce new input immediately
   window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'en-US';
-  utterance.rate = 0.95; // Tốc độ tự nhiên, rõ ràng, không bị chậm lề mề
-  utterance.pitch = 1.05; // Cao hơn một chút, phát âm vui tươi cho trẻ nhỏ
+  utterance.rate = 0.95; // Natural, clear cadence for kids
+  utterance.pitch = 1.05; // Slightly cheerful pitch for toddlers
 
   if (!cachedVoice) {
     const voices = window.speechSynthesis.getVoices();
@@ -104,6 +104,6 @@ function speakWithWebSpeech(text, callback) {
     if (callback) callback(false);
   };
 
-  // Phát âm ngay
+  // Speak immediately
   window.speechSynthesis.speak(utterance);
 }

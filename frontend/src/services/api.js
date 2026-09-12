@@ -12,7 +12,7 @@ export async function fetchSystemConfig() {
     if (!res.ok) throw new Error('Không thể tải cấu hình hệ thống');
     return res.json();
   } catch (err) {
-    console.warn('Lỗi tải cấu hình, dùng mặc định:', err);
+    console.warn('Failed to load configuration, using defaults:', err);
     return {
       imageAiEnabled: false,
       flashcardAiEnabled: true,
@@ -35,7 +35,7 @@ export async function fetchUserProgress() {
     if (!res.ok) throw new Error('Không thể tải tiến trình');
     return res.json();
   } catch (err) {
-    console.warn('Lỗi lấy tiến trình, dùng dữ liệu offline local:', err);
+    console.warn('Failed to fetch user progress, using local offline data:', err);
     return {
       stars: parseInt(localStorage.getItem('kids_stars') || '0', 10),
       feed_count: 0,

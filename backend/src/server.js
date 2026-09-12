@@ -18,26 +18,26 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Khởi tạo DB Schema
+// Initialize Database Schema
 initDatabase();
 
 // ----------------------------------------------------
 // FEATURE FLAGS & RATE LIMITING CONFIGURATION
 // ----------------------------------------------------
-// IMAGE_AI_GENERATE_ENABLE: Mặc định false
+// IMAGE_AI_GENERATE_ENABLE: Defaults to false
 const isImageAiEnabled = () => process.env.IMAGE_AI_GENERATE_ENABLE === 'true';
 
-// FLASHCARD_GENERATE_ENABLE: Mặc định true
+// FLASHCARD_GENERATE_ENABLE: Defaults to true
 const isFlashcardAiEnabled = () => process.env.FLASHCARD_GENERATE_ENABLE !== 'false';
 
-// FLASHCARD_GENERATE_RATE_LIMIT: Mặc định 5 (0 = không giới hạn)
+// FLASHCARD_GENERATE_RATE_LIMIT: Defaults to 5 (0 = unlimited)
 const getFlashcardRateLimit = () => {
   const val = parseInt(process.env.FLASHCARD_GENERATE_RATE_LIMIT, 10);
   return isNaN(val) ? 5 : val;
 };
 
 // In-memory rate limiting map: ip -> { count: number, resetTime: number }
-// Reset sau mỗi 24 giờ (hoặc ngày mới)
+// Resets every 24 hours
 const rateLimitStore = new Map();
 const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -87,54 +87,54 @@ const fastify = Fastify({
   logger: true
 });
 
-// 1. Cấu hình CORS để Frontend kết nối dễ dàng
+// 1. Configure CORS for frontend access
 await fastify.register(cors, {
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE']
 });
 
-// 1.1. Cấu hình Multipart Upload cho ảnh thủ công
+// 1.1. Configure multipart upload for manual images
 await fastify.register(multipart, {
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB tối đa
+    fileSize: 10 * 1024 * 1024 // 10MB maximum
   }
 });
 
-// 2. Phục vụ static files từ thư mục uploads (/uploads/images và /uploads/audio)
+// 2. Serve static files from uploads folder (/uploads/images and /uploads/audio)
 const uploadsPath = path.resolve(__dirname, '../uploads');
 await fastify.register(fastifyStatic, {
   root: uploadsPath,
   prefix: '/uploads/',
-  maxAge: '1h', // Cho phép trình duyệt revalidate khi file trên đĩa thay đổi
+  maxAge: '1h', // Allow browser revalidation when disk assets change
   immutable: false,
   decorateReply: false
 });
 
-// 2.1. Phục vụ Frontend SPA build từ thư mục public (khi chạy Production Docker hoặc có thư mục public)
+// 2.1. Serve compiled Frontend SPA from public directory in Production
 const publicDir = path.resolve(__dirname, '../public');
 const hasPublicDir = fs.existsSync(publicDir) && fs.existsSync(path.join(publicDir, 'index.html'));
 
 if (hasPublicDir) {
-  fastify.log.info(`[Static Server] Tìm thấy thư mục frontend production tại: ${publicDir}`);
+  fastify.log.info(`[Static Server] Found production frontend directory at: ${publicDir}`);
   await fastify.register(fastifyStatic, {
     root: publicDir,
     prefix: '/',
     decorateReply: true
   });
 
-  // SPA Fallback: chuyển tiếp tất cả các route không khớp (trừ /api/* và /uploads/*) về index.html
+  // SPA Fallback: route unmatched paths (except /api/* and /uploads/*) to index.html
   fastify.setNotFoundHandler((request, reply) => {
     const url = request.raw.url || '';
     if (url.startsWith('/api/') || url.startsWith('/uploads/')) {
       return reply.status(404).send({
         error: 'NOT_FOUND',
-        message: `Tài nguyên ${url} không tồn tại trên hệ thống`
+        message: `Resource ${url} was not found on the server.`
       });
     }
     return reply.sendFile('index.html');
   });
 } else {
-  // 3. Root route cho môi trường Dev khi chưa build public
+  // 3. Root route for development environment
   fastify.get('/', async (request, reply) => {
     return {
       app: 'Kids English Flashcard Backend API',
@@ -144,7 +144,7 @@ if (hasPublicDir) {
         health: '/health',
         config: '/api/v1/config',
         topics: '/api/v1/topics',
-        cards_example: '/api/v1/topics/animals/cards',
+        cards_example: '/api/v1/topics/wild-animals/cards',
         progress: '/api/v1/progress'
       }
     };
@@ -168,7 +168,7 @@ fastify.get('/api/v1/config', async (request, reply) => {
 });
 
 // 4. API Endpoints
-// 4.1. Lấy danh sách tất cả chủ đề kèm số lượng thẻ & tiến trình
+// 4.1. Retrieve all topics with card counts and progress
 fastify.get('/api/v1/topics', async (request, reply) => {
   try {
     const stmt = db.prepare(`
@@ -199,7 +199,7 @@ fastify.get('/api/v1/topics', async (request, reply) => {
   }
 });
 
-// 4.2. Lấy danh sách flashcards theo Topic ID (hỗ trợ cả topicId = 'all' cho chế độ Khám Phá Tổng Hợp)
+// 4.2. Retrieve flashcards by Topic ID (supports topicId = 'all' for All Words exploration mode)
 fastify.get('/api/v1/topics/:topicId/cards', async (request, reply) => {
   const { topicId } = request.params;
   try {
@@ -258,7 +258,7 @@ fastify.get('/api/v1/topics/:topicId/cards', async (request, reply) => {
   }
 });
 
-// 4.3. Lấy thông tin tiến trình của bé (Stars & Thú cưng)
+// 4.3. Retrieve learner progression (Stars & Pet status)
 fastify.get('/api/v1/progress', async (request, reply) => {
   try {
     const progress = db.prepare('SELECT * FROM user_progress WHERE id = ?').get('default_kid');
@@ -269,18 +269,18 @@ fastify.get('/api/v1/progress', async (request, reply) => {
   }
 });
 
-// 4.4. Tạo chủ đề mới (Admin)
+// 4.4. Create new topic (Admin)
 fastify.post('/api/v1/topics', async (request, reply) => {
   const { id, name_en, name_vi, icon, color_theme } = request.body || {};
   if (!name_en || !name_vi) {
-    return reply.status(400).send({ error: 'Tên tiếng Anh và tiếng Việt là bắt buộc' });
+    return reply.status(400).send({ error: 'English and Vietnamese names are required' });
   }
 
   try {
     const topicId = id ? slugify(id) : slugify(name_en);
     const existingTopic = db.prepare('SELECT * FROM topics WHERE id = ?').get(topicId);
     if (existingTopic) {
-      return reply.status(409).send({ error: `Chủ đề '${topicId}' đã tồn tại!` });
+      return reply.status(409).send({ error: `Topic '${topicId}' already exists!` });
     }
 
     const nextOrder = (db.prepare('SELECT MAX(display_order) as maxOrder FROM topics').get().maxOrder || 0) + 1;
@@ -290,7 +290,7 @@ fastify.post('/api/v1/topics', async (request, reply) => {
       VALUES (?, ?, ?, ?, ?, ?)
     `).run(topicId, name_en.trim(), name_vi.trim(), icon || '🌟', color_theme || 'amber', nextOrder);
 
-    // Tạo luôn tiến trình ban đầu cho chủ đề
+    // Initialize per-topic progress entry
     db.prepare(`
       INSERT OR IGNORE INTO topic_progress (topic_id, is_unlocked, cards_learned, quiz_high_score)
       VALUES (?, 1, 0, 0)
@@ -300,71 +300,71 @@ fastify.post('/api/v1/topics', async (request, reply) => {
     return reply.status(201).send({ success: true, topic: created });
   } catch (err) {
     fastify.log.error(err);
-    return reply.status(500).send({ error: 'Lỗi khi tạo chủ đề mới: ' + err.message });
+    return reply.status(500).send({ error: 'Error creating topic: ' + err.message });
   }
 });
 
-// 4.5. API Tự Động Sinh Flashcards Bằng Gemini + Tải Ảnh Cục Bộ (Admin AI Generator)
+// 4.5. Batch Generate Flashcards via Gemini + Local Media Download (Admin AI Generator)
 fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
-  // 1. Kiểm tra Feature Flag: FLASHCARD_GENERATE_ENABLE
+  // 1. Check Feature Flag: FLASHCARD_GENERATE_ENABLE
   if (!isFlashcardAiEnabled()) {
     return reply.status(403).send({
       error: 'FEATURE_DISABLED',
-      message: 'Tính năng tự động sinh thẻ AI hiện đang tạm tắt trên hệ thống.'
+      message: 'AI flashcard generation feature is currently disabled.'
     });
   }
 
   const { topic_id, words = [], image_source = 'ai_refined' } = request.body || {};
 
   if (!topic_id || !Array.isArray(words) || words.length === 0) {
-    return reply.status(400).send({ error: 'topic_id và danh sách từ vựng (words) là bắt buộc' });
+    return reply.status(400).send({ error: 'topic_id and words array are required' });
   }
 
-  // Lọc sạch từ vựng hợp lệ
+  // Sanitize valid vocabulary entries
   const sanitizedWords = words
     .map(w => (typeof w === 'string' ? w.trim() : ''))
     .filter(w => w.length > 0);
 
   if (sanitizedWords.length === 0) {
-    return reply.status(400).send({ error: 'Không có từ vựng hợp lệ nào để xử lý' });
+    return reply.status(400).send({ error: 'No valid vocabulary words provided' });
   }
 
-  // 2. Kiểm tra Rate Limit theo IP
+  // 2. Check IP Rate Limit
   const rateLimitInfo = getRateLimitInfo(request);
   if (rateLimitInfo.limit > 0 && rateLimitInfo.remaining <= 0) {
     return reply.status(429).send({
       error: 'QUOTA_EXCEEDED',
-      message: `Bạn đã đạt giới hạn tối đa ${rateLimitInfo.limit} lượt tạo từ vựng hôm nay. Vui lòng quay lại vào ngày mai!`,
+      message: `You have reached the maximum daily limit of ${rateLimitInfo.limit} AI-generated words. Please return tomorrow!`,
       limit: rateLimitInfo.limit,
       remaining: 0
     });
   }
 
-  // Nếu số từ gửi lên vượt quá quota còn lại
+  // If requested words exceed remaining quota
   if (rateLimitInfo.limit > 0 && sanitizedWords.length > rateLimitInfo.remaining) {
     return reply.status(429).send({
       error: 'QUOTA_EXCEEDED',
-      message: `Số lượng từ yêu cầu (${sanitizedWords.length}) vượt quá hạn ngạch còn lại hôm nay (${rateLimitInfo.remaining} lượt).`,
+      message: `Requested words count (${sanitizedWords.length}) exceeds today's remaining quota (${rateLimitInfo.remaining} words).`,
       limit: rateLimitInfo.limit,
       remaining: rateLimitInfo.remaining
     });
   }
 
-  // Kiểm tra xem Topic có tồn tại không
+  // Verify whether topic exists
   const topic = db.prepare('SELECT * FROM topics WHERE id = ?').get(topic_id);
   if (!topic) {
-    return reply.status(404).send({ error: `Chủ đề '${topic_id}' không tồn tại trong hệ thống` });
+    return reply.status(404).send({ error: `Topic '${topic_id}' does not exist in the database` });
   }
 
   try {
     const imageAiActive = isImageAiEnabled();
-    fastify.log.info(`[Admin Generate] Bắt đầu xử lý ${sanitizedWords.length} từ cho chủ đề "${topic_id}" (Nguồn ảnh AI bật: ${imageAiActive})...`);
+    fastify.log.info(`[Admin Generate] Processing ${sanitizedWords.length} words for topic "${topic_id}" (AI image active: ${imageAiActive})...`);
 
-    // 1. Gọi Gemini API để sinh dữ liệu ngữ nghĩa & phiên âm
+    // 1. Invoke Gemini API for semantics and phonetics
     const vocabData = await generateVocabularyData(sanitizedWords);
 
-    // Sử dụng ON CONFLICT(topic_id, word) DO UPDATE SET để tránh bản ghi trùng lặp
-    // Khi tạo mới từ Admin, luôn gán is_custom = 1
+    // Use ON CONFLICT(topic_id, word) DO UPDATE SET to avoid duplicates
+    // Custom cards created from Admin have is_custom = 1
     const upsertCard = db.prepare(`
       INSERT INTO flashcards (topic_id, word, phonetic, meaning_vi, example_en, example_vi, image_url, audio_url, difficulty, is_custom)
       VALUES (@topic_id, @word, @phonetic, @meaning_vi, @example_en, @example_vi, @image_url, @audio_url, 1, 1)
@@ -379,18 +379,18 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
 
     const createdCards = [];
 
-    // 2. Với từng từ, tải và tối ưu file hình ảnh .webp và audio .mp3
+    // 2. Download and optimize .webp image and .mp3 audio for each card
     for (const item of vocabData) {
       const cleanWord = item.word.trim();
-      fastify.log.info(`[Admin Generate] Đang tải media cho: ${cleanWord}`);
+      fastify.log.info(`[Admin Generate] Downloading media assets for: ${cleanWord}`);
 
-      // Xử lý ảnh: Nếu IMAGE_AI_GENERATE_ENABLE là true thì mới tải ảnh tự động; nếu false thì gán ảnh mặc định
+      // Image processing: fetch AI image only if IMAGE_AI_GENERATE_ENABLE is true
       let imageUrl = '/uploads/images/default-placeholder.webp';
       if (imageAiActive) {
         imageUrl = await downloadAndConvertKidImage(cleanWord, topic_id, image_source);
       }
 
-      // Sinh giọng đọc Edge-TTS MP3 cục bộ theo thư mục topic_id
+      // Generate local Edge-TTS MP3 under topic_id directory
       const audioUrl = await downloadWordAudio(cleanWord, topic_id);
 
       const cardPayload = {
@@ -406,36 +406,36 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
 
       upsertCard.run(cardPayload);
 
-      // Lấy lại bản ghi từ DB để có ID chính xác (dù là tạo mới hay cập nhật)
+      // Re-fetch record from DB to obtain correct ID
       const savedCard = db.prepare('SELECT * FROM flashcards WHERE topic_id = ? AND word = ? COLLATE NOCASE').get(topic_id, cleanWord);
       if (savedCard) {
         createdCards.push(savedCard);
       }
     }
 
-    // Tăng bộ đếm Rate Limit theo số thẻ đã tạo thành công
+    // Increment rate limit usage by generated cards count
     incrementRateLimit(request, createdCards.length);
 
     return reply.status(201).send({
       success: true,
-      message: `Đã xử lý thành công ${createdCards.length} thẻ flashcards!`,
+      message: `Successfully processed ${createdCards.length} flashcards!`,
       topic_id,
       cards: createdCards,
       quotaRemaining: getRateLimitInfo(request).remaining
     });
   } catch (err) {
     fastify.log.error(err);
-    return reply.status(500).send({ error: 'Lỗi trong quá trình sinh Flashcards tự động: ' + err.message });
+    return reply.status(500).send({ error: 'Error generating flashcards: ' + err.message });
   }
 });
 
-// 4.6. API Tái Tạo Lại Ảnh Cho Một Thẻ Đơn Lẻ (Admin Regenerate Image)
+// 4.6. Regenerate Image for Single Card (Admin Regenerate Image)
 fastify.post('/api/v1/admin/cards/:id/regenerate-image', async (request, reply) => {
-  // Kiểm tra Feature Flag tạo ảnh AI
+  // Check Feature Flag for AI image generation
   if (!isImageAiEnabled()) {
     return reply.status(403).send({
       error: 'FEATURE_DISABLED',
-      message: 'Tính năng tạo ảnh AI tự động hiện đang tạm tắt. Vui lòng sử dụng tính năng tải ảnh thủ công từ máy tính.'
+      message: 'Automated AI image generation is currently disabled. Please upload images manually.'
     });
   }
 
@@ -445,33 +445,33 @@ fastify.post('/api/v1/admin/cards/:id/regenerate-image', async (request, reply) 
   try {
     const card = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
     if (!card) {
-      return reply.status(404).send({ error: `Không tìm thấy flashcard với ID ${id}` });
+      return reply.status(404).send({ error: `Flashcard with ID ${id} not found` });
     }
 
-    fastify.log.info(`[Regenerate Image] Đang tạo lại ảnh cho từ "${card.word}" theo nguồn "${imageSource}"...`);
+    fastify.log.info(`[Regenerate Image] Regenerating image for "${card.word}" via "${imageSource}"...`);
 
-    // Tải và chuyển đổi ảnh mới (buộc ghi đè file với forceOverwrite = true)
+    // Download and convert new image (force overwrite file on disk)
     const newImageUrl = await downloadAndConvertKidImage(card.word, card.topic_id, imageSource, true);
 
-    // Cập nhật CSDL (lưu đường dẫn gốc vào DB)
+    // Update SQLite database (save canonical relative path)
     db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(newImageUrl, id);
 
     const updatedCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
-    // Nối thêm query param t=timestamp để client nhận diện ngay ảnh mới
+    // Append timestamp query parameter so client browser refreshes immediately
     updatedCard.image_url = `${updatedCard.image_url}?t=${Date.now()}`;
 
     return {
       success: true,
-      message: `Đã tạo lại ảnh thành công cho từ "${card.word}"!`,
+      message: `Successfully regenerated image for "${card.word}"!`,
       card: updatedCard
     };
   } catch (err) {
     fastify.log.error(err);
-    return reply.status(500).send({ error: 'Lỗi khi tái tạo ảnh: ' + err.message });
+    return reply.status(500).send({ error: 'Error regenerating image: ' + err.message });
   }
 });
 
-// 4.7. API Cập Nhật Thông Tin Thẻ Thủ Công (Admin Edit Flashcard)
+// 4.7. Update Flashcard Information Manually (Admin Edit Flashcard)
 fastify.put('/api/v1/cards/:id', async (request, reply) => {
   const { id } = request.params;
   const { word, phonetic, meaning_vi, example_en, example_vi, image_url } = request.body || {};
@@ -488,7 +488,7 @@ fastify.put('/api/v1/cards/:id', async (request, reply) => {
     const updatedExampleVi = example_vi !== undefined ? String(example_vi).trim() : card.example_vi;
     const updatedImageUrl = image_url !== undefined ? String(image_url).trim() : card.image_url;
 
-    // Khóa trường word để tránh hỏng liên kết file media (.webp, .mp3)
+    // Lock the word field to preserve media file path integrity (.webp, .mp3)
     db.prepare(`
       UPDATE flashcards 
       SET 
@@ -510,37 +510,37 @@ fastify.put('/api/v1/cards/:id', async (request, reply) => {
     const freshCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
     return reply.send({
       success: true,
-      message: 'Cập nhật thẻ thành công!',
+      message: 'Flashcard updated successfully!',
       card: freshCard
     });
   } catch (err) {
     fastify.log.error(err);
-    return reply.status(500).send({ error: 'Lỗi khi cập nhật thẻ: ' + err.message });
+    return reply.status(500).send({ error: 'Error updating card: ' + err.message });
   }
 });
 
-// 4.8. API Upload Hình Ảnh Thủ Công (Admin Manual Image Upload)
+// 4.8. Manual Image Upload API (Admin Manual Image Upload)
 fastify.post('/api/v1/cards/:id/upload-image', async (request, reply) => {
   const { id } = request.params;
 
   try {
     const card = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
     if (!card) {
-      return reply.status(404).send({ error: `Không tìm thấy flashcard với ID ${id}` });
+      return reply.status(404).send({ error: `Flashcard with ID ${id} not found` });
     }
 
     const data = await request.file();
     if (!data) {
-      return reply.status(400).send({ error: 'Vui lòng chọn một file ảnh để tải lên' });
+      return reply.status(400).send({ error: 'Please select an image file to upload' });
     }
 
-    // Đọc toàn bộ nội dung file ảnh vào Buffer
+    // Read full image content into Buffer
     const buffer = await data.toBuffer();
     if (!buffer || buffer.length === 0) {
-      return reply.status(400).send({ error: 'File ảnh không có nội dung' });
+      return reply.status(400).send({ error: 'Uploaded file is empty' });
     }
 
-    // Chuẩn bị thư mục đích: backend/uploads/images/{topic_slug}
+    // Prepare target directory: backend/uploads/images/{topic_slug}
     const safeTopic = slugify(card.topic_id || 'general');
     const safeWord = slugify(card.word);
     const targetDir = path.resolve(__dirname, `../uploads/images/${safeTopic}`);
@@ -551,66 +551,65 @@ fastify.post('/api/v1/cards/:id/upload-image', async (request, reply) => {
     const filename = `${safeWord}.webp`;
     const targetFilePath = path.join(targetDir, filename);
 
-    // Chuyển đổi và nén sang định dạng .webp chất lượng 85 bằng Sharp
+    // Convert and compress to .webp with quality 85 using Sharp
     await sharp(buffer)
       .resize(400, 400, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
       .webp({ quality: 85 })
       .toFile(targetFilePath);
 
-    // Cập nhật lại trường image_url trong CSDL (lưu path gốc)
+    // Update image_url field in SQLite database (save canonical path)
     const basePublicUrl = `/uploads/images/${safeTopic}/${filename}`;
     db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(basePublicUrl, id);
 
     const freshCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
-    // Kèm query timestamp để trình duyệt load ngay ảnh mới
+    // Append timestamp query parameter for immediate client cache-busting
     const freshUrlWithTimestamp = `${basePublicUrl}?t=${Date.now()}`;
     freshCard.image_url = freshUrlWithTimestamp;
 
     return reply.send({
       success: true,
-      message: 'Tải và nén ảnh thành công!',
+      message: 'Image uploaded and converted successfully!',
       image_url: freshUrlWithTimestamp,
       card: freshCard
     });
   } catch (err) {
     fastify.log.error(err);
-    return reply.status(500).send({ error: 'Lỗi khi upload ảnh: ' + err.message });
+    return reply.status(500).send({ error: 'Error uploading image: ' + err.message });
   }
 });
 
-// 4.9. API Xóa Thẻ Flashcard (Chỉ cho phép xóa thẻ do người dùng tự tạo is_custom = 1)
+// 4.9. Delete Flashcard API (Only allows deleting custom user cards with is_custom = 1)
 fastify.delete('/api/v1/cards/:id', async (request, reply) => {
   const { id } = request.params;
 
   try {
     const card = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
     if (!card) {
-      return reply.status(404).send({ error: 'NOT_FOUND', message: `Không tìm thấy flashcard với ID ${id}` });
+      return reply.status(404).send({ error: 'NOT_FOUND', message: `Flashcard with ID ${id} not found` });
     }
 
-    // Kiểm tra quyền xóa: Nếu là thẻ mặc định của hệ thống (is_custom === 0), cấm xóa
+    // Permission check: If system default card (is_custom === 0), disallow deletion
     if (!card.is_custom || card.is_custom === 0) {
       return reply.status(403).send({
         error: 'FORBIDDEN',
-        message: 'Không thể xóa thẻ từ vựng mặc định của hệ thống!'
+        message: 'Cannot delete default system flashcards!'
       });
     }
 
-    // Tiến hành xóa bản ghi trong SQLite
+    // Delete record from SQLite
     db.prepare('DELETE FROM flashcards WHERE id = ?').run(id);
 
-    // Dọn dẹp file ảnh và audio trên đĩa nếu có (tránh rác bộ nhớ)
-    // Lưu ý: Không xóa ảnh placeholder mặc định
+    // Clean up local disk files if present (prevent orphan storage leaks)
+    // Note: Never delete default placeholder image
     try {
       if (card.image_url && !card.image_url.includes('default-placeholder.webp')) {
-        // Tách query param nếu có
         const cleanImagePath = card.image_url.split('?')[0];
         if (cleanImagePath.startsWith('/uploads/')) {
           const relativePath = cleanImagePath.replace('/uploads/', '');
           const fullDiskPath = path.resolve(__dirname, '../uploads', relativePath);
           if (fs.existsSync(fullDiskPath)) {
             fs.unlinkSync(fullDiskPath);
-            fastify.log.info(`[Delete Card] Đã xóa file ảnh cục bộ: ${fullDiskPath}`);
+            fastify.log.info(`[Delete Card] Deleted local image: ${fullDiskPath}`);
           }
         }
       }
@@ -622,25 +621,25 @@ fastify.delete('/api/v1/cards/:id', async (request, reply) => {
           const fullDiskPath = path.resolve(__dirname, '../uploads', relativePath);
           if (fs.existsSync(fullDiskPath)) {
             fs.unlinkSync(fullDiskPath);
-            fastify.log.info(`[Delete Card] Đã xóa file audio cục bộ: ${fullDiskPath}`);
+            fastify.log.info(`[Delete Card] Deleted local audio: ${fullDiskPath}`);
           }
         }
       }
     } catch (cleanupErr) {
-      fastify.log.warn(`[Delete Card] Lỗi khi dọn dẹp file rác: ${cleanupErr.message}`);
+      fastify.log.warn(`[Delete Card] Error cleaning orphan media files: ${cleanupErr.message}`);
     }
 
     return reply.send({
       success: true,
-      message: 'Đã xóa thẻ thành công'
+      message: 'Card deleted successfully'
     });
   } catch (err) {
     fastify.log.error(err);
-    return reply.status(500).send({ error: 'INTERNAL_ERROR', message: 'Lỗi khi xóa thẻ: ' + err.message });
+    return reply.status(500).send({ error: 'INTERNAL_ERROR', message: 'Error deleting card: ' + err.message });
   }
 });
 
-// Khởi động server
+// Start Server
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
 

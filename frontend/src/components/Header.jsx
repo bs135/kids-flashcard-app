@@ -13,7 +13,7 @@ export default function Header({
   return (
     <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b-4 border-amber-200 px-4 py-3 shadow-sm select-none">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
-        {/* Logo & Tên ứng dụng */}
+        {/* Logo & App title */}
         <div 
           onClick={() => {
             soundEffects.playPop();
@@ -34,9 +34,9 @@ export default function Header({
           </div>
         </div>
 
-        {/* Các nút tương tác: Thú Cưng, Mini Games, Sao Vàng, Khóa Phụ Huynh */}
+        {/* Interactive buttons: Pet, Mini Games, Stars Counter, Parental Gate */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Nút Bạn Thú Cưng Mini (Dino) */}
+          {/* Virtual Pet button (Dino) */}
           <button
             onClick={() => {
               soundEffects.playPop();
@@ -49,7 +49,7 @@ export default function Header({
             <span className="hidden sm:inline">Thú Cưng</span>
           </button>
 
-          {/* Nút Mini-Games (Game Hub) */}
+          {/* Mini-Games button (Game Hub) */}
           <button
             onClick={() => {
               soundEffects.playPop();
@@ -62,7 +62,7 @@ export default function Header({
             <span className="hidden sm:inline">Trò Chơi</span>
           </button>
 
-          {/* Widget Điểm Sao Vàng */}
+          {/* Star points widget */}
           <div 
             onClick={() => {
               soundEffects.playStar();
@@ -76,7 +76,7 @@ export default function Header({
             </span>
           </div>
 
-          {/* Nút Cổng Phụ Huynh / Quản trị */}
+          {/* Parental Gate / Admin button */}
           <button
             onClick={() => {
               soundEffects.playPop();

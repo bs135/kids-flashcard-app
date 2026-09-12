@@ -30,9 +30,9 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
         transition={{ duration: 0.6, type: 'spring', stiffness: 260, damping: 20 }}
         className="w-full h-full relative transform-style-3d shadow-2xl rounded-3xl"
       >
-        {/* ==================== MẶT TRƯỚC (FRONT) ==================== */}
+        {/* ==================== FRONT SIDE ==================== */}
         <div className="absolute inset-0 w-full h-full backface-hidden bg-white border-4 border-amber-300 rounded-3xl p-6 flex flex-col items-center justify-between shadow-bouncy overflow-hidden">
-          {/* Huy hiệu đỉnh & Nút lật gợi ý */}
+          {/* Header badge & flip hint */}
           <div className="w-full flex justify-between items-center text-xs font-bold text-amber-700">
             <span className="bg-amber-100 px-3 py-1 rounded-full border border-amber-200">
               Chạm thẻ để xem nghĩa 🔄
@@ -40,7 +40,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
             <span className="text-xl">✨</span>
           </div>
 
-          {/* Hình ảnh minh họa to rõ (Kèm Cache-busting) */}
+          {/* Large illustration image (with cache-busting) */}
           <div className="relative w-48 h-48 sm:w-56 sm:h-56 my-2 rounded-2xl overflow-hidden border-4 border-amber-100 shadow-inner group">
             <img
               src={card.image_url?.includes('?') ? card.image_url : `${card.image_url}?v=${card.id || ''}`}
@@ -50,7 +50,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
             />
           </div>
 
-          {/* Từ vựng tiếng Anh & Phiên âm IPA */}
+          {/* English Word & IPA phonetics */}
           <div className="text-center w-full">
             <h3 className="text-4xl sm:text-5xl font-black text-slate-800 tracking-wide font-kids">
               {card.word}
@@ -62,7 +62,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
             )}
           </div>
 
-          {/* Nút Loa Phát Âm (Audio Button) To Tròn */}
+          {/* Circular Audio Button */}
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
@@ -75,9 +75,9 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
           </motion.button>
         </div>
 
-        {/* ==================== MẶT SAU (BACK) ==================== */}
+        {/* ==================== BACK SIDE ==================== */}
         <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 border-4 border-sky-300 rounded-3xl p-6 flex flex-col items-center justify-between shadow-bouncy overflow-hidden">
-          {/* Huy hiệu mặt sau */}
+          {/* Back badge */}
           <div className="w-full flex justify-between items-center text-xs font-bold text-sky-700">
             <span className="bg-sky-100 px-3 py-1 rounded-full border border-sky-200">
               Nghĩa tiếng Việt
@@ -95,7 +95,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
             </button>
           </div>
 
-          {/* Nghĩa tiếng Việt chữ to rõ */}
+          {/* Vietnamese definition */}
           <div className="text-center my-auto">
             <span className="text-sm font-bold text-sky-600 uppercase tracking-widest block mb-1">
               Tiếng Việt có nghĩa là:
@@ -105,7 +105,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
             </h4>
           </div>
 
-          {/* Ví dụ minh họa song ngữ */}
+          {/* Bilingual contextual example */}
           {card.example_en && (
             <div className="w-full bg-white/90 border-2 border-sky-200 rounded-2xl p-4 text-left shadow-sm">
               <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 mb-1">
@@ -123,7 +123,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
             </div>
           )}
 
-          {/* Nút Loa Lặp Lại Phát Âm ở mặt sau */}
+          {/* Pronunciation replay button */}
           <button
             onClick={handleAudioPlay}
             className="mt-4 sm:mt-5 flex items-center gap-2 bg-sky-500 hover:bg-sky-600 text-white font-bold px-6 py-2.5 rounded-full shadow-md transition-transform transform active:scale-95 text-sm"

@@ -13,12 +13,12 @@ if (!fs.existsSync(baseAudioDir)) {
 }
 
 /**
- * Sinh file audio mp3 bằng Edge-TTS (giọng trẻ em / tự nhiên en-US-AnaNeural)
- * và lưu trực tiếp về backend/uploads/audio/{topicSlug}/{wordSlug}.mp3
- * @param {string} word Từ tiếng Anh
- * @param {string} [topicSlug='general'] Slug của chủ đề
- * @param {string} [voiceName='en-US-AnaNeural'] Tên giọng đọc Microsoft Edge
- * @returns {Promise<string>} Đường dẫn cục bộ dạng /uploads/audio/{topicSlug}/{wordSlug}.mp3
+ * Generates an MP3 audio file using Edge-TTS (natural child voice en-US-AnaNeural)
+ * and stores it directly at backend/uploads/audio/{topicSlug}/{wordSlug}.mp3
+ * @param {string} word English vocabulary word
+ * @param {string} [topicSlug='general'] Topic slug identifier
+ * @param {string} [voiceName='en-US-AnaNeural'] Microsoft Edge voice name
+ * @returns {Promise<string>} Local relative URL format: /uploads/audio/{topicSlug}/{wordSlug}.mp3
  */
 export async function downloadWordAudio(word, topicSlug = 'general', voiceName = 'en-US-AnaNeural') {
   const safeTopic = slugify(topicSlug);
@@ -33,7 +33,7 @@ export async function downloadWordAudio(word, topicSlug = 'general', voiceName =
   const filePath = path.join(topicAudioDir, filename);
   const publicUrl = `/uploads/audio/${safeTopic}/${filename}`;
 
-  // Nếu file đã tồn tại và có dung lượng > 500 bytes thì tái sử dụng cache
+  // Reuse cached file if it exists and has size > 500 bytes
   if (fs.existsSync(filePath) && fs.statSync(filePath).size > 500) {
     return publicUrl;
   }
@@ -42,7 +42,7 @@ export async function downloadWordAudio(word, topicSlug = 'general', voiceName =
     const tts = new MsEdgeTTS();
     await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
     
-    // toStream trả về { audioStream, metadataStream }
+    // toStream returns { audioStream, metadataStream }
     const { audioStream } = tts.toStream(word.trim());
     const writeStream = fs.createWriteStream(filePath);
 
@@ -55,8 +55,8 @@ export async function downloadWordAudio(word, topicSlug = 'general', voiceName =
 
     return publicUrl;
   } catch (error) {
-    console.warn(`[Edge-TTS] Lỗi sinh audio cho từ "${word}":`, error.message);
-    // Thử fallback sang giọng en-US-JennyNeural
+    console.warn(`[Edge-TTS] Error generating audio for "${word}":`, error.message);
+    // Fallback to en-US-JennyNeural voice
     try {
       const fallbackTts = new MsEdgeTTS();
       await fallbackTts.setMetadata('en-US-JennyNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
@@ -72,7 +72,7 @@ export async function downloadWordAudio(word, topicSlug = 'general', voiceName =
 
       return publicUrl;
     } catch (fallbackError) {
-      console.error(`[Edge-TTS Fallback] Thất bại cho từ "${word}":`, fallbackError.message);
+      console.error(`[Edge-TTS Fallback] Failed generating audio for "${word}":`, fallbackError.message);
       if (fs.existsSync(filePath)) {
         try { fs.unlinkSync(filePath); } catch (e) {}
       }

@@ -19,15 +19,15 @@ export default function App() {
     return parseInt(localStorage.getItem('kids_stars') || '0', 10);
   });
 
-  // Quản lý trạng thái Admin & Parental Gate
+  // Admin & Parental Gate state management
   const [isParentalGateOpen, setIsParentalGateOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
 
-  // Quản lý trạng thái Thú Cưng Ảo & Mini-Games
+  // Virtual Pet & Mini-Games state management
   const [isPetOpen, setIsPetOpen] = useState(false);
   const [activeGame, setActiveGame] = useState(null); // 'bubble' | 'memory' | null
 
-  // Tải dữ liệu ban đầu từ Backend
+  // Load initial data from Backend
   useEffect(() => {
     async function loadInitialData() {
       try {
@@ -44,7 +44,7 @@ export default function App() {
           localStorage.setItem('kids_stars', initialStars.toString());
         }
       } catch (err) {
-        console.error('Lỗi khi tải dữ liệu từ máy chủ:', err);
+        console.error('Error fetching initial data from server:', err);
       } finally {
         setLoading(false);
       }
@@ -52,7 +52,7 @@ export default function App() {
     loadInitialData();
   }, []);
 
-  // Xử lý khi bé chọn một hòn đảo chủ đề
+  // Handle selecting a topic island
   const handleSelectTopic = async (topic) => {
     try {
       setLoading(true);
@@ -61,21 +61,21 @@ export default function App() {
       setCurrentCards(data.cards || []);
       setActiveGame(null);
     } catch (err) {
-      console.error('Lỗi tải thẻ của chủ đề:', err);
+      console.error('Error loading cards for topic:', err);
       alert('Không thể tải các thẻ của chủ đề này!');
     } finally {
       setLoading(false);
     }
   };
 
-  // Quay về bản đồ chủ đề
+  // Navigate back to topic map
   const handleBackToMap = () => {
     setSelectedTopic(null);
     setCurrentCards([]);
     setActiveGame(null);
   };
 
-  // Cộng / Trừ sao cho bé
+  // Add / Deduct stars
   const handleUpdateStars = (amount) => {
     setStars(prev => {
       const newStars = Math.max(0, prev + amount);
@@ -84,25 +84,25 @@ export default function App() {
     });
   };
 
-  // Cộng sao khi học xong thẻ hoặc thắng mini-game
+  // Reward stars upon completing cards or winning mini-games
   const handleEarnStar = (amount = 1) => {
     soundEffects.playStar();
     handleUpdateStars(amount);
   };
 
-  // Tải lại danh sách chủ đề khi Admin tạo thêm từ/chủ đề
+  // Refresh topic catalog when cards or topics are created by Admin
   const handleRefreshTopics = async () => {
     try {
       const data = await fetchTopics();
       setTopics(data);
     } catch (err) {
-      console.error('Lỗi làm mới chủ đề:', err);
+      console.error('Error refreshing topics:', err);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Thanh Header trên cùng */}
+      {/* Top Header Navigation */}
       <Header
         stars={stars}
         currentTopic={selectedTopic}
@@ -115,7 +115,7 @@ export default function App() {
         }}
       />
 
-      {/* Vùng Nội Dung Chính */}
+      {/* Main Content Area */}
       <main className="flex-1 flex flex-col justify-center">
         {isAdminOpen ? (
           <AdminPanel
@@ -160,7 +160,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Modal Thú Cưng Ảo (Dino) */}
+      {/* Virtual Pet Modal */}
       <VirtualPetModal
         isOpen={isPetOpen}
         onClose={() => setIsPetOpen(false)}
@@ -168,7 +168,7 @@ export default function App() {
         onUpdateStars={handleUpdateStars}
       />
 
-      {/* Cổng Bảo Vệ Phụ Huynh */}
+      {/* Parental Gate Security Modal */}
       <ParentalGateModal
         isOpen={isParentalGateOpen}
         onClose={() => setIsParentalGateOpen(false)}
@@ -180,7 +180,7 @@ export default function App() {
         }}
       />
 
-      {/* Footer nhỏ nhẹ */}
+      {/* Minimal App Footer */}
       <footer className="py-4 text-center text-xs font-semibold text-slate-400">
         Kids English Flashcard App • Học Vui Mỗi Ngày • v1.0.0
       </footer>

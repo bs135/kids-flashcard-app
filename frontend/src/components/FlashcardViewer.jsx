@@ -6,20 +6,20 @@ import Flashcard from './Flashcard';
 import { soundEffects } from '../services/soundEffects';
 
 export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEarnStar }) {
-  // Quản lý bộ 5 thẻ ngẫu nhiên cho mỗi lượt học
+  // Manage random 5-card deck for each study session
   const [activeCards, setActiveCards] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  // Hàm chọn ngẫu nhiên 5 thẻ từ nguồn cards
+  // Randomly selects 5 cards from card pool
   const pickRandomCards = (sourceCards) => {
     if (!sourceCards || sourceCards.length === 0) return [];
     const shuffled = [...sourceCards].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, 5);
   };
 
-  // Khởi tạo lượt học 5 thẻ khi topic hoặc cards thay đổi
+  // Initialize 5-card session when topic or card pool changes
   useEffect(() => {
     setActiveCards(pickRandomCards(cards));
     setCurrentIndex(0);
@@ -30,7 +30,7 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
   const currentCard = activeCards[currentIndex];
   const progressPercent = activeCards.length > 0 ? Math.round(((currentIndex + 1) / activeCards.length) * 100) : 0;
 
-  // Xáo trộn lượt học mới (5 thẻ ngẫu nhiên mới)
+  // Shuffle a new session (5 random cards)
   const handleShuffleNewSession = () => {
     soundEffects.playPop();
     setActiveCards(pickRandomCards(cards));
@@ -39,7 +39,7 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
     setIsCompleted(false);
   };
 
-  // Chuyển thẻ tiếp theo
+  // Advance to next card
   const handleNext = () => {
     soundEffects.playPop();
     setIsFlipped(false);
@@ -47,12 +47,12 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
     if (currentIndex < activeCards.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
-      // Bé đã hoàn thành toàn bộ 5 thẻ trong lượt học!
+      // Child completed all 5 cards in current session
       triggerCompletion();
     }
   };
 
-  // Quay lại thẻ trước
+  // Return to previous card
   const handlePrev = () => {
     if (currentIndex > 0) {
       soundEffects.playPop();
@@ -61,12 +61,12 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
     }
   };
 
-  // Kích hoạt pháo hoa chúc mừng và cộng sao
+  // Trigger celebration confetti and reward stars
   const triggerCompletion = () => {
     setIsCompleted(true);
     soundEffects.playWin();
 
-    // Bắn pháo hoa giấy confetti
+    // Fire celebration confetti
     confetti({
       particleCount: 120,
       spread: 70,
@@ -74,7 +74,7 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
     });
 
     if (onEarnStar) {
-      onEarnStar(3); // Tặng bé 3 ⭐ khi hoàn thành chủ đề!
+      onEarnStar(3); // Award 3 stars on session completion
     }
   };
 
@@ -84,9 +84,9 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
 
   return (
     <div className="max-w-md mx-auto px-4 py-5">
-      {/* Thanh điều hướng trên cùng với khoảng cách cân đối, gọn mắt */}
+      {/* Top navigation bar */}
       <div className="flex items-center justify-between gap-2.5 sm:gap-3 mb-5">
-        {/* Nút Bản đồ */}
+        {/* Map navigation button */}
         <button
           onClick={() => {
             soundEffects.playPop();
@@ -99,15 +99,15 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
           <span className="hidden sm:inline">Bản đồ</span>
         </button>
 
-        {/* Huy hiệu tên chủ đề */}
+        {/* Topic title badge */}
         <div className="flex items-center gap-1.5 bg-amber-100 border-2 border-amber-300 px-3 py-1.5 rounded-2xl text-amber-900 font-bold text-sm max-w-[170px] sm:max-w-[220px] truncate shadow-sm">
           <span className="text-lg shrink-0">{topic?.icon}</span>
           <span className="truncate">{topic?.name_en}</span>
         </div>
 
-        {/* Cụm Nút Xáo trộn & Đếm số thẻ */}
+        {/* Shuffle button & card counter */}
         <div className="flex items-center gap-2">
-          {/* Nút Xáo trộn / Bắt đầu lại */}
+          {/* Shuffle button */}
           <button
             onClick={handleShuffleNewSession}
             className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-white border-2 border-slate-200 hover:border-purple-400 text-purple-600 rounded-xl shadow-sm transition-all hover:scale-110 active:scale-95 cursor-pointer"
@@ -116,14 +116,14 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
             <Shuffle className="w-4 h-4" />
           </button>
 
-          {/* Số thứ tự thẻ: 1 / 5 */}
+          {/* Card counter: 1 / 5 */}
           <div className="bg-white border-2 border-slate-200 px-2.5 py-1 sm:py-1.5 rounded-xl font-black text-purple-600 text-xs sm:text-sm shadow-sm whitespace-nowrap">
             {activeCards.length > 0 ? currentIndex + 1 : 0}/{activeCards.length}
           </div>
         </div>
       </div>
 
-      {/* Thanh tiến độ thanh mảnh phía trên */}
+      {/* Progress bar */}
       <div className="w-full h-3 bg-slate-200 rounded-full mb-6 overflow-hidden border border-slate-300 p-0.5">
         <motion.div
           className="h-full bg-gradient-to-r from-amber-400 via-pink-400 to-emerald-400 rounded-full"
@@ -132,7 +132,7 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
         />
       </div>
 
-      {/* Màn hình Chúc Mừng Hoàn Thành HOẶC Flashcard */}
+      {/* Completion celebration screen OR Flashcard */}
       <AnimatePresence mode="wait">
         {isCompleted ? (
           <motion.div
@@ -150,13 +150,13 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
               Bé đã học xong tất cả các từ vựng về chủ đề <strong className="text-amber-600">{topic?.name_en}</strong>!
             </p>
 
-            {/* Phần thưởng 3 sao vàng */}
+            {/* 3 Stars reward */}
             <div className="inline-flex items-center gap-3 bg-gradient-to-r from-amber-100 to-yellow-200 border-2 border-amber-400 px-6 py-3 rounded-3xl shadow-md">
               <span className="text-3xl">⭐ ⭐ ⭐</span>
               <span className="text-xl font-black text-amber-900 font-kids">+3 Sao Vàng</span>
             </div>
 
-            {/* Các nút hành động */}
+            {/* Action buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <button
                 onClick={handleRestart}
@@ -185,14 +185,14 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
             exit={{ opacity: 0, x: -40 }}
             transition={{ duration: 0.25 }}
           >
-            {/* Component Flashcard 3D */}
+            {/* 3D Flashcard Component */}
             <Flashcard
               card={currentCard}
               isFlipped={isFlipped}
               onFlip={() => setIsFlipped(!isFlipped)}
             />
 
-            {/* Các Nút Chuyển Thẻ (Trước / Tiếp Theo) */}
+            {/* Previous / Next Card navigation buttons */}
             <div className="flex items-center justify-between gap-4 mt-8">
               <button
                 onClick={handlePrev}
