@@ -101,7 +101,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen w-full overflow-x-hidden flex flex-col">
       {/* Top Header Navigation */}
       <Header
         stars={stars}
@@ -181,7 +181,7 @@ export default function App() {
       />
 
       {/* Minimal App Footer */}
-      <footer className="py-4 text-center text-xs font-semibold text-slate-400">
+      <footer className="py-1.5 sm:py-2 text-center text-[11px] sm:text-xs font-semibold text-slate-400 shrink-0 select-none">
         Kids English Flashcard App • Học Vui Mỗi Ngày • v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0'}
       </footer>
     </div>

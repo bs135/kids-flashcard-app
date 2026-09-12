@@ -38,12 +38,12 @@ export default function ParentalGateModal({ isOpen, onClose, onSuccess }) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border-4 border-amber-300 relative select-none"
+          className="bg-white rounded-3xl p-5 sm:p-8 max-w-md w-full shadow-2xl border-3 sm:border-4 border-amber-300 relative select-none my-auto"
         >
           {/* Close button */}
           <button

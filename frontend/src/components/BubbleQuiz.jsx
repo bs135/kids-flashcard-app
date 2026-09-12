@@ -159,32 +159,28 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 select-none">
-      {/* Header & Navigation bar */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 py-3 sm:py-6 select-none overflow-x-hidden">
+      {/* Header bar */}
+      <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
         <button
           onClick={() => {
             soundEffects.playPop();
             onBack();
           }}
-          className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold hover:border-amber-400 hover:text-amber-700 shadow-sm transition-all"
+          className="flex items-center gap-1.5 sm:gap-2 bg-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold hover:border-sky-400 hover:text-sky-700 shadow-sm transition-all text-xs sm:text-sm shrink-0"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           <span>Quay Lại</span>
         </button>
 
         {/* Topic selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-500 hidden sm:inline">Chủ đề:</span>
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <span className="text-xs font-bold text-slate-500 hidden sm:inline shrink-0">Chủ đề:</span>
           <select
             value={selectedTopicId}
             disabled={isPlaying}
-            onChange={(e) => {
-              setSelectedTopicId(e.target.value);
-              setIsPlaying(false);
-              setIsGameOver(false);
-            }}
-            className="bg-white border-2 border-amber-300 text-amber-900 font-bold px-3 py-1.5 rounded-2xl text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:opacity-60"
+            onChange={(e) => setSelectedTopicId(e.target.value)}
+            className="bg-white border-2 border-sky-300 text-sky-900 font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-2xl text-xs sm:text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 disabled:opacity-60 max-w-[170px] sm:max-w-[220px] truncate"
           >
             {topics.map(t => (
               <option key={t.id} value={t.id}>
@@ -196,23 +192,23 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
       </div>
 
       {/* Game arena */}
-      <div className="relative min-h-[520px] bg-gradient-to-b from-sky-100 via-indigo-50 to-white rounded-3xl border-4 border-sky-300 shadow-bouncy overflow-hidden p-6 flex flex-col justify-between">
+      <div className="relative min-h-[460px] sm:min-h-[520px] bg-gradient-to-b from-sky-100 via-indigo-50 to-white rounded-3xl border-3 sm:border-4 border-sky-300 shadow-bouncy overflow-hidden p-3 sm:p-6 flex flex-col justify-between">
         {/* Background decorative clouds */}
         <div className="absolute top-6 left-8 text-4xl opacity-40 animate-pulse pointer-events-none">☁️</div>
         <div className="absolute top-16 right-12 text-5xl opacity-40 animate-pulse pointer-events-none">☁️</div>
 
         {/* In-game header: Score & Timer */}
-        <div className="relative z-20 flex items-center justify-between">
+        <div className="relative z-20 flex items-center justify-between gap-2">
           {/* Score */}
-          <div className="flex items-center gap-2 bg-white/90 border-2 border-amber-300 px-4 py-2 rounded-2xl shadow-sm">
-            <Trophy className="w-5 h-5 text-amber-500 fill-amber-400" />
-            <span className="text-sm font-extrabold text-amber-900 font-kids">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-white/90 border-2 border-amber-300 px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl shadow-sm shrink-0">
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 fill-amber-400" />
+            <span className="text-xs sm:text-sm font-extrabold text-amber-900 font-kids">
               Điểm: {score}
             </span>
           </div>
 
           {/* 60s countdown timer */}
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border-2 shadow-sm font-extrabold text-sm ${
+          <div className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl border-2 shadow-sm font-extrabold text-xs sm:text-sm shrink-0 ${
             timeLeft <= 10 
               ? 'bg-rose-100 border-rose-300 text-rose-700 animate-bounce' 
               : 'bg-white/90 border-sky-300 text-sky-900'
@@ -249,23 +245,23 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
         {isPlaying && targetCard && (
           <>
             {/* Target word pronunciation box */}
-            <div className="relative z-20 text-center my-2">
-              <div className="inline-flex items-center gap-3 bg-white/95 border-3 border-sky-300 px-6 py-3 rounded-full shadow-md">
+            <div className="relative z-20 text-center my-2 max-w-full px-1">
+              <div className="inline-flex items-center gap-2 sm:gap-3 bg-white/95 border-2 sm:border-3 border-sky-300 px-3.5 sm:px-6 py-2 sm:py-3 rounded-full shadow-md max-w-full">
                 <button
                   onClick={() => {
                     soundEffects.playPop();
                     speakWord(targetCard.word, targetCard.audio_url);
                   }}
-                  className="w-11 h-11 rounded-full bg-amber-400 hover:bg-amber-500 border-2 border-amber-300 flex items-center justify-center text-amber-950 shadow-sm active:scale-95 transition-transform"
+                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-amber-400 hover:bg-amber-500 border-2 border-amber-300 flex items-center justify-center text-amber-950 shadow-sm active:scale-95 transition-transform shrink-0"
                   title="Nghe lại"
                 >
-                  <Volume2 className="w-6 h-6 animate-pulse" />
+                  <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
                 </button>
-                <div className="text-left">
-                  <div className="text-xs font-bold text-sky-600 uppercase tracking-wide">
+                <div className="text-left min-w-0">
+                  <div className="text-[10px] sm:text-xs font-bold text-sky-600 uppercase tracking-wide">
                     Hãy tìm quả bóng:
                   </div>
-                  <div className="text-2xl font-black text-slate-800 font-kids tracking-wide">
+                  <div className="text-lg sm:text-2xl font-black text-slate-800 font-kids tracking-wide truncate">
                     {targetCard.word}
                   </div>
                 </div>
@@ -273,8 +269,8 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
             </div>
 
             {/* Bubble floating area */}
-            <div className="relative flex-1 w-full flex items-center justify-center min-h-[320px]">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 items-center justify-center px-6 sm:px-8 py-4">
+            <div className="relative flex-1 w-full flex items-center justify-center min-h-[280px] sm:min-h-[320px] overflow-hidden">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 items-center justify-center px-1 sm:px-8 py-2 sm:py-4">
                 {bubbles.map((b) => {
                   const isShaking = shakingBubbleId === b.id;
 

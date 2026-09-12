@@ -92,12 +92,12 @@ export default function VirtualPetModal({ isOpen, onClose, stars = 0, onUpdateSt
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
       <motion.div
         initial={{ scale: 0.85, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.85, opacity: 0 }}
-        className="relative w-full max-w-md bg-gradient-to-b from-emerald-50 via-teal-50 to-white rounded-3xl border-4 border-emerald-300 shadow-2xl p-6 overflow-hidden select-none"
+        className="relative w-full max-w-md bg-gradient-to-b from-emerald-50 via-teal-50 to-white rounded-3xl border-3 sm:border-4 border-emerald-300 shadow-2xl p-4 sm:p-6 overflow-hidden select-none my-auto"
       >
         {/* Close button */}
         <button

@@ -8,5 +8,14 @@
     "url": "git+https://github.com/bs135/kids-flashcard-app.git"
   },
   "author": "bs135",
-  "license": "MIT"
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test:ui": "playwright test tests/responsive-visual.spec.js",
+    "test:devices": "node scripts/test-devices.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "playwright": "^1.63.0"
+  }
 }

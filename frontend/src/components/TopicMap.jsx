@@ -5,23 +5,23 @@ import { soundEffects } from '../services/soundEffects';
 
 export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="w-full max-w-4xl mx-auto px-2.5 sm:px-4 py-4 sm:py-8 overflow-x-hidden">
       {/* Welcome Title */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 bg-yellow-100 border-2 border-yellow-300 px-4 py-1.5 rounded-full text-yellow-800 font-bold text-sm mb-3 shadow-sm">
-          <Compass className="w-4 h-4 text-amber-600 animate-spin" />
+      <div className="text-center mb-6 sm:mb-8 px-1">
+        <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-yellow-100 border-2 border-yellow-300 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-yellow-800 font-bold text-xs sm:text-sm mb-2 sm:mb-3 shadow-sm">
+          <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 animate-spin" />
           <span>BẢN ĐỒ KHÁM PHÁ THẾ GIỚI</span>
         </div>
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-800 font-kids tracking-tight">
+        <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-800 font-kids tracking-tight">
           Hôm nay bé muốn học gì nào? 🚀
         </h2>
-        <p className="text-slate-500 mt-2 text-base font-medium">
+        <p className="text-slate-500 mt-1 sm:mt-2 text-sm sm:text-base font-medium">
           Chọn một hòn đảo chủ đề bên dưới hoặc thử thách mini-games nhé!
         </p>
       </div>
 
       {/* Mini-Games Section Banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
         {/* Game 1: Bubble Pop */}
         <motion.div
           whileHover={{ scale: 1.02, translateY: -2 }}

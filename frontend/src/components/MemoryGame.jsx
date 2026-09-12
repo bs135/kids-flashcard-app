@@ -172,27 +172,27 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 select-none">
+    <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 py-3 sm:py-6 select-none overflow-x-hidden">
       {/* Header & Navigation bar */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
         <button
           onClick={() => {
             soundEffects.playPop();
             onBack();
           }}
-          className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold hover:border-amber-400 hover:text-amber-700 shadow-sm transition-all"
+          className="flex items-center gap-1.5 sm:gap-2 bg-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold hover:border-amber-400 hover:text-amber-700 shadow-sm transition-all text-xs sm:text-sm shrink-0"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           <span>Quay Lại</span>
         </button>
 
         {/* Topic selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-500 hidden sm:inline">Chủ đề:</span>
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <span className="text-xs font-bold text-slate-500 hidden sm:inline shrink-0">Chủ đề:</span>
           <select
             value={selectedTopicId}
             onChange={(e) => setSelectedTopicId(e.target.value)}
-            className="bg-white border-2 border-amber-300 text-amber-900 font-bold px-3 py-1.5 rounded-2xl text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="bg-white border-2 border-amber-300 text-amber-900 font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-2xl text-xs sm:text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 max-w-[170px] sm:max-w-[220px] truncate"
           >
             {topics.map(t => (
               <option key={t.id} value={t.id}>
@@ -204,20 +204,20 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
       </div>
 
       {/* Memory game board arena */}
-      <div className="relative min-h-[520px] bg-gradient-to-b from-amber-50 via-orange-50 to-white rounded-3xl border-4 border-amber-300 shadow-bouncy overflow-hidden p-6 flex flex-col justify-between">
+      <div className="relative min-h-[460px] sm:min-h-[520px] bg-gradient-to-b from-amber-50 via-orange-50 to-white rounded-3xl border-3 sm:border-4 border-amber-300 shadow-bouncy overflow-hidden p-3 sm:p-6 flex flex-col justify-between">
         {/* In-game header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 bg-white/90 border-2 border-amber-300 px-4 py-1.5 rounded-2xl shadow-sm">
-            <span className="text-lg">🎯</span>
-            <span className="text-sm font-extrabold text-amber-900 font-kids">
-              Lượt lật: {moves}
+        <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+          <div className="flex items-center gap-1 sm:gap-2 bg-white/90 border-2 border-amber-300 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-2xl shadow-sm shrink-0">
+            <span className="text-base sm:text-lg">🎯</span>
+            <span className="text-xs sm:text-sm font-extrabold text-amber-900 font-kids">
+              Lượt: {moves}
             </span>
           </div>
 
-          <div className="flex items-center gap-2 bg-white/90 border-2 border-emerald-300 px-4 py-1.5 rounded-2xl shadow-sm">
-            <span className="text-lg">✨</span>
-            <span className="text-sm font-extrabold text-emerald-800 font-kids">
-              Ghép đúng: {matchedIds.size} / {gameCards.length / 2} cặp
+          <div className="flex items-center gap-1 sm:gap-2 bg-white/90 border-2 border-emerald-300 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-2xl shadow-sm truncate">
+            <span className="text-base sm:text-lg shrink-0">✨</span>
+            <span className="text-xs sm:text-sm font-extrabold text-emerald-800 font-kids truncate">
+              {matchedIds.size} / {gameCards.length / 2} cặp
             </span>
           </div>
 
@@ -226,10 +226,10 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
             whileTap={{ scale: 0.9, rotate: -180 }}
             transition={{ type: "spring", stiffness: 300, damping: 15 }}
             onClick={() => initBoard(cardsPool)}
-            className="p-2.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-600 hover:border-amber-400 hover:text-amber-700 shadow-sm cursor-pointer select-none flex items-center justify-center"
+            className="p-1.5 sm:p-2.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-600 hover:border-amber-400 hover:text-amber-700 shadow-sm cursor-pointer select-none flex items-center justify-center shrink-0"
             title="Xáo trộn lại"
           >
-            <RefreshCw className="w-5 h-5" />
+            <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
           </motion.button>
         </div>
 

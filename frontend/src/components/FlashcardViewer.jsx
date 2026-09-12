@@ -83,141 +83,156 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
   };
 
   return (
-    <div className="max-w-md mx-auto px-4 py-5">
-      {/* Top navigation bar */}
-      <div className="flex items-center justify-between gap-2.5 sm:gap-3 mb-5">
-        {/* Map navigation button */}
-        <button
-          onClick={() => {
-            soundEffects.playPop();
-            onBackToHome();
-          }}
-          className="flex items-center gap-1.5 bg-white border-2 border-slate-200 hover:border-amber-400 px-3 py-1.5 rounded-2xl font-bold text-slate-700 text-sm shadow-sm transition-all hover:scale-105 active:scale-95"
-          title="Về bản đồ chủ đề"
-        >
-          <Home className="w-4 h-4 text-amber-500 shrink-0" />
-          <span className="hidden sm:inline">Bản đồ</span>
-        </button>
-
-        {/* Topic title badge */}
-        <div className="flex items-center gap-1.5 bg-amber-100 border-2 border-amber-300 px-3 py-1.5 rounded-2xl text-amber-900 font-bold text-sm max-w-[170px] sm:max-w-[220px] truncate shadow-sm">
-          <span className="text-lg shrink-0">{topic?.icon}</span>
-          <span className="truncate">{topic?.name_en}</span>
-        </div>
-
-        {/* Shuffle button & card counter */}
-        <div className="flex items-center gap-2">
-          {/* Shuffle button */}
+    <div className="w-full max-w-md sm:max-w-lg md:max-w-xl mx-auto px-2.5 sm:px-4 py-1 sm:py-2 flex flex-col justify-between flex-1 h-full min-h-0 overflow-hidden">
+      {/* Top Section: Navigation bar & Progress bar */}
+      <div className="shrink-0 mb-1 sm:mb-2">
+        {/* Top navigation bar */}
+        <div className="flex items-center justify-between gap-1.5 sm:gap-3 mb-1 sm:mb-2">
+          {/* Map navigation button */}
           <button
-            onClick={handleShuffleNewSession}
-            className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-white border-2 border-slate-200 hover:border-purple-400 text-purple-600 rounded-xl shadow-sm transition-all hover:scale-110 active:scale-95 cursor-pointer"
-            title="Xáo trộn 5 thẻ mới"
+            onClick={() => {
+              soundEffects.playPop();
+              onBackToHome();
+            }}
+            className="flex items-center gap-1 sm:gap-1.5 bg-white border-2 border-slate-200 hover:border-amber-400 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-2xl font-bold text-slate-700 text-xs sm:text-sm shadow-sm transition-all hover:scale-105 active:scale-95 shrink-0"
+            title="Về bản đồ chủ đề"
           >
-            <Shuffle className="w-4 h-4" />
+            <Home className="w-4 h-4 text-amber-500 shrink-0" />
+            <span className="hidden sm:inline">Bản đồ</span>
           </button>
 
-          {/* Card counter: 1 / 5 */}
-          <div className="bg-white border-2 border-slate-200 px-2.5 py-1 sm:py-1.5 rounded-xl font-black text-purple-600 text-xs sm:text-sm shadow-sm whitespace-nowrap">
-            {activeCards.length > 0 ? currentIndex + 1 : 0}/{activeCards.length}
+          {/* Topic title badge */}
+          <div className="flex items-center gap-1.5 bg-amber-100 border-2 border-amber-300 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-2xl text-amber-900 font-bold text-xs sm:text-sm max-w-[150px] sm:max-w-[220px] truncate shadow-sm shrink-0">
+            <span className="text-base sm:text-lg shrink-0">{topic?.icon}</span>
+            <span className="truncate">{topic?.name_en}</span>
           </div>
+
+          {/* Shuffle button & card counter */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Shuffle button */}
+            <button
+              onClick={handleShuffleNewSession}
+              className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 bg-white border-2 border-slate-200 hover:border-purple-400 text-purple-600 rounded-xl shadow-sm transition-all hover:scale-110 active:scale-95 cursor-pointer"
+              title="Xáo trộn 5 thẻ mới"
+            >
+              <Shuffle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
+
+            {/* Card counter: 1 / 5 */}
+            <div className="bg-white border-2 border-slate-200 px-2 sm:px-2.5 py-0.5 sm:py-1.5 rounded-xl font-black text-purple-600 text-xs sm:text-sm shadow-sm whitespace-nowrap">
+              {activeCards.length > 0 ? currentIndex + 1 : 0}/{activeCards.length}
+            </div>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full h-2 sm:h-2.5 bg-slate-200 rounded-full overflow-hidden border border-slate-300 p-0.5">
+          <motion.div
+            className="h-full bg-gradient-to-r from-amber-400 via-pink-400 to-emerald-400 rounded-full"
+            animate={{ width: `${progressPercent}%` }}
+            transition={{ duration: 0.3 }}
+          />
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="w-full h-3 bg-slate-200 rounded-full mb-6 overflow-hidden border border-slate-300 p-0.5">
-        <motion.div
-          className="h-full bg-gradient-to-r from-amber-400 via-pink-400 to-emerald-400 rounded-full"
-          animate={{ width: `${progressPercent}%` }}
-          transition={{ duration: 0.3 }}
-        />
+      {/* Center Section: 3D Flashcard or Completion Screen (fills available vertical space) */}
+      <div className="flex-1 w-full min-h-0 flex items-center justify-center py-1 sm:py-2">
+        <AnimatePresence mode="wait">
+          {isCompleted ? (
+            <motion.div
+              key="congrats"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="bg-white border-3 sm:border-4 border-yellow-300 rounded-3xl p-5 sm:p-8 text-center shadow-bouncy space-y-4 sm:space-y-6 my-auto"
+            >
+              <div className="text-5xl sm:text-7xl animate-bounce">🎉</div>
+              <div>
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-800 font-kids mb-1 sm:mb-2">
+                  Bé Giỏi Quá!
+                </h3>
+                <p className="text-xs sm:text-base font-semibold text-slate-600">
+                  Bé đã hoàn thành 5 thẻ từ vựng chủ đề <strong>{topic?.name_vi}</strong>!
+                </p>
+              </div>
+
+              {/* Reward badge */}
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-amber-100 to-yellow-100 border-2 border-amber-300 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl shadow-sm">
+                <Award className="w-6 h-6 sm:w-7 sm:h-7 text-amber-500" />
+                <span className="text-sm sm:text-lg font-black text-amber-900 font-kids">
+                  Thưởng: +3 Sao Vàng ⭐
+                </span>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-4 pt-2">
+                <button
+                  onClick={handleRestart}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white font-black px-5 sm:px-6 py-2.5 sm:py-3.5 rounded-2xl shadow-lg transition-transform active:scale-95 text-xs sm:text-base"
+                >
+                  <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Học 5 Thẻ Mới</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundEffects.playPop();
+                    onBackToHome();
+                  }}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-black px-5 sm:px-6 py-2.5 sm:py-3.5 rounded-2xl shadow-lg transition-transform active:scale-95 text-xs sm:text-base"
+                >
+                  <Home className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Về Bản Đồ Chủ Đề</span>
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key={currentIndex}
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.2 }}
+              className="w-full h-full flex-1 flex items-center justify-center"
+            >
+              {/* 3D Flashcard Component */}
+              <Flashcard
+                card={currentCard}
+                isFlipped={isFlipped}
+                onFlip={() => setIsFlipped(!isFlipped)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Completion celebration screen OR Flashcard */}
-      <AnimatePresence mode="wait">
-        {isCompleted ? (
-          <motion.div
-            key="congrats"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="bg-white border-4 border-yellow-300 rounded-3xl p-8 text-center shadow-bouncy space-y-6 my-8"
-          >
-            <div className="text-7xl animate-bounce">🎉</div>
-            <h3 className="text-3xl sm:text-4xl font-black text-slate-800 font-kids">
-              Hoan Hô Bé! Giỏi Quá! 🏆
-            </h3>
-            <p className="text-slate-600 font-semibold text-lg">
-              Bé đã học xong tất cả các từ vựng về chủ đề <strong className="text-amber-600">{topic?.name_en}</strong>!
-            </p>
+      {/* Bottom Section: Navigation Prev/Next Buttons (pinned safely at bottom) */}
+      {!isCompleted && (
+        <div className="shrink-0 pt-1.5 sm:pt-2 pb-0.5 sm:pb-1">
+          <div className="flex items-center justify-between gap-3 sm:gap-4">
+            <button
+              onClick={handlePrev}
+              disabled={currentIndex === 0}
+              className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3.5 rounded-2xl font-bold text-xs sm:text-base transition-all ${
+                currentIndex === 0
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-2 border-slate-200'
+                  : 'bg-white hover:bg-slate-50 text-slate-700 border-2 border-slate-300 shadow-bouncy active:shadow-bouncy-active'
+              }`}
+            >
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>Thẻ Trước</span>
+            </button>
 
-            {/* 3 Stars reward */}
-            <div className="inline-flex items-center gap-3 bg-gradient-to-r from-amber-100 to-yellow-200 border-2 border-amber-400 px-6 py-3 rounded-3xl shadow-md">
-              <span className="text-3xl">⭐ ⭐ ⭐</span>
-              <span className="text-xl font-black text-amber-900 font-kids">+3 Sao Vàng</span>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <button
-                onClick={handleRestart}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-3.5 rounded-2xl transition-transform active:scale-95"
-              >
-                <RotateCcw className="w-5 h-5" />
-                <span>Học Lại Bộ Này</span>
-              </button>
-              <button
-                onClick={() => {
-                  soundEffects.playPop();
-                  onBackToHome();
-                }}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-black px-8 py-3.5 rounded-2xl shadow-lg transition-transform active:scale-95"
-              >
-                <Home className="w-5 h-5" />
-                <span>Về Bản Đồ Chủ Đề</span>
-              </button>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key={currentIndex}
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -40 }}
-            transition={{ duration: 0.25 }}
-          >
-            {/* 3D Flashcard Component */}
-            <Flashcard
-              card={currentCard}
-              isFlipped={isFlipped}
-              onFlip={() => setIsFlipped(!isFlipped)}
-            />
-
-            {/* Previous / Next Card navigation buttons */}
-            <div className="flex items-center justify-between gap-4 mt-8">
-              <button
-                onClick={handlePrev}
-                disabled={currentIndex === 0}
-                className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-base transition-all ${
-                  currentIndex === 0
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-2 border-slate-200'
-                    : 'bg-white hover:bg-slate-50 text-slate-700 border-2 border-slate-300 shadow-bouncy active:shadow-bouncy-active'
-                }`}
-              >
-                <ChevronLeft className="w-5 h-5" />
-                <span>Thẻ Trước</span>
-              </button>
-
-              <button
-                onClick={handleNext}
-                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white py-3.5 rounded-2xl font-black text-base shadow-bouncy active:shadow-bouncy-active transition-all"
-              >
-                <span>{currentIndex === activeCards.length - 1 ? 'Hoàn Thành' : 'Thẻ Tiếp Theo'}</span>
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <button
+              onClick={handleNext}
+              className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white py-2.5 sm:py-3.5 rounded-2xl font-black text-xs sm:text-base shadow-bouncy active:shadow-bouncy-active transition-all"
+            >
+              <span>{currentIndex === activeCards.length - 1 ? 'Hoàn Thành' : 'Thẻ Tiếp Theo'}</span>
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -366,25 +366,25 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
+    <div className="w-full max-w-5xl mx-auto px-2.5 sm:px-4 py-4 sm:py-6 overflow-x-hidden">
       {/* Header Admin */}
-      <div className="flex items-center justify-between mb-8 pb-4 border-b-2 border-slate-200">
+      <div className="flex items-center justify-between gap-2 mb-6 sm:mb-8 pb-4 border-b-2 border-slate-200">
         <button
           onClick={() => {
             soundEffects.playPop();
             onBack();
           }}
-          className="flex items-center gap-2 bg-white border-2 border-slate-200 hover:border-amber-400 px-4 py-2 rounded-2xl font-bold text-slate-700 shadow-sm transition-all hover:scale-105 active:scale-95"
+          className="flex items-center gap-1.5 sm:gap-2 bg-white border-2 border-slate-200 hover:border-amber-400 px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl font-bold text-slate-700 shadow-sm transition-all hover:scale-105 active:scale-95 text-xs sm:text-sm shrink-0"
         >
-          <ArrowLeft className="w-5 h-5 text-amber-500" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
           <span>Về Ứng Dụng</span>
         </button>
 
-        <div className="text-right">
-          <h2 className="text-2xl font-black text-slate-800 font-kids flex items-center gap-2 justify-end">
+        <div className="text-right min-w-0">
+          <h2 className="text-lg sm:text-2xl font-black text-slate-800 font-kids flex items-center gap-1.5 sm:gap-2 justify-end truncate">
             <span>⚙️ Quản Trị Flashcards</span>
           </h2>
-          <p className="text-xs text-slate-500 font-medium">
+          <p className="text-[11px] sm:text-xs text-slate-500 font-medium hidden sm:block">
             Tự động sinh AI & Tải ảnh / Chỉnh sửa thẻ thủ công
           </p>
         </div>
