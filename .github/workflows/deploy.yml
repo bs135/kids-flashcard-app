@@ -1,4 +1,4 @@
-name: Auto Deploy to VPS
+name: Auto Release and Deploy to VPS
 
 # Trigger workflow on push to main branch
 on:
@@ -7,9 +7,45 @@ on:
       - main
 
 jobs:
-  deploy:
+  # Job 1: Calculate SemVer tag, push git tag, and create GitHub Release with changelog
+  release:
+    name: Create Semantic Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      new_tag: ${{ steps.tag_version.outputs.new_tag }}
+      release_type: ${{ steps.tag_version.outputs.release_type }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      - name: Bump Version and Push Git Tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          tag_prefix: v
+          fetch_all_tags: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: steps.tag_version.outputs.new_tag != ''
+        with:
+          tag_name: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
+          generate_release_notes: false
+
+  # Job 2: Deploy to VPS via SSH after release job finishes successfully
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: release
+    if: success()
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -22,12 +58,29 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            # 1. Navigate to the project directory on the VPS
+            echo "=========================================="
+            echo "Starting deployment for release: ${{ needs.release.outputs.new_tag || 'latest' }}"
+            echo "=========================================="
+
+            # 1. Navigate to the project directory on VPS
             cd /opt/kids-flashcard-app
-            
+
             # 2. Add safe.directory configuration for Git (avoid Git security error)
             git config --global --add safe.directory /opt/kids-flashcard-app
-            
-            # 3. Run the existing deploy.sh script in the project
+
+            # 3. Fetch latest tags and update to latest main branch
+            git fetch --tags origin
+            git checkout main
+            git pull origin main
+
+            # 4. Make deploy.sh executable and execute
             chmod +x deploy.sh
             ./deploy.sh
+
+            # 5. Display current git status and commit details
+            echo "=========================================="
+            echo "Deployment finished successfully!"
+            echo "Deployed Release: ${{ needs.release.outputs.new_tag || 'latest' }}"
+            echo "Latest Commit Information:"
+            git log -1 --oneline
+            echo "=========================================="

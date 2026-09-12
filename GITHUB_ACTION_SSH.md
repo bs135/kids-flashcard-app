@@ -49,14 +49,34 @@ Store connection credentials safely in GitHub Secrets so the workflow can connec
 
 ---
 
-### Step 4: Create the GitHub Actions Workflow File
-Ensure the workflow configuration file exists in your repository.
+### Step 4: Configure Workflow Permissions on GitHub
+To allow GitHub Actions to bump SemVer versions, create Git tags, and publish GitHub Releases, verify that workflow permissions are set properly:
 
-1. In the repository root, create the directory `.github/workflows/` (if it doesn't already exist).
-2. Create or verify `deploy.yml` with the following content:
+1. Go to your GitHub repository.
+2. Navigate to: **Settings** > **Actions** > **General**.
+3. Scroll down to **Workflow permissions**.
+4. Select **Read and write permissions**.
+5. Click **Save**.
+
+---
+
+### Step 5: Understand Conventional Commits and Semantic Versioning
+The workflow automatically calculates the next version tag based on [Conventional Commits](https://www.conventionalcommits.org/):
+
+| Commit Message Prefix | Release Type | Example | Description |
+| :--- | :--- | :--- | :--- |
+| `fix:` / `fix(...):` | **PATCH** | `fix: fix audio playback on safari` | Bug fixes or minor corrections (e.g., `v1.0.0` $\rightarrow$ `v1.0.1`). |
+| `feat:` / `feat(...):` | **MINOR** | `feat: add new animals topic` | New features or functional additions (e.g., `v1.0.0` $\rightarrow$ `v1.1.0`). |
+| `BREAKING CHANGE:` or `feat!:` / `fix!:` | **MAJOR** | `feat!: restructure entire media API` | Incompatible breaking changes (e.g., `v1.0.0` $\rightarrow$ `v2.0.0`). |
+| `chore:`, `docs:`, `style:`, `refactor:`, `test:` | **PATCH** (default) | `docs: update deployment documentation` | Maintenance, documentation, and code refactor tasks. |
+
+---
+
+### Step 6: Create the GitHub Actions Workflow File
+Ensure the workflow configuration file exists in your repository at `.github/workflows/deploy.yml`:
 
 ```yaml
-name: Auto Deploy to VPS
+name: Auto Release and Deploy to VPS
 
 # Trigger workflow on push to main branch
 on:
@@ -65,9 +85,45 @@ on:
       - main
 
 jobs:
-  deploy:
+  # Job 1: Calculate SemVer tag, push git tag, and create GitHub Release with changelog
+  release:
+    name: Create Semantic Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      new_tag: ${{ steps.tag_version.outputs.new_tag }}
+      release_type: ${{ steps.tag_version.outputs.release_type }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      - name: Bump Version and Push Git Tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          tag_prefix: v
+          fetch_all_tags: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: steps.tag_version.outputs.new_tag != ''
+        with:
+          tag_name: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
+          generate_release_notes: false
+
+  # Job 2: Deploy to VPS via SSH after release job finishes successfully
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: release
+    if: success()
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -80,18 +136,37 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
+            echo "=========================================="
+            echo "Starting deployment for release: ${{ needs.release.outputs.new_tag }}"
+            echo "=========================================="
+
             # 1. Navigate to the project directory on VPS
             cd /opt/kids-flashcard-app
-            
-            # 2. Mark project directory as safe for Git
+
+            # 2. Add safe.directory configuration for Git (avoid Git security error)
             git config --global --add safe.directory /opt/kids-flashcard-app
-            
-            # 3. Execute deploy.sh
+
+            # 3. Fetch latest tags and commits
+            git fetch --tags origin
+
+            # 4. Make deploy.sh executable and execute
             chmod +x deploy.sh
             ./deploy.sh
+
+            # 5. Display current git status and commit details
+            echo "=========================================="
+            echo "Deployment finished successfully!"
+            echo "Deployed Tag: ${{ needs.release.outputs.new_tag }}"
+            echo "Latest Commit Information:"
+            git log -1 --oneline
+            echo "=========================================="
 ```
 
-### Step 5: Verification & Operation
-1. Commit and push the `.github/workflows/deploy.yml` file to the `main` branch.
-2. In your GitHub repository, switch to the **Actions** tab; you will see the `Auto Deploy to VPS` workflow running.
-3. Once the workflow completes (marked with a green checkmark ✅), pulling the latest code, rebuilding Docker containers, and pruning old images on your VPS will be completely automated!
+---
+
+### Step 7: Verification & Operation
+1. When changes are merged or pushed to the `main` branch, the workflow will trigger automatically.
+2. In your GitHub repository, switch to the **Actions** tab to observe the execution:
+   - **Job 1 (`release`)**: Inspects commit messages, bumps version tag according to SemVer, creates git tag, and generates GitHub Release with release notes.
+   - **Job 2 (`deploy`)**: Triggers only when `release` succeeds, connects to VPS via SSH, pulls updates, executes `./deploy.sh`, and prints release tag and commit information.
+3. Check the **Releases** tab on GitHub to see the generated release and changelog notes.
