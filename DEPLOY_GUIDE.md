@@ -151,18 +151,40 @@ Sau khi hoàn tất, truy cập trình duyệt tại `https://flashcards.chipfc.
 
 ---
 
-## 4. Quy Trình Cập Nhật Ứng Dụng Nhanh
+## 4. Quy Trình Cập Nhật & Tự Động Triển Khai (CI/CD Auto-Deploy)
 
-Khi bạn có các bản cập nhật mã nguồn mới trên Git, bạn có thể dùng script `deploy.sh`:
+Hệ thống hỗ trợ cả hai phương thức cập nhật: **Tự động qua GitHub Actions (CI/CD)** và **Thủ công qua bash script trên VPS**.
+
+### 4.1. Tự động triển khai qua GitHub Actions (Khuyến nghị)
+Workflow tại `.github/workflows/deploy.yml` được cấu hình để mỗi khi bạn `git push` lên nhánh `main`, GitHub Actions sẽ tự động SSH vào VPS và kích hoạt script `./deploy.sh`.
+
+#### Các bước thiết lập GitHub Secrets:
+1. Vào repository trên GitHub: **Settings** ➔ **Secrets and variables** ➔ **Actions** ➔ Bấm **New repository secret**.
+2. Thêm 3 Secrets sau:
+   - `SSH_HOST`: Địa chỉ IP Public của VPS (ví dụ: `123.45.67.89`).
+   - `SSH_USERNAME`: Tên người dùng SSH (thường là `root` hoặc user có quyền sudo/docker).
+   - `SSH_PRIVATE_KEY`: Nội dung Private Key SSH (`id_rsa` hoặc `id_ed25519`) dùng để đăng nhập vào VPS.
+     > **Lưu ý:** Copy toàn bộ nội dung file private key, bao gồm cả các dòng `-----BEGIN OPENSSH PRIVATE KEY-----` và `-----END OPENSSH PRIVATE KEY-----`. Đảm bảo Public Key tương ứng đã được thêm vào file `~/.ssh/authorized_keys` trên VPS.
+
+3. **Cách thức hoạt động:**
+   - Mỗi lần bạn chạy `git push origin main`, GitHub Actions sẽ tự động chạy job `Auto Deploy to VPS`.
+   - Script tự động cấu hình `safe.directory` cho Git, cấp quyền thực thi và chạy `./deploy.sh`.
+   - Bạn có thể theo dõi tiến độ deploy trực tiếp tại tab **Actions** trên GitHub.
+
+---
+
+### 4.2. Triển khai thủ công bằng script trên VPS
+Nếu bạn muốn chủ động cập nhật trực tiếp trên VPS mà không cần push code hoặc muốn kèm nạp lại thẻ seed:
 
 - **Cập nhật code và build lại bình thường:**
   ```bash
   ./deploy.sh
   ```
   Script sẽ tự động:
-  1. Kéo mã nguồn mới nhất (`git pull`).
+  1. Kéo mã nguồn mới nhất (`git pull origin main`).
   2. Build lại image và khởi động lại container `app`.
   3. Dọn dẹp cache images thừa (`docker image prune -f`).
+  4. Hiển thị trạng thái container.
 
 - **Cập nhật code kèm đồng bộ lại 115 thẻ từ vựng seed:**
   ```bash
