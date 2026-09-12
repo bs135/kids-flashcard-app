@@ -100,7 +100,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Bump Version and Push Git Tag
+      - name: Calculate Next SemVer Tag
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.2
         with:
@@ -108,6 +108,34 @@ jobs:
           default_bump: patch
           tag_prefix: v
           fetch_all_tags: true
+          create_annotated_tag: false
+
+      - name: Synchronize Version into package.json Files
+        if: steps.tag_version.outputs.new_tag != ''
+        run: |
+          NEW_VER="${{ steps.tag_version.outputs.new_version }}"
+          NEW_TAG="${{ steps.tag_version.outputs.new_tag }}"
+          echo "Updating packages to version: $NEW_VER ($NEW_TAG)"
+
+          # Update version in root, backend, and frontend package.json
+          npm version "$NEW_VER" --no-git-tag-version
+          npm --prefix backend version "$NEW_VER" --no-git-tag-version
+          npm --prefix frontend version "$NEW_VER" --no-git-tag-version
+
+          # Configure Git author
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Commit updated package manifests
+          git add package.json backend/package.json frontend/package.json
+          git commit -m "chore(release): bump version to $NEW_VER [skip ci]"
+
+          # Push commit back to main branch
+          git push origin HEAD:main
+
+          # Point release tag to the bumped version commit and push tag
+          git tag -fa "$NEW_TAG" -m "Release $NEW_TAG"
+          git push origin "$NEW_TAG" --force
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

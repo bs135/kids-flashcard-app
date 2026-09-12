@@ -1,0 +1,12 @@
+{
+  "name": "kids-flashcard-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kids English Flashcard Web Application",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bs135/kids-flashcard-app.git"
+  },
+  "author": "bs135",
+  "license": "MIT"
+}

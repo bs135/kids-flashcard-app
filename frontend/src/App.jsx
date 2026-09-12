@@ -182,7 +182,7 @@ export default function App() {
 
       {/* Minimal App Footer */}
       <footer className="py-4 text-center text-xs font-semibold text-slate-400">
-        Kids English Flashcard App • Học Vui Mỗi Ngày • v1.0.0
+        Kids English Flashcard App • Học Vui Mỗi Ngày • v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0'}
       </footer>
     </div>
   );
