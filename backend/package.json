@@ -1,6 +1,6 @@
 {
   "name": "kids-flashcard-backend",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Fastify backend for Kids Flashcard Web App",
   "author": "bs135",
   "repository": {
