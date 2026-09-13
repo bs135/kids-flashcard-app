@@ -40,7 +40,7 @@ const devicesToTest = [
   {
     name: 'iphone-se-portrait',
     title: 'iPhone SE (Portrait)',
-    viewport: { width: 375, height: 667 },
+    viewport: { width: 375, height: 560 },
     isMobile: true,
     hasTouch: true
   },

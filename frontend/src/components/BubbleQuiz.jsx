@@ -220,21 +220,21 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
 
         {/* State 1: Not started */}
         {!isPlaying && !isGameOver && (
-          <div className="relative z-20 my-auto text-center py-8">
-            <div className="w-24 h-24 mx-auto mb-4 rounded-3xl bg-gradient-to-tr from-sky-400 to-blue-500 flex items-center justify-center text-5xl shadow-lg border-4 border-white animate-bounce">
+          <div className="relative z-20 my-auto text-center py-2 sm:py-8">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-4 rounded-3xl bg-gradient-to-tr from-sky-400 to-blue-500 flex items-center justify-center text-3xl sm:text-5xl shadow-lg border-4 border-white animate-bounce">
               🫧
             </div>
-            <h3 className="text-3xl sm:text-4xl font-black text-slate-800 font-kids mb-2">
+            <h3 className="text-2xl sm:text-4xl font-black text-slate-800 font-kids mb-1.5 sm:mb-2">
               Bong Bóng Từ Vựng
             </h3>
-            <p className="text-slate-600 max-w-md mx-auto text-sm sm:text-base font-medium mb-6">
+            <p className="text-slate-600 max-w-md mx-auto text-xs sm:text-base font-medium mb-4 sm:mb-6 px-2">
               Lắng nghe từ tiếng Anh được đọc và bấm vỡ quả bóng chứa hình ảnh đúng trước khi bóng bay mất nhé! 🎈
             </p>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={startGame}
-              className="bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-lg px-8 py-3.5 rounded-full shadow-lg border-3 border-amber-300 cursor-pointer"
+              className="bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-sm sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3.5 rounded-full shadow-lg border-2 sm:border-3 border-amber-300 cursor-pointer"
             >
               BẮT ĐẦU CHƠI NGAY 🚀
             </motion.button>
@@ -269,8 +269,8 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
             </div>
 
             {/* Bubble floating area */}
-            <div className="relative flex-1 w-full flex items-center justify-center min-h-[280px] sm:min-h-[320px] overflow-hidden">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 items-center justify-center px-1 sm:px-8 py-2 sm:py-4">
+            <div className="relative flex-1 w-full flex items-center justify-center min-h-[200px] sm:min-h-[320px] overflow-hidden">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-6 items-center justify-center px-1 sm:px-8 py-1 sm:py-4">
                 {bubbles.map((b) => {
                   const isShaking = shakingBubbleId === b.id;
 
@@ -295,7 +295,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
                       whileHover={{ scale: 1.08 }}
                       whileTap={{ scale: 0.92 }}
                       onClick={() => handleBubbleClick(b)}
-                      className={`relative w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br ${b.color} border-4 p-3 sm:p-4 flex items-center justify-center shadow-lg cursor-pointer select-none overflow-hidden`}
+                      className={`relative w-22 h-22 xs:w-26 xs:h-26 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br ${b.color} border-3 sm:border-4 p-2 sm:p-4 flex items-center justify-center shadow-lg cursor-pointer select-none overflow-hidden`}
                     >
                       {/* Bubble shine highlight reflection */}
                       <div className="absolute top-2.5 left-3.5 w-6 h-3 bg-white/75 rounded-full rotate-[-35deg] pointer-events-none z-10" />

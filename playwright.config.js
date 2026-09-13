@@ -35,7 +35,7 @@ export default defineConfig({
     {
       name: 'iphone-se-portrait',
       use: {
-        viewport: { width: 375, height: 667 },
+        viewport: { width: 375, height: 560 },
         isMobile: true,
         hasTouch: true
       }

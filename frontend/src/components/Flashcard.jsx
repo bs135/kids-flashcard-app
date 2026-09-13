@@ -23,7 +23,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
   };
 
   return (
-    <div className="w-full h-full max-w-sm sm:max-w-md flex flex-col justify-between perspective-1000 select-none cursor-pointer mx-auto">
+    <div className="w-full h-full max-w-sm sm:max-w-md max-h-[320px] xs:max-h-[360px] sm:max-h-none flex flex-col justify-between perspective-1000 select-none cursor-pointer mx-auto my-auto">
       <motion.div
         onClick={handleCardClick}
         animate={{ rotateY: isFlipped ? 180 : 0 }}
@@ -31,17 +31,17 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
         className="w-full h-full relative transform-style-3d shadow-2xl rounded-3xl flex-1 flex flex-col"
       >
         {/* ==================== FRONT SIDE ==================== */}
-        <div className="absolute inset-0 w-full h-full backface-hidden bg-white border-3 sm:border-4 border-amber-300 rounded-3xl p-3 sm:p-5 flex flex-col items-center justify-between shadow-bouncy overflow-hidden">
+        <div className="absolute inset-0 w-full h-full backface-hidden bg-white border-3 sm:border-4 border-amber-300 rounded-3xl p-2.5 sm:p-5 flex flex-col items-center justify-between shadow-bouncy overflow-hidden">
           {/* Header badge & flip hint */}
           <div className="w-full flex justify-between items-center text-xs font-bold text-amber-700 shrink-0">
-            <span className="bg-amber-100 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-amber-200 text-[10px] sm:text-xs">
+            <span className="bg-amber-100 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-amber-200 text-[10px] sm:text-xs">
               Chạm thẻ để xem nghĩa 🔄
             </span>
             <span className="text-base sm:text-xl">✨</span>
           </div>
 
           {/* Large illustration image container (expands dynamically to fill vertical space) */}
-          <div className="relative flex-1 w-full min-h-[160px] sm:min-h-[240px] my-1 sm:my-2 rounded-2xl overflow-hidden border-2 sm:border-4 border-amber-100 shadow-inner group flex items-center justify-center p-2">
+          <div className="relative flex-1 w-full min-h-[100px] sm:min-h-[220px] my-1 sm:my-2 rounded-2xl overflow-hidden border-2 sm:border-4 border-amber-100 shadow-inner group flex items-center justify-center p-1.5 sm:p-2">
             <img
               src={card.image_url?.includes('?') ? card.image_url : `${card.image_url}?v=${card.id || ''}`}
               alt={card.word}

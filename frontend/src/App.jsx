@@ -27,6 +27,29 @@ export default function App() {
   const [isPetOpen, setIsPetOpen] = useState(false);
   const [activeGame, setActiveGame] = useState(null); // 'bubble' | 'memory' | null
 
+  // Dynamically update --app-height on iOS / Mobile browser address bar changes
+  useEffect(() => {
+    const updateAppHeight = () => {
+      const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty('--app-height', `${vh}px`);
+    };
+
+    updateAppHeight();
+    window.addEventListener('resize', updateAppHeight);
+    window.addEventListener('orientationchange', updateAppHeight);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateAppHeight);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateAppHeight);
+      window.removeEventListener('orientationchange', updateAppHeight);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', updateAppHeight);
+      }
+    };
+  }, []);
+
   // Load initial data from Backend
   useEffect(() => {
     async function loadInitialData() {
@@ -101,7 +124,10 @@ export default function App() {
   };
 
   return (
-    <div className="h-[100dvh] w-full flex flex-col overflow-hidden bg-slate-50 select-none">
+    <div 
+      style={{ height: 'var(--app-height, 100dvh)' }}
+      className="app-container w-full flex flex-col overflow-hidden bg-slate-50 select-none pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]"
+    >
       {/* Top Header Navigation (Fixed Height Shell Layer) */}
       <Header
         stars={stars}
@@ -196,7 +222,7 @@ export default function App() {
       />
 
       {/* Standard App Footer */}
-      <footer className="w-full shrink-0 py-1.5 px-4 text-center text-xs text-slate-400 border-t border-slate-100 bg-white/80 z-20">
+      <footer className="w-full shrink-0 py-1 px-3 text-center text-[10px] sm:text-xs text-slate-400 border-t border-slate-100 bg-white/90 z-20">
         Kids English Flashcard App • Học Vui Mỗi Ngày • v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.1.0'}
       </footer>
     </div>

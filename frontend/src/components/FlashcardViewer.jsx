@@ -208,12 +208,12 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
 
       {/* Bottom Section: Navigation Prev/Next Buttons (pinned safely at bottom) */}
       {!isCompleted && (
-        <div className="shrink-0 pt-1.5 sm:pt-2 pb-0.5 sm:pb-1">
-          <div className="flex items-center justify-between gap-3 sm:gap-4">
+        <div className="shrink-0 pt-1 sm:pt-2 pb-1 z-10">
+          <div className="flex items-center justify-between gap-2.5 sm:gap-4">
             <button
               onClick={handlePrev}
               disabled={currentIndex === 0}
-              className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3.5 rounded-2xl font-bold text-xs sm:text-base transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3.5 rounded-2xl font-bold text-xs sm:text-base transition-all ${
                 currentIndex === 0
                   ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-2 border-slate-200'
                   : 'bg-white hover:bg-slate-50 text-slate-700 border-2 border-slate-300 shadow-bouncy active:shadow-bouncy-active'
@@ -225,7 +225,7 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
 
             <button
               onClick={handleNext}
-              className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white py-2.5 sm:py-3.5 rounded-2xl font-black text-xs sm:text-base shadow-bouncy active:shadow-bouncy-active transition-all"
+              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white py-2 sm:py-3.5 rounded-2xl font-black text-xs sm:text-base shadow-bouncy active:shadow-bouncy-active transition-all"
             >
               <span>{currentIndex === activeCards.length - 1 ? 'Hoàn Thành' : 'Thẻ Tiếp Theo'}</span>
               <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />

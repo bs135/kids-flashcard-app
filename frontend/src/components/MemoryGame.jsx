@@ -204,7 +204,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
       </div>
 
       {/* Memory game board arena */}
-      <div className="memory-arena relative flex-1 min-h-0 w-full bg-gradient-to-b from-amber-50 via-orange-50 to-white rounded-3xl border-3 sm:border-4 border-amber-300 shadow-bouncy overflow-hidden p-2 sm:p-4 flex flex-col justify-between mb-2">
+      <div className="memory-arena relative flex-1 min-h-0 w-full bg-gradient-to-b from-amber-50 via-orange-50 to-white rounded-3xl border-3 sm:border-4 border-amber-300 shadow-bouncy overflow-hidden p-1.5 sm:p-4 flex flex-col justify-between mb-1.5 sm:mb-2">
         {/* In-game header */}
         <div className="shrink-0 flex items-center justify-between gap-1.5 sm:gap-2 mb-1 sm:mb-2 px-1">
           <div className="flex items-center gap-1 sm:gap-2 bg-white/90 border-2 border-amber-300 px-2 sm:px-4 py-0.5 sm:py-1.5 rounded-2xl shadow-sm shrink-0">
@@ -235,8 +235,8 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
 
         {/* Card grid container (centered horizontally and vertically with container-aware max width) */}
         {!isWon ? (
-          <div className="flex-1 min-h-0 w-full flex items-center justify-center p-1 sm:p-2 overflow-hidden">
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-3 lg:gap-3.5 w-full max-w-[280px] xs:max-w-[340px] sm:max-w-[500px] lg:max-w-[520px] mx-auto my-auto items-center justify-items-center">
+          <div className="flex-1 min-h-0 w-full flex items-center justify-center p-0.5 sm:p-2 overflow-hidden">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-3 lg:gap-3.5 w-full max-w-[216px] xs:max-w-[240px] sm:max-w-[500px] lg:max-w-[520px] mx-auto my-auto items-center justify-items-center">
               {gameCards.map((card, index) => {
                 const isFlipped = flippedIndices.includes(index) || matchedIds.has(card.cardId);
                 const isMatched = matchedIds.has(card.cardId);
@@ -253,7 +253,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
                 return (
                   <div
                     key={card.uniqueKey}
-                    className="memory-card-item w-full aspect-[4/5] max-h-[105px] sm:max-h-[160px] lg:max-h-[170px] relative min-w-0 min-h-0 rounded-2xl overflow-hidden mx-auto"
+                    className="memory-card-item w-full aspect-[4/5] max-h-[85px] sm:max-h-[160px] lg:max-h-[170px] relative min-w-0 min-h-0 rounded-2xl overflow-hidden mx-auto"
                   >
                     <motion.div
                       whileHover={isMatched ? {} : { scale: 1 }}
