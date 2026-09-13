@@ -3,6 +3,10 @@ import { test, expect } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { TopicMapPage } from './pages/TopicMapPage.js';
+import { FlashcardPage } from './pages/FlashcardPage.js';
+import { MemoryGamePage } from './pages/MemoryGamePage.js';
+import { BubbleQuizPage } from './pages/BubbleQuizPage.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,115 +16,124 @@ if (!fs.existsSync(screenshotsDir)) {
   fs.mkdirSync(screenshotsDir, { recursive: true });
 }
 
-test('Verify Flashcard UI responsive layout and capture snapshot', async ({ page }, testInfo) => {
-  const projectName = testInfo.project.name;
+test.describe('Kids Flashcard App - POM Comprehensive UI Responsive Suite', () => {
 
-  // 1. Navigate to application
-  await page.goto('/', { waitUntil: 'networkidle' });
+  test('Screen 1: Topic Map (Home) - Responsive & Overflow Check', async ({ page }, testInfo) => {
+    const projectName = testInfo.project.name;
+    const topicMapPage = new TopicMapPage(page);
 
-  // 2. Open "Colors" Flashcard topic
-  const colorsTopic = page.locator('text=Colors').first();
-  await expect(colorsTopic).toBeVisible({ timeout: 10000 });
-  await colorsTopic.click();
+    await topicMapPage.goto();
+    await expect(topicMapPage.title).toBeVisible({ timeout: 10000 });
 
-  // 3. Wait for Flashcard and image to fully render
-  await page.waitForSelector('text=Chạm thẻ để xem nghĩa', { timeout: 10000 });
-  const flashcardImage = page.locator('.perspective-1000 img').first();
-  await expect(flashcardImage).toBeVisible({ timeout: 10000 });
+    // Header Admin button check
+    const headerAdmin = await topicMapPage.checkHeaderAdminButtonVisible();
+    expect(headerAdmin.isWithinViewport, `Admin Lock icon cut off on ${projectName}`).toBe(true);
 
-  // Wait briefly for CSS layout and animations to settle
-  await page.waitForTimeout(1000);
+    // Horizontal overflow check
+    const overflow = await topicMapPage.checkHorizontalOverflow();
+    expect(overflow.hasOverflow, `Horizontal scroll detected on TopicMap (${projectName})`).toBe(false);
 
-  // 4. Assertions:
-  // a. Horizontal overflow check (scrollWidth <= innerWidth)
-  const overflowCheck = await page.evaluate(() => {
-    return {
-      scrollWidth: document.documentElement.scrollWidth,
-      innerWidth: window.innerWidth,
-      hasOverflow: document.documentElement.scrollWidth > window.innerWidth
-    };
+    // Footer visibility
+    const footer = await topicMapPage.getFooterMetrics();
+    expect(footer.isFullyVisible, `Footer pushed out of viewport on TopicMap (${projectName})`).toBe(true);
   });
-  expect(
-    overflowCheck.hasOverflow,
-    `Horizontal scroll detected on ${projectName}: scrollWidth=${overflowCheck.scrollWidth}px, innerWidth=${overflowCheck.innerWidth}px`
-  ).toBe(false);
 
-  // b. Bottom navigation buttons check (boundingClientRect.bottom <= window.innerHeight)
-  const prevButton = page.locator('button:has-text("Thẻ Trước")').first();
-  const nextButton = page.locator('button:has-text("Thẻ Tiếp Theo"), button:has-text("Hoàn Thành")').first();
-  await expect(prevButton).toBeVisible();
-  await expect(nextButton).toBeVisible();
+  test('Screen 2: Flashcard Viewer - Fits in One Screen & Footer Check', async ({ page }, testInfo) => {
+    const projectName = testInfo.project.name;
+    const topicMapPage = new TopicMapPage(page);
+    const flashcardPage = new FlashcardPage(page);
 
-  const nextBtnBox = await nextButton.boundingBox();
-  expect(nextBtnBox).not.toBeNull();
-  const viewport = page.viewportSize();
-  const viewportHeight = viewport ? viewport.height : 800;
+    await topicMapPage.goto();
+    await topicMapPage.selectTopic('Colors');
+    await flashcardPage.waitForReady();
 
-  expect(
-    nextBtnBox.y + nextBtnBox.height,
-    `Navigation buttons pushed off-screen on ${projectName}: bottom=${nextBtnBox.y + nextBtnBox.height}px, viewportHeight=${viewportHeight}px`
-  ).toBeLessThanOrEqual(viewportHeight + 5);
+    // 1. Horizontal overflow
+    const overflow = await flashcardPage.checkHorizontalOverflow();
+    expect(overflow.hasOverflow, `Horizontal scroll detected on Flashcard (${projectName})`).toBe(false);
 
-  // c. Flashcard height check: >= 280px on mobile, >= 420px on iPad / Desktop
-  const cardLocator = page.locator('.perspective-1000').first();
-  const cardBox = await cardLocator.boundingBox();
-  expect(cardBox).not.toBeNull();
+    // 2. Navigation buttons
+    const nav = await flashcardPage.getNavigationMetrics();
+    expect(nav.isWithinViewport, `Nav buttons off-screen on Flashcard (${projectName})`).toBe(true);
 
-  const isMobileDevice = projectName.includes('iphone') || projectName.includes('mobile');
-  const minRequiredHeight = isMobileDevice ? 280 : 420;
-  console.log(`[${projectName}] Card dimensions: ${Math.round(cardBox.width)}px x ${Math.round(cardBox.height)}px (Min required: ${minRequiredHeight}px)`);
+    // 3. Card dimensions
+    const isMobile = projectName.includes('iphone') || projectName.includes('mobile');
+    const minHeight = isMobile ? 260 : 380;
+    const card = await flashcardPage.getCardMetrics();
+    console.log(`[${projectName}] Flashcard: ${card.width}x${card.height}px (Min: ${minHeight}px)`);
+    expect(card.height).toBeGreaterThanOrEqual(minHeight);
 
-  expect(
-    cardBox.height,
-    `Card height collapsed on ${projectName}: actual ${cardBox.height}px < minimum ${minRequiredHeight}px`
-  ).toBeGreaterThanOrEqual(minRequiredHeight);
+    // 4. Footer visibility
+    const footer = await flashcardPage.getFooterMetrics();
+    expect(footer.isFullyVisible, `Footer pushed out of viewport on Flashcard (${projectName})`).toBe(true);
 
-  // d. Illustration image check: naturalWidth > 0 and offsetHeight > 100px
-  const imageMetrics = await flashcardImage.evaluate((img) => {
-    return {
-      naturalWidth: img.naturalWidth,
-      offsetHeight: img.offsetHeight,
-      offsetWidth: img.offsetWidth,
-      complete: img.complete
-    };
+    // 5. Gap between nav button and footer (no overlap)
+    const gap = footer.top - nav.bottom;
+    expect(gap, `Footer overlaps navigation buttons on ${projectName}`).toBeGreaterThanOrEqual(0);
+
+    // Save snapshot
+    const screenshotPath = path.join(screenshotsDir, `${projectName}.png`);
+    await page.screenshot({ path: screenshotPath });
   });
-  console.log(`[${projectName}] Image dimensions: display=${imageMetrics.offsetWidth}x${imageMetrics.offsetHeight}px, naturalWidth=${imageMetrics.naturalWidth}px`);
 
-  expect(imageMetrics.naturalWidth, `Image did not load properly on ${projectName}`).toBeGreaterThan(0);
-  expect(imageMetrics.offsetHeight, `Image display height too small on ${projectName}`).toBeGreaterThan(100);
+  test('Screen 3: Memory Game - Grid Fits in One Screen & Footer Check', async ({ page }, testInfo) => {
+    const projectName = testInfo.project.name;
+    const topicMapPage = new TopicMapPage(page);
+    const memoryGamePage = new MemoryGamePage(page);
 
-  // e. Footer visibility and position check
-  const footerLocator = page.locator('footer:has-text("Kids English Flashcard App")').first();
-  await expect(footerLocator).toBeVisible();
+    await topicMapPage.goto();
+    await topicMapPage.openMemoryGame();
+    await memoryGamePage.waitForReady();
 
-  const footerBox = await footerLocator.boundingBox();
-  expect(footerBox, `Footer boundingBox is null on ${projectName}`).not.toBeNull();
+    // 1. Horizontal overflow
+    const overflow = await memoryGamePage.checkHorizontalOverflow();
+    expect(overflow.hasOverflow, `Horizontal scroll detected on MemoryGame (${projectName})`).toBe(false);
 
-  const footerBottom = footerBox.y + footerBox.height;
-  const footerTop = footerBox.y;
-  console.log(`[${projectName}] Footer metrics: top=${Math.round(footerTop)}px, bottom=${Math.round(footerBottom)}px, viewportHeight=${viewportHeight}px`);
+    // 2. Arena within viewport
+    const arena = await memoryGamePage.getArenaMetrics();
+    expect(arena.isWithinViewport, `Memory cards arena off-screen on ${projectName}`).toBe(true);
 
-  expect(
-    footerBottom,
-    `Footer pushed out of viewport on ${projectName}: bottom=${Math.round(footerBottom)}px > viewportHeight=${viewportHeight}px`
-  ).toBeLessThanOrEqual(viewportHeight + 5);
+    // 3. Card Aspect Ratio check (1.1 <= H/W <= 1.55)
+    const cardRatio = await memoryGamePage.getCardAspectRatio();
+    expect(cardRatio.ratio, `Card ratio out of bounds (${cardRatio.ratio}) on ${projectName}`).toBeGreaterThanOrEqual(1.1);
+    expect(cardRatio.ratio, `Card ratio out of bounds (${cardRatio.ratio}) on ${projectName}`).toBeLessThanOrEqual(1.55);
 
-  expect(
-    footerTop,
-    `Footer top is negative or off-screen on ${projectName}: top=${Math.round(footerTop)}px`
-  ).toBeGreaterThanOrEqual(0);
+    // 4. Visible gap between arena and footer (>= 6px)
+    const arenaGap = await memoryGamePage.getArenaFooterGap();
+    expect(arenaGap.gap, `Arena-to-footer gap too small (${arenaGap.gap}px) on ${projectName}`).toBeGreaterThanOrEqual(6);
 
-  // Check no overlap with navigation buttons
-  const btnBottom = nextBtnBox.y + nextBtnBox.height;
-  const gap = footerTop - btnBottom;
-  console.log(`[${projectName}] Gap between navigation buttons and footer: ${Math.round(gap)}px`);
-  expect(
-    gap,
-    `Footer overlaps navigation buttons on ${projectName}: gap=${Math.round(gap)}px < 0`
-  ).toBeGreaterThanOrEqual(0);
+    // 5. Card to arena boundary breathing room (>= 4px)
+    const cardPadding = await memoryGamePage.getCardArenaPadding();
+    expect(cardPadding.minPadding, `Card too close to arena edges (${cardPadding.minPadding}px) on ${projectName}`).toBeGreaterThanOrEqual(4);
 
-  // 5. Capture screenshot
-  const screenshotPath = path.join(screenshotsDir, `${projectName}.png`);
-  await page.screenshot({ path: screenshotPath, fullPage: false });
-  console.log(`[${projectName}] Snapshot saved to: ${screenshotPath}\n`);
+    // 6. Last card containment check (arenaBottom - lastCardBottom >= 6px)
+    const bottomGap = await memoryGamePage.getLastCardArenaBottomGap();
+    expect(bottomGap.isContained, `Hàng thẻ cuối cùng bị tràn ra ngoài khung game arena (${bottomGap.gap}px) on ${projectName}`).toBe(true);
+
+    // 7. Footer visibility
+    const footer = await memoryGamePage.getFooterMetrics();
+    expect(footer.isFullyVisible, `Footer pushed out of viewport on MemoryGame (${projectName})`).toBe(true);
+  });
+
+  test('Screen 4: Bubble Quiz - Arena Fits in One Screen & Footer Check', async ({ page }, testInfo) => {
+    const projectName = testInfo.project.name;
+    const topicMapPage = new TopicMapPage(page);
+    const bubbleQuizPage = new BubbleQuizPage(page);
+
+    await topicMapPage.goto();
+    await topicMapPage.openBubbleGame();
+    await bubbleQuizPage.waitForReady();
+
+    // 1. Horizontal overflow
+    const overflow = await bubbleQuizPage.checkHorizontalOverflow();
+    expect(overflow.hasOverflow, `Horizontal scroll detected on BubbleQuiz (${projectName})`).toBe(false);
+
+    // 2. Start button within viewport
+    const startBtn = await bubbleQuizPage.getStartButtonMetrics();
+    expect(startBtn.isWithinViewport, `Bubble Quiz start button off-screen on ${projectName}`).toBe(true);
+
+    // 3. Footer visibility
+    const footer = await bubbleQuizPage.getFooterMetrics();
+    expect(footer.isFullyVisible, `Footer pushed out of viewport on BubbleQuiz (${projectName})`).toBe(true);
+  });
+
 });

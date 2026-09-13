@@ -11,7 +11,7 @@ export default function Header({
   onOpenGames
 }) {
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b-4 border-amber-200 px-2 sm:px-4 py-2 sm:py-3 shadow-sm select-none w-full">
+    <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b-4 border-amber-200 px-2 sm:px-4 shadow-sm select-none w-full h-14 sm:h-16 shrink-0 flex items-center">
       <div className="w-full max-w-4xl mx-auto flex items-center justify-between gap-1.5 sm:gap-4 min-w-0">
         {/* Left Section: Logo & Branding (icon-only on mobile < sm) */}
         <div 
@@ -21,8 +21,8 @@ export default function Header({
           }}
           className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group select-none shrink-0"
         >
-          <div className="w-9 h-9 sm:w-11 sm:h-11 bg-gradient-to-tr from-amber-400 to-yellow-300 rounded-2xl flex items-center justify-center shadow-md transform group-hover:scale-105 transition-transform">
-            <span className="text-xl sm:text-2xl">🌟</span>
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-tr from-amber-400 to-yellow-300 rounded-2xl flex items-center justify-center shadow-md transform group-hover:scale-105 transition-transform">
+            <span className="text-lg sm:text-xl">🌟</span>
           </div>
           {/* App title is hidden on small mobile screens (< 640px) to prevent pushing right-side action buttons */}
           <div className="hidden sm:block min-w-0">

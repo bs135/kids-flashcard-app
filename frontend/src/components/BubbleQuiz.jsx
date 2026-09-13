@@ -159,9 +159,9 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 py-3 sm:py-6 select-none overflow-x-hidden">
-      {/* Header bar */}
-      <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
+    <div className="w-full h-full flex flex-col justify-between overflow-hidden select-none">
+      {/* Header & Navigation bar */}
+      <div className="shrink-0 flex items-center justify-between gap-2 mb-2 sm:mb-3">
         <button
           onClick={() => {
             soundEffects.playPop();
@@ -192,7 +192,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
       </div>
 
       {/* Game arena */}
-      <div className="relative min-h-[460px] sm:min-h-[520px] bg-gradient-to-b from-sky-100 via-indigo-50 to-white rounded-3xl border-3 sm:border-4 border-sky-300 shadow-bouncy overflow-hidden p-3 sm:p-6 flex flex-col justify-between">
+      <div className="relative flex-1 min-h-0 w-full bg-gradient-to-b from-sky-100 via-indigo-50 to-white rounded-3xl border-3 sm:border-4 border-sky-300 shadow-bouncy overflow-hidden p-2 sm:p-4 flex flex-col justify-between">
         {/* Background decorative clouds */}
         <div className="absolute top-6 left-8 text-4xl opacity-40 animate-pulse pointer-events-none">☁️</div>
         <div className="absolute top-16 right-12 text-5xl opacity-40 animate-pulse pointer-events-none">☁️</div>

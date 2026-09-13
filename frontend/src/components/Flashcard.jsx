@@ -23,7 +23,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
   };
 
   return (
-    <div className="w-full max-w-sm h-[52vh] min-h-[360px] max-h-[460px] sm:w-[380px] sm:h-[460px] sm:max-h-[60vh] sm:max-w-none md:w-[400px] md:h-[480px] md:max-h-[62vh] flex flex-col justify-between perspective-1000 select-none cursor-pointer mx-auto">
+    <div className="w-full h-full max-w-sm sm:max-w-md flex flex-col justify-between perspective-1000 select-none cursor-pointer mx-auto">
       <motion.div
         onClick={handleCardClick}
         animate={{ rotateY: isFlipped ? 180 : 0 }}

@@ -5,7 +5,7 @@ import { soundEffects } from '../services/soundEffects';
 
 export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
   return (
-    <div className="w-full max-w-4xl mx-auto px-2.5 sm:px-4 py-4 sm:py-8 overflow-x-hidden">
+    <div className="w-full select-none pb-4">
       {/* Welcome Title */}
       <div className="text-center mb-6 sm:mb-8 px-1">
         <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-yellow-100 border-2 border-yellow-300 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-yellow-800 font-bold text-xs sm:text-sm mb-2 sm:mb-3 shadow-sm">

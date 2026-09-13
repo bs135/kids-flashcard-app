@@ -172,9 +172,9 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 py-3 sm:py-6 select-none overflow-x-hidden">
+    <div className="w-full h-full flex flex-col justify-between overflow-hidden select-none">
       {/* Header & Navigation bar */}
-      <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
+      <div className="shrink-0 flex items-center justify-between gap-2 mb-2 sm:mb-3">
         <button
           onClick={() => {
             soundEffects.playPop();
@@ -204,18 +204,18 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
       </div>
 
       {/* Memory game board arena */}
-      <div className="relative min-h-[460px] sm:min-h-[520px] bg-gradient-to-b from-amber-50 via-orange-50 to-white rounded-3xl border-3 sm:border-4 border-amber-300 shadow-bouncy overflow-hidden p-3 sm:p-6 flex flex-col justify-between">
+      <div className="memory-arena relative flex-1 min-h-0 w-full bg-gradient-to-b from-amber-50 via-orange-50 to-white rounded-3xl border-3 sm:border-4 border-amber-300 shadow-bouncy overflow-hidden p-2 sm:p-4 flex flex-col justify-between mb-2">
         {/* In-game header */}
-        <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-3 sm:mb-4">
-          <div className="flex items-center gap-1 sm:gap-2 bg-white/90 border-2 border-amber-300 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-2xl shadow-sm shrink-0">
-            <span className="text-base sm:text-lg">🎯</span>
+        <div className="shrink-0 flex items-center justify-between gap-1.5 sm:gap-2 mb-1 sm:mb-2 px-1">
+          <div className="flex items-center gap-1 sm:gap-2 bg-white/90 border-2 border-amber-300 px-2 sm:px-4 py-0.5 sm:py-1.5 rounded-2xl shadow-sm shrink-0">
+            <span className="text-sm sm:text-lg">🎯</span>
             <span className="text-xs sm:text-sm font-extrabold text-amber-900 font-kids">
               Lượt: {moves}
             </span>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-2 bg-white/90 border-2 border-emerald-300 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-2xl shadow-sm truncate">
-            <span className="text-base sm:text-lg shrink-0">✨</span>
+          <div className="flex items-center gap-1 sm:gap-2 bg-white/90 border-2 border-emerald-300 px-2 sm:px-4 py-0.5 sm:py-1.5 rounded-2xl shadow-sm truncate">
+            <span className="text-sm sm:text-lg shrink-0">✨</span>
             <span className="text-xs sm:text-sm font-extrabold text-emerald-800 font-kids truncate">
               {matchedIds.size} / {gameCards.length / 2} cặp
             </span>
@@ -226,93 +226,95 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
             whileTap={{ scale: 0.9, rotate: -180 }}
             transition={{ type: "spring", stiffness: 300, damping: 15 }}
             onClick={() => initBoard(cardsPool)}
-            className="p-1.5 sm:p-2.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-600 hover:border-amber-400 hover:text-amber-700 shadow-sm cursor-pointer select-none flex items-center justify-center shrink-0"
+            className="p-1 sm:p-2 rounded-2xl bg-white border-2 border-slate-200 text-slate-600 hover:border-amber-400 hover:text-amber-700 shadow-sm cursor-pointer select-none flex items-center justify-center shrink-0"
             title="Xáo trộn lại"
           >
-            <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
+            <RefreshCw className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </motion.button>
         </div>
 
-        {/* Card grid (3x4 or 4x3) */}
+        {/* Card grid container (centered horizontally and vertically with container-aware max width) */}
         {!isWon ? (
-          <div className="grid grid-cols-[repeat(3,minmax(0,1fr))] sm:grid-cols-[repeat(4,minmax(0,1fr))] gap-3 sm:gap-4 my-auto w-full">
-            {gameCards.map((card, index) => {
-              const isFlipped = flippedIndices.includes(index) || matchedIds.has(card.cardId);
-              const isMatched = matchedIds.has(card.cardId);
+          <div className="flex-1 min-h-0 w-full flex items-center justify-center p-1 sm:p-2 overflow-hidden">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-3 lg:gap-3.5 w-full max-w-[280px] xs:max-w-[340px] sm:max-w-[500px] lg:max-w-[520px] mx-auto my-auto items-center justify-items-center">
+              {gameCards.map((card, index) => {
+                const isFlipped = flippedIndices.includes(index) || matchedIds.has(card.cardId);
+                const isMatched = matchedIds.has(card.cardId);
 
-              // Calculate font size and check compound words
-              const hasSpace = card.word ? card.word.includes(' ') : false;
-              const wordLength = card.word ? card.word.length : 0;
-              const wordFontSize = 
-                wordLength > 10 ? 'text-[11px] sm:text-xs' :
-                wordLength > 7  ? 'text-xs sm:text-sm' :
-                wordLength > 5  ? 'text-xs sm:text-base' :
-                'text-sm sm:text-lg';
+                // Calculate font size and check compound words
+                const hasSpace = card.word ? card.word.includes(' ') : false;
+                const wordLength = card.word ? card.word.length : 0;
+                const wordFontSize = 
+                  wordLength > 10 ? 'text-[11px] sm:text-xs md:text-sm' :
+                  wordLength > 7  ? 'text-xs sm:text-sm md:text-base' :
+                  wordLength > 5  ? 'text-xs sm:text-base md:text-lg' :
+                  'text-sm sm:text-lg md:text-xl';
 
-              return (
-                <div
-                  key={card.uniqueKey}
-                  className="w-full aspect-[4/5] relative min-w-0 min-h-0 rounded-2xl overflow-hidden"
-                >
-                  <motion.div
-                    whileHover={isMatched ? {} : { scale: 1 }}
-                    whileTap={isMatched ? {} : { scale: 0.98 }}
-                    onClick={() => handleCardClick(index)}
-                    className={`absolute inset-0 w-full h-full rounded-2xl cursor-pointer select-none transition-shadow duration-300 ${
-                      isMatched ? 'opacity-85' : ''
-                    }`}
+                return (
+                  <div
+                    key={card.uniqueKey}
+                    className="memory-card-item w-full aspect-[4/5] max-h-[105px] sm:max-h-[160px] lg:max-h-[170px] relative min-w-0 min-h-0 rounded-2xl overflow-hidden mx-auto"
                   >
-                    <div
-                      className={`absolute inset-0 w-full h-full rounded-2xl border-4 transition-all duration-300 flex flex-col items-center justify-center p-1 sm:p-2 text-center overflow-hidden box-border ${
-                        isMatched
-                          ? 'bg-emerald-50 border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.6)]'
-                          : isFlipped
-                          ? 'bg-white border-amber-400 shadow-md'
-                          : 'bg-gradient-to-br from-amber-400 to-yellow-400 border-amber-300 hover:border-amber-500 shadow-sm'
+                    <motion.div
+                      whileHover={isMatched ? {} : { scale: 1 }}
+                      whileTap={isMatched ? {} : { scale: 0.98 }}
+                      onClick={() => handleCardClick(index)}
+                      className={`absolute inset-0 w-full h-full rounded-2xl cursor-pointer select-none transition-shadow duration-300 ${
+                        isMatched ? 'opacity-85' : ''
                       }`}
                     >
-                      {isFlipped ? (
-                        card.type === 'image' ? (
-                          <div className="w-full h-full flex flex-col items-center justify-between py-1 animate-fade-in overflow-hidden">
-                            <div className="flex-1 w-full flex items-center justify-center min-h-0 overflow-hidden p-0.5">
-                              <img
-                                src={`${card.image_url}?t=${card.cardId}`}
-                                alt={card.word}
-                                className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-sm rounded-lg"
-                                loading="eager"
-                              />
-                            </div>
-                            <span className="text-[9px] sm:text-[10px] font-extrabold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0">
-                              HÌNH ẢNH
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="w-full h-full max-w-full flex flex-col items-center justify-between py-1 animate-fade-in overflow-hidden">
-                            <div className="flex-1 w-full max-w-full flex items-center justify-center min-h-0 px-0.5 overflow-hidden">
-                              <span 
-                                className={`w-full ${wordFontSize} font-black text-amber-950 font-kids tracking-tight leading-none text-center ${
-                                  hasSpace ? 'break-normal' : 'whitespace-nowrap'
-                                }`}
-                                title={card.word}
-                              >
-                                {card.word}
+                      <div
+                        className={`absolute inset-0 w-full h-full rounded-2xl border-4 transition-all duration-300 flex flex-col items-center justify-center p-1 sm:p-2 text-center overflow-hidden box-border ${
+                          isMatched
+                            ? 'bg-emerald-50 border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.6)]'
+                            : isFlipped
+                            ? 'bg-white border-amber-400 shadow-md'
+                            : 'bg-gradient-to-br from-amber-400 to-yellow-400 border-amber-300 hover:border-amber-500 shadow-sm'
+                        }`}
+                      >
+                        {isFlipped ? (
+                          card.type === 'image' ? (
+                            <div className="w-full h-full flex flex-col items-center justify-between py-0.5 sm:py-1 animate-fade-in overflow-hidden">
+                              <div className="flex-1 w-full flex items-center justify-center min-h-0 overflow-hidden p-0.5">
+                                <img
+                                  src={`${card.image_url}?t=${card.cardId}`}
+                                  alt={card.word}
+                                  className="w-full h-full max-h-[85%] object-contain pointer-events-none drop-shadow-sm rounded-lg"
+                                  loading="eager"
+                                />
+                              </div>
+                              <span className="text-[9px] sm:text-[10px] font-extrabold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                                HÌNH ẢNH
                               </span>
                             </div>
-                            <span className="text-[9px] sm:text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0">
-                              TỪ VỰNG
-                            </span>
+                          ) : (
+                            <div className="w-full h-full max-w-full flex flex-col items-center justify-between py-0.5 sm:py-1 animate-fade-in overflow-hidden">
+                              <div className="flex-1 w-full max-w-full flex items-center justify-center min-h-0 px-0.5 overflow-hidden">
+                                <span 
+                                  className={`w-full ${wordFontSize} font-black text-amber-950 font-kids tracking-tight leading-none text-center ${
+                                    hasSpace ? 'break-normal' : 'whitespace-nowrap'
+                                  }`}
+                                  title={card.word}
+                                >
+                                  {card.word}
+                                </span>
+                              </div>
+                              <span className="text-[9px] sm:text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                                TỪ VỰNG
+                              </span>
+                            </div>
+                          )
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-3xl sm:text-4xl text-amber-950 drop-shadow-sm">❓</span>
                           </div>
-                        )
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-3xl sm:text-4xl text-amber-950 drop-shadow-sm">❓</span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                </div>
-              );
-            })}
+                        )}
+                      </div>
+                    </motion.div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : (
           /* Victory celebration screen */

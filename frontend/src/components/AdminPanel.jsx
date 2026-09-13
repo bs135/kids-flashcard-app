@@ -366,7 +366,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-2.5 sm:px-4 py-4 sm:py-6 overflow-x-hidden">
+    <div className="w-full select-none pb-8">
       {/* Header Admin */}
       <div className="flex items-center justify-between gap-2 mb-6 sm:mb-8 pb-4 border-b-2 border-slate-200">
         <button

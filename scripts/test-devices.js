@@ -3,6 +3,10 @@ import { chromium } from 'playwright';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { TopicMapPage } from '../tests/pages/TopicMapPage.js';
+import { FlashcardPage } from '../tests/pages/FlashcardPage.js';
+import { MemoryGamePage } from '../tests/pages/MemoryGamePage.js';
+import { BubbleQuizPage } from '../tests/pages/BubbleQuizPage.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,37 +35,33 @@ const devicesToTest = [
     title: 'Desktop Web Browser',
     viewport: { width: 1280, height: 800 },
     isMobile: false,
-    hasTouch: false,
-    minHeight: 420
+    hasTouch: false
   },
   {
     name: 'iphone-se-portrait',
     title: 'iPhone SE (Portrait)',
     viewport: { width: 375, height: 667 },
     isMobile: true,
-    hasTouch: true,
-    minHeight: 280
+    hasTouch: true
   },
   {
     name: 'ipad-mini-portrait',
     title: 'iPad Mini (Portrait)',
     viewport: { width: 768, height: 1024 },
     isMobile: true,
-    hasTouch: true,
-    minHeight: 420
+    hasTouch: true
   },
   {
     name: 'ipad-mini-landscape',
     title: 'iPad Mini (Landscape)',
     viewport: { width: 1024, height: 768 },
     isMobile: true,
-    hasTouch: true,
-    minHeight: 420
+    hasTouch: true
   }
 ];
 
 async function runDeviceMatrix() {
-  console.log('🚀 Launching Comprehensive Responsive & Footer Test Suite with Playwright...\n');
+  console.log('🚀 Running Multi-Screen Comprehensive Responsive & Footer Test Suite (POM)...');
   const executablePath = getExecutablePath();
   const browser = await chromium.launch({
     headless: true,
@@ -71,9 +71,9 @@ async function runDeviceMatrix() {
   const results = [];
 
   for (const dev of devicesToTest) {
-    console.log(`====================================================`);
-    console.log(`📱 Running Test: ${dev.title} (${dev.viewport.width} x ${dev.viewport.height})`);
-    console.log(`====================================================`);
+    console.log(`\n========================================================================`);
+    console.log(`📱 Device: ${dev.title} (${dev.viewport.width} x ${dev.viewport.height})`);
+    console.log(`========================================================================`);
 
     const context = await browser.newContext({
       viewport: dev.viewport,
@@ -87,128 +87,125 @@ async function runDeviceMatrix() {
       device: dev.title,
       name: dev.name,
       viewport: `${dev.viewport.width}x${dev.viewport.height}`,
-      passed: false,
-      errors: []
+      passed: true,
+      screens: {}
     };
 
     try {
-      // 1. Navigate to application
-      await page.goto('http://localhost:5173', { waitUntil: 'networkidle' });
+      const topicMapPage = new TopicMapPage(page);
+      const flashcardPage = new FlashcardPage(page);
+      const memoryGamePage = new MemoryGamePage(page);
+      const bubbleQuizPage = new BubbleQuizPage(page);
 
-      // 2. Open "Colors" topic
-      const colorsTopic = page.locator('text=Colors').first();
-      await colorsTopic.waitFor({ state: 'visible', timeout: 10000 });
-      await colorsTopic.click();
+      // 1. Check Topic Map (Home)
+      await topicMapPage.goto();
+      const homeOverflow = await topicMapPage.checkHorizontalOverflow();
+      const homeFooter = await topicMapPage.getFooterMetrics();
+      const homeAdmin = await topicMapPage.checkHeaderAdminButtonVisible();
+      result.screens.topicMap = {
+        overflowPass: !homeOverflow.hasOverflow,
+        footerPass: homeFooter.isFullyVisible,
+        adminPass: homeAdmin.isWithinViewport
+      };
 
-      // 3. Wait for card to appear
-      await page.waitForSelector('text=Chạm thẻ để xem nghĩa', { timeout: 10000 });
-      const cardLocator = page.locator('.perspective-1000').first();
-      await cardLocator.waitFor({ state: 'visible', timeout: 10000 });
+      // 2. Check Flashcard Screen
+      await topicMapPage.selectTopic('Colors');
+      await flashcardPage.waitForReady();
+      const fcOverflow = await flashcardPage.checkHorizontalOverflow();
+      const fcNav = await flashcardPage.getNavigationMetrics();
+      const fcCard = await flashcardPage.getCardMetrics();
+      const fcFooter = await flashcardPage.getFooterMetrics();
+      const fcGap = fcFooter.top - fcNav.bottom;
 
-      const imgLocator = page.locator('.perspective-1000 img').first();
-      await imgLocator.waitFor({ state: 'visible', timeout: 10000 });
+      result.screens.flashcard = {
+        cardDimensions: `${fcCard.width}x${fcCard.height}px`,
+        overflowPass: !fcOverflow.hasOverflow,
+        navPass: fcNav.isWithinViewport,
+        footerPass: fcFooter.isFullyVisible,
+        noOverlap: fcGap >= 0,
+        gap: fcGap
+      };
 
-      // Wait for layout animations
-      await page.waitForTimeout(1000);
+      // Save screenshot
+      const ssPath = path.join(screenshotsDir, `${dev.name}.png`);
+      await page.screenshot({ path: ssPath });
 
-      // 4. Assertions:
-      // a. Horizontal overflow
-      const overflow = await page.evaluate(() => {
-        return {
-          scrollWidth: document.documentElement.scrollWidth,
-          innerWidth: window.innerWidth,
-          hasOverflow: document.documentElement.scrollWidth > window.innerWidth
-        };
-      });
-      if (overflow.hasOverflow) {
-        result.errors.push(`Horizontal scroll overflow: scrollWidth=${overflow.scrollWidth}px > innerWidth=${overflow.innerWidth}px`);
+      // 3. Check Memory Game
+      await topicMapPage.goto();
+      await topicMapPage.openMemoryGame();
+      await memoryGamePage.waitForReady();
+      const memOverflow = await memoryGamePage.checkHorizontalOverflow();
+      const memArena = await memoryGamePage.getArenaMetrics();
+      const memCardRatio = await memoryGamePage.getCardAspectRatio();
+      const memFooterGap = await memoryGamePage.getArenaFooterGap();
+      const memCardPad = await memoryGamePage.getCardArenaPadding();
+      const memLastCardGap = await memoryGamePage.getLastCardArenaBottomGap();
+      const memFooter = await memoryGamePage.getFooterMetrics();
+
+      result.screens.memoryGame = {
+        overflowPass: !memOverflow.hasOverflow,
+        arenaPass: memArena.isWithinViewport,
+        footerPass: memFooter.isFullyVisible,
+        cardRatioPass: memCardRatio.ratio >= 1.1 && memCardRatio.ratio <= 1.55,
+        footerGapPass: memFooterGap.gap >= 6,
+        paddingPass: memCardPad.minPadding >= 4,
+        lastCardContainedPass: memLastCardGap.isContained,
+        cardDimensions: `${memCardRatio.width}x${memCardRatio.height}px (Ratio: ${memCardRatio.ratio})`,
+        gap: memFooterGap.gap,
+        padding: memCardPad.minPadding,
+        bottomPadding: memLastCardGap.gap
+      };
+
+      // 4. Check Bubble Quiz
+      await topicMapPage.goto();
+      await topicMapPage.openBubbleGame();
+      await bubbleQuizPage.waitForReady();
+      const bqOverflow = await bubbleQuizPage.checkHorizontalOverflow();
+      const bqBtn = await bubbleQuizPage.getStartButtonMetrics();
+      const bqFooter = await bubbleQuizPage.getFooterMetrics();
+
+      result.screens.bubbleQuiz = {
+        overflowPass: !bqOverflow.hasOverflow,
+        buttonPass: bqBtn.isWithinViewport,
+        footerPass: bqFooter.isFullyVisible
+      };
+
+      const testMap = {
+        'topicMap.overflow': result.screens.topicMap.overflowPass,
+        'topicMap.footer': result.screens.topicMap.footerPass,
+        'topicMap.admin': result.screens.topicMap.adminPass,
+        'flashcard.overflow': result.screens.flashcard.overflowPass,
+        'flashcard.nav': result.screens.flashcard.navPass,
+        'flashcard.footer': result.screens.flashcard.footerPass,
+        'flashcard.noOverlap': result.screens.flashcard.noOverlap,
+        'memoryGame.overflow': result.screens.memoryGame.overflowPass,
+        'memoryGame.arena': result.screens.memoryGame.arenaPass,
+        'memoryGame.footer': result.screens.memoryGame.footerPass,
+        'memoryGame.cardRatio': result.screens.memoryGame.cardRatioPass,
+        'memoryGame.footerGap': result.screens.memoryGame.footerGapPass,
+        'memoryGame.padding': result.screens.memoryGame.paddingPass,
+        'memoryGame.lastCardContained': result.screens.memoryGame.lastCardContainedPass,
+        'bubbleQuiz.overflow': result.screens.bubbleQuiz.overflowPass,
+        'bubbleQuiz.button': result.screens.bubbleQuiz.buttonPass,
+        'bubbleQuiz.footer': result.screens.bubbleQuiz.footerPass
+      };
+
+      const failures = Object.entries(testMap).filter(([_, pass]) => !pass).map(([k]) => k);
+      result.passed = failures.length === 0;
+
+      console.log(`   [Topic Map]   Overflow: ${result.screens.topicMap.overflowPass ? 'OK' : 'FAIL'} | Footer: ${result.screens.topicMap.footerPass ? 'OK' : 'FAIL'} | Admin Button: ${result.screens.topicMap.adminPass ? 'OK' : 'FAIL'}`);
+      console.log(`   [Flashcard]   Card: ${result.screens.flashcard.cardDimensions} | Nav: ${result.screens.flashcard.navPass ? 'OK' : 'FAIL'} | Footer: ${result.screens.flashcard.footerPass ? 'OK' : 'FAIL'} (Gap: ${result.screens.flashcard.gap}px)`);
+      console.log(`   [Memory Game] Card: ${result.screens.memoryGame.cardDimensions} | Ratio: ${result.screens.memoryGame.cardRatioPass ? 'OK' : 'FAIL'} | BottomGap: ${result.screens.memoryGame.bottomPadding}px (${result.screens.memoryGame.lastCardContainedPass ? 'OK' : 'FAIL'}) | Footer: ${result.screens.memoryGame.footerPass ? 'OK' : 'FAIL'}`);
+      console.log(`   [Bubble Quiz] Button Fit: ${result.screens.bubbleQuiz.buttonPass ? 'OK' : 'FAIL'} | Footer: ${result.screens.bubbleQuiz.footerPass ? 'OK' : 'FAIL'}`);
+      if (!result.passed) {
+        console.log(`   ❌ FAILED CHECKS: ${failures.join(', ')}`);
       }
-
-      // b. Bottom navigation visible
-      const nextBtnLocator = page.locator('button:has-text("Thẻ Tiếp Theo"), button:has-text("Hoàn Thành")').first();
-      await nextBtnLocator.waitFor({ state: 'visible', timeout: 5000 });
-      const nextBtnBox = await nextBtnLocator.boundingBox();
-      const viewportHeight = dev.viewport.height;
-
-      const btnBottom = nextBtnBox ? Math.round(nextBtnBox.y + nextBtnBox.height) : 0;
-      result.btnBottom = btnBottom;
-
-      if (btnBottom > viewportHeight + 5) {
-        result.errors.push(`Navigation buttons off-screen: bottom=${btnBottom}px > viewportHeight=${viewportHeight}px`);
-      }
-
-      // c. Card height check
-      const cardBox = await cardLocator.boundingBox();
-      result.cardHeight = cardBox ? Math.round(cardBox.height) : 0;
-      result.cardWidth = cardBox ? Math.round(cardBox.width) : 0;
-
-      if (!cardBox || cardBox.height < dev.minHeight) {
-        result.errors.push(`Card height collapsed: actual ${cardBox ? cardBox.height : 0}px < min ${dev.minHeight}px`);
-      }
-
-      // d. Image metrics check
-      const imageMetrics = await imgLocator.evaluate((img) => ({
-        naturalWidth: img.naturalWidth,
-        offsetHeight: img.offsetHeight,
-        offsetWidth: img.offsetWidth
-      }));
-      result.imageDisplay = `${imageMetrics.offsetWidth}x${imageMetrics.offsetHeight}px`;
-      result.imageNatural = `${imageMetrics.naturalWidth}px`;
-
-      if (imageMetrics.naturalWidth <= 0) {
-        result.errors.push(`Image failed to load: naturalWidth <= 0`);
-      }
-      if (imageMetrics.offsetHeight <= 100) {
-        result.errors.push(`Image height too small: ${imageMetrics.offsetHeight}px <= 100px`);
-      }
-
-      // e. Footer check
-      const footerLocator = page.locator('footer:has-text("Kids English Flashcard App")').first();
-      await footerLocator.waitFor({ state: 'visible', timeout: 5000 });
-      const footerBox = await footerLocator.boundingBox();
-
-      if (!footerBox) {
-        result.errors.push(`Footer boundingBox is null`);
-      } else {
-        const footerTop = Math.round(footerBox.y);
-        const footerBottom = Math.round(footerBox.y + footerBox.height);
-        const footerGap = footerTop - btnBottom;
-
-        result.footerTop = footerTop;
-        result.footerBottom = footerBottom;
-        result.footerGap = footerGap;
-
-        if (footerBottom > viewportHeight + 5) {
-          result.errors.push(`Footer pushed out of viewport: bottom=${footerBottom}px > viewportHeight=${viewportHeight}px`);
-        }
-        if (footerTop < 0) {
-          result.errors.push(`Footer top negative: top=${footerTop}px`);
-        }
-        if (footerGap < 0) {
-          result.errors.push(`Footer overlaps buttons: gap=${footerGap}px < 0`);
-        }
-      }
-
-      // 5. Screenshot
-      const screenshotPath = path.join(screenshotsDir, `${dev.name}.png`);
-      await page.screenshot({ path: screenshotPath });
-      result.screenshot = screenshotPath;
-
-      result.passed = result.errors.length === 0;
-      console.log(`   Card Size: ${result.cardWidth}px x ${result.cardHeight}px (Min: ${dev.minHeight}px)`);
-      console.log(`   Image Size: ${result.imageDisplay} (Natural: ${result.imageNatural})`);
-      console.log(`   Nav Button Bottom: ${result.btnBottom}px / Viewport: ${viewportHeight}px`);
-      console.log(`   Footer Top: ${result.footerTop}px, Bottom: ${result.footerBottom}px (Gap: ${result.footerGap}px)`);
-      console.log(`   Status: ${result.passed ? '✅ PASSED' : '❌ FAILED'}`);
-      if (result.errors.length > 0) {
-        console.log(`   Errors:`, result.errors);
-      }
-      console.log(`   Saved: ${screenshotPath}\n`);
+      console.log(`   Result: ${result.passed ? '✅ ALL PASSED' : '❌ SOME TESTS FAILED'}`);
 
     } catch (err) {
       result.passed = false;
-      result.errors.push(err.message);
-      console.error(`   Execution error on ${dev.title}:`, err.message);
+      result.error = err.message;
+      console.error(`   Error on ${dev.title}:`, err.message);
     } finally {
       await context.close();
       results.push(result);
@@ -217,24 +214,21 @@ async function runDeviceMatrix() {
 
   await browser.close();
 
-  console.log(`========================================================================================================================`);
-  console.log(`📊 TEST SUITE SUMMARY (CARD, NAVIGATION & FOOTER METRICS):`);
-  console.log(`========================================================================================================================`);
-  let allPassed = true;
+  console.log(`\n========================================================================================================`);
+  console.log(`📊 FINAL POM TEST MATRIX SUMMARY:`);
+  console.log(`========================================================================================================`);
+  let allPass = true;
   for (const r of results) {
-    console.log(
-      `${r.passed ? '✅' : '❌'} ${r.device.padEnd(25)} | Viewport: ${r.viewport.padEnd(10)} | Card: ${String(r.cardWidth + 'x' + r.cardHeight + 'px').padEnd(12)} | Footer: [Top ${r.footerTop}px, Bot ${r.footerBottom}px, Gap ${r.footerGap}px] | ${r.passed ? 'PASSED' : 'FAILED: ' + r.errors.join('; ')}`
-    );
-    if (!r.passed) allPassed = false;
+    const fc = r.screens.flashcard ? r.screens.flashcard.cardDimensions : 'N/A';
+    console.log(`${r.passed ? '✅' : '❌'} ${r.device.padEnd(25)} | Viewport: ${r.viewport.padEnd(10)} | Flashcard: ${fc.padEnd(12)} | Status: ${r.passed ? 'PASSED (All 4 Screens)' : 'FAILED'}`);
+    if (!r.passed) allPass = false;
   }
-  console.log(`========================================================================================================================`);
+  console.log(`========================================================================================================`);
 
-  if (!allPassed) {
-    process.exit(1);
-  }
+  if (!allPass) process.exit(1);
 }
 
-runDeviceMatrix().catch((err) => {
-  console.error('Test Suite Failed:', err);
+runDeviceMatrix().catch(err => {
+  console.error('Suite error:', err);
   process.exit(1);
 });

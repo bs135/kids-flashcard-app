@@ -101,8 +101,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden flex flex-col">
-      {/* Top Header Navigation */}
+    <div className="h-[100dvh] w-full flex flex-col overflow-hidden bg-slate-50 select-none">
+      {/* Top Header Navigation (Fixed Height Shell Layer) */}
       <Header
         stars={stars}
         currentTopic={selectedTopic}
@@ -115,48 +115,63 @@ export default function App() {
         }}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col justify-center">
+      {/* Main Viewport Content Area */}
+      <main className="flex-1 min-h-0 w-full relative overflow-hidden flex flex-col">
         {isAdminOpen ? (
-          <AdminPanel
-            topics={topics}
-            onBack={() => setIsAdminOpen(false)}
-            onTopicUpdated={handleRefreshTopics}
-          />
+          /* Type 2: Scrollable Document Screen */
+          <div className="w-full h-full overflow-y-auto p-3 sm:p-6 max-w-5xl mx-auto">
+            <AdminPanel
+              topics={topics}
+              onBack={() => setIsAdminOpen(false)}
+              onTopicUpdated={handleRefreshTopics}
+            />
+          </div>
         ) : activeGame === 'bubble' ? (
-          <BubbleQuiz
-            topics={topics}
-            initialTopic={selectedTopic}
-            onBack={handleBackToMap}
-            onEarnStar={handleEarnStar}
-          />
+          /* Type 1: App / Game Screen */
+          <div className="w-full h-full flex flex-col justify-between overflow-hidden p-2 sm:p-4 max-w-4xl mx-auto">
+            <BubbleQuiz
+              topics={topics}
+              initialTopic={selectedTopic}
+              onBack={handleBackToMap}
+              onEarnStar={handleEarnStar}
+            />
+          </div>
         ) : activeGame === 'memory' ? (
-          <MemoryGame
-            topics={topics}
-            initialTopic={selectedTopic}
-            onBack={handleBackToMap}
-            onEarnStar={handleEarnStar}
-          />
+          /* Type 1: App / Game Screen */
+          <div className="w-full h-full flex flex-col justify-between overflow-hidden p-2 sm:p-4 max-w-4xl mx-auto">
+            <MemoryGame
+              topics={topics}
+              initialTopic={selectedTopic}
+              onBack={handleBackToMap}
+              onEarnStar={handleEarnStar}
+            />
+          </div>
         ) : loading ? (
-          <div className="text-center py-20">
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
             <div className="text-6xl animate-bounce mb-4">🚀</div>
             <p className="text-xl font-bold text-amber-800 font-kids">
               Đang chuẩn bị thẻ cho bé...
             </p>
           </div>
         ) : selectedTopic ? (
-          <FlashcardViewer
-            topic={selectedTopic}
-            cards={currentCards}
-            onBackToHome={handleBackToMap}
-            onEarnStar={handleEarnStar}
-          />
+          /* Type 1: App / Game Screen */
+          <div className="w-full h-full flex flex-col justify-between overflow-hidden p-2 sm:p-4 max-w-4xl mx-auto">
+            <FlashcardViewer
+              topic={selectedTopic}
+              cards={currentCards}
+              onBackToHome={handleBackToMap}
+              onEarnStar={handleEarnStar}
+            />
+          </div>
         ) : (
-          <TopicMap
-            topics={topics}
-            onSelectTopic={handleSelectTopic}
-            onSelectGame={(gameType) => setActiveGame(gameType)}
-          />
+          /* Type 2: Scrollable Document Screen */
+          <div className="w-full h-full overflow-y-auto p-4 sm:p-6 max-w-4xl mx-auto">
+            <TopicMap
+              topics={topics}
+              onSelectTopic={handleSelectTopic}
+              onSelectGame={(gameType) => setActiveGame(gameType)}
+            />
+          </div>
         )}
       </main>
 
@@ -180,9 +195,9 @@ export default function App() {
         }}
       />
 
-      {/* Minimal App Footer */}
-      <footer className="py-1.5 sm:py-2 text-center text-[11px] sm:text-xs font-semibold text-slate-400 shrink-0 select-none">
-        Kids English Flashcard App • Học Vui Mỗi Ngày • v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0'}
+      {/* Standard App Footer */}
+      <footer className="w-full shrink-0 py-1.5 px-4 text-center text-xs text-slate-400 border-t border-slate-100 bg-white/80 z-20">
+        Kids English Flashcard App • Học Vui Mỗi Ngày • v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.1.0'}
       </footer>
     </div>
   );

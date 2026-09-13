@@ -83,7 +83,7 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
   };
 
   return (
-    <div className="w-full max-w-md sm:max-w-lg md:max-w-xl mx-auto px-2.5 sm:px-4 py-1 sm:py-2 flex flex-col justify-between flex-1 h-full min-h-0 overflow-hidden">
+    <div className="w-full h-full flex flex-col justify-between overflow-hidden">
       {/* Top Section: Navigation bar & Progress bar */}
       <div className="shrink-0 mb-1 sm:mb-2">
         {/* Top navigation bar */}
