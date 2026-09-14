@@ -45,8 +45,8 @@ const devicesToTest = [
     hasTouch: true
   },
   {
-    name: 'mobile-ios-restricted',
-    title: 'iOS Safari Restricted Toolbar (Portrait)',
+    name: 'mobile-restricted-viewport',
+    title: 'Mobile Restricted Viewport (Portrait)',
     viewport: { width: 390, height: 500 },
     isMobile: true,
     hasTouch: true

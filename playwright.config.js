@@ -41,7 +41,7 @@ export default defineConfig({
       }
     },
     {
-      name: 'mobile-ios-restricted',
+      name: 'mobile-restricted-viewport',
       use: {
         viewport: { width: 390, height: 500 },
         isMobile: true,

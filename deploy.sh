@@ -51,11 +51,34 @@ if [ "$RESET_DB" = true ]; then
   mkdir -p "$BACKUP_DIR"
   BACKUP_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-  # Quiesce app container if running to avoid SQLite WAL locks or in-flight writes
-  if docker compose ps -q app 2>/dev/null | grep -q .; then
-    echo "⏸️  [Quiesce] Stopping running app container to ensure consistent backup..."
-    docker compose stop app
+  # Check if app container was running, and capture compose exit status cleanly
+  APP_CONTAINER_ID=""
+  if ! APP_CONTAINER_ID=$(docker compose ps -q app 2>/dev/null); then
+    echo "❌ [ERROR] Failed to query Docker container status! Aborting reset for safety."
+    exit 1
   fi
+
+  WAS_APP_RUNNING=false
+  if [ -n "$APP_CONTAINER_ID" ]; then
+    echo "⏸️  [Quiesce] Stopping running app container to ensure consistent backup..."
+    if docker compose stop app; then
+      WAS_APP_RUNNING=true
+    else
+      echo "❌ [ERROR] Failed to stop running app container! Aborting reset to prevent file corruption."
+      exit 1
+    fi
+  fi
+
+  # Trap unexpected errors during reset to restore running service if it was running
+  cleanup_reset_failure() {
+    local exit_code=$?
+    if [ "$WAS_APP_RUNNING" = true ]; then
+      echo "⚠️  [Rollback] Script interrupted or encountered an error. Restarting app container..."
+      docker compose start app || true
+    fi
+    exit "$exit_code"
+  }
+  trap cleanup_reset_failure ERR INT TERM
 
   DATA_BACKUP_FILE="$BACKUP_DIR/data.bak_${BACKUP_TIMESTAMP}.tar.gz"
   UPLOADS_BACKUP_FILE="$BACKUP_DIR/user_uploads.bak_${BACKUP_TIMESTAMP}.tar.gz"
@@ -76,7 +99,7 @@ if [ "$RESET_DB" = true ]; then
   fi
 
   USER_UPLOADS_DIR="backend/uploads/user"
-  if [ -d "$USER_UPLOADS_DIR" ] && [ "$(ls -A "$USER_UPLOADS_DIR" 2>/dev/null)" ]; then
+  if [ -d "$USER_UPLOADS_DIR" ]; then
     echo "💾 [Backup 2/2] Archiving user uploads to ${UPLOADS_BACKUP_FILE}..."
     if tar -czf "$UPLOADS_BACKUP_FILE" -C backend/uploads user; then
       ARCHIVE_SIZE=$(du -h "$UPLOADS_BACKUP_FILE" | cut -f1)
@@ -86,9 +109,6 @@ if [ "$RESET_DB" = true ]; then
       echo "❌ [ERROR] Failed to archive user uploads! Aborting reset to protect uploads."
       exit 1
     fi
-  else
-    echo "ℹ️  [Backup 2/2] No user uploads found in ${USER_UPLOADS_DIR}, skipping archive."
-    [ -d "$USER_UPLOADS_DIR" ] && UPLOADS_NEEDS_CLEAN=true
   fi
 
   # Step 2: Now that all archives have been successfully validated, execute cleanups
@@ -103,6 +123,9 @@ if [ "$RESET_DB" = true ]; then
     rm -rf "$USER_UPLOADS_DIR" && mkdir -p "$USER_UPLOADS_DIR"
     echo "   ✓ Recreated empty user uploads directory."
   fi
+
+  # Remove error trap as reset phase completed safely
+  trap - ERR INT TERM
 fi
 
 echo "📦 [2/4] Building and restarting app container..."
