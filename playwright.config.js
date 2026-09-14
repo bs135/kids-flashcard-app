@@ -41,6 +41,14 @@ export default defineConfig({
       }
     },
     {
+      name: 'mobile-ios-restricted',
+      use: {
+        viewport: { width: 390, height: 500 },
+        isMobile: true,
+        hasTouch: true
+      }
+    },
+    {
       name: 'ipad-mini-portrait',
       use: {
         viewport: { width: 768, height: 1024 },
