@@ -23,12 +23,12 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
   };
 
   return (
-    <div className="w-full h-full max-w-sm sm:max-w-md max-h-[320px] xs:max-h-[360px] sm:max-h-none flex flex-col justify-between perspective-1000 select-none cursor-pointer mx-auto my-auto">
+    <div className="w-full h-full max-w-sm sm:max-w-md max-h-full flex items-center justify-center perspective-1000 select-none cursor-pointer mx-auto p-1">
       <motion.div
         onClick={handleCardClick}
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ duration: 0.6, type: 'spring', stiffness: 260, damping: 20 }}
-        className="w-full h-full relative transform-style-3d shadow-2xl rounded-3xl flex-1 flex flex-col"
+        className="h-full max-h-full w-auto max-w-full aspect-[3/4] sm:aspect-[4/5] relative transform-style-3d shadow-2xl rounded-3xl flex flex-col mx-auto"
       >
         {/* ==================== FRONT SIDE ==================== */}
         <div className="absolute inset-0 w-full h-full backface-hidden bg-white border-3 sm:border-4 border-amber-300 rounded-3xl p-2.5 sm:p-5 flex flex-col items-center justify-between shadow-bouncy overflow-hidden">
@@ -41,7 +41,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
           </div>
 
           {/* Large illustration image container (expands dynamically to fill vertical space) */}
-          <div className="relative flex-1 w-full min-h-[100px] sm:min-h-[220px] my-1 sm:my-2 rounded-2xl overflow-hidden border-2 sm:border-4 border-amber-100 shadow-inner group flex items-center justify-center p-1.5 sm:p-2">
+          <div className="relative flex-1 min-h-0 w-full my-1 sm:my-2 rounded-2xl overflow-hidden border-2 sm:border-4 border-amber-100 shadow-inner group flex items-center justify-center p-1 sm:p-2">
             <img
               src={card.image_url?.includes('?') ? card.image_url : `${card.image_url}?v=${card.id || ''}`}
               alt={card.word}

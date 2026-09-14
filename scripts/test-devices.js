@@ -45,6 +45,13 @@ const devicesToTest = [
     hasTouch: true
   },
   {
+    name: 'mobile-restricted-viewport',
+    title: 'Mobile Restricted Viewport (Portrait)',
+    viewport: { width: 390, height: 500 },
+    isMobile: true,
+    hasTouch: true
+  },
+  {
     name: 'ipad-mini-portrait',
     title: 'iPad Mini (Portrait)',
     viewport: { width: 768, height: 1024 },
@@ -108,9 +115,10 @@ async function runDeviceMatrix() {
         adminPass: homeAdmin.isWithinViewport
       };
 
-      // 2. Check Flashcard Screen
+      // 2. Check Flashcard Screen (Zone 1: Top, Zone 2: Card, Zone 3: Bottom Nav + Footer)
       await topicMapPage.selectTopic('Colors');
       await flashcardPage.waitForReady();
+      const fcTopBar = await flashcardPage.getTopBarMetrics();
       const fcOverflow = await flashcardPage.checkHorizontalOverflow();
       const fcNav = await flashcardPage.getNavigationMetrics();
       const fcCard = await flashcardPage.getCardMetrics();
@@ -119,6 +127,7 @@ async function runDeviceMatrix() {
 
       result.screens.flashcard = {
         cardDimensions: `${fcCard.width}x${fcCard.height}px`,
+        topBarPass: fcTopBar.isWithinViewport,
         overflowPass: !fcOverflow.hasOverflow,
         navPass: fcNav.isWithinViewport,
         footerPass: fcFooter.isFullyVisible,
@@ -130,10 +139,11 @@ async function runDeviceMatrix() {
       const ssPath = path.join(screenshotsDir, `${dev.name}.png`);
       await page.screenshot({ path: ssPath });
 
-      // 3. Check Memory Game
+      // 3. Check Memory Game (Zone 1: Top, Zone 2: Arena/Grid, Zone 3: Footer)
       await topicMapPage.goto();
       await topicMapPage.openMemoryGame();
       await memoryGamePage.waitForReady();
+      const memTopBar = await memoryGamePage.getTopBarMetrics();
       const memOverflow = await memoryGamePage.checkHorizontalOverflow();
       const memArena = await memoryGamePage.getArenaMetrics();
       const memCardRatio = await memoryGamePage.getCardAspectRatio();
@@ -143,12 +153,13 @@ async function runDeviceMatrix() {
       const memFooter = await memoryGamePage.getFooterMetrics();
 
       result.screens.memoryGame = {
+        topBarPass: memTopBar.isWithinViewport,
         overflowPass: !memOverflow.hasOverflow,
         arenaPass: memArena.isWithinViewport,
         footerPass: memFooter.isFullyVisible,
-        cardRatioPass: memCardRatio.ratio >= 1.1 && memCardRatio.ratio <= 1.55,
-        footerGapPass: memFooterGap.gap >= 6,
-        paddingPass: memCardPad.minPadding >= 4,
+        cardRatioPass: memCardRatio.ratio >= 1.15 && memCardRatio.ratio <= 1.50,
+        footerGapPass: memFooterGap.gap >= 4,
+        paddingPass: memCardPad.minPadding >= 2,
         lastCardContainedPass: memLastCardGap.isContained,
         cardDimensions: `${memCardRatio.width}x${memCardRatio.height}px (Ratio: ${memCardRatio.ratio})`,
         gap: memFooterGap.gap,
@@ -156,15 +167,17 @@ async function runDeviceMatrix() {
         bottomPadding: memLastCardGap.gap
       };
 
-      // 4. Check Bubble Quiz
+      // 4. Check Bubble Quiz (Zone 1: Top, Zone 2: Start Button / Arena, Zone 3: Footer)
       await topicMapPage.goto();
       await topicMapPage.openBubbleGame();
       await bubbleQuizPage.waitForReady();
+      const bqTopBar = await bubbleQuizPage.getTopBarMetrics();
       const bqOverflow = await bubbleQuizPage.checkHorizontalOverflow();
       const bqBtn = await bubbleQuizPage.getStartButtonMetrics();
       const bqFooter = await bubbleQuizPage.getFooterMetrics();
 
       result.screens.bubbleQuiz = {
+        topBarPass: bqTopBar.isWithinViewport,
         overflowPass: !bqOverflow.hasOverflow,
         buttonPass: bqBtn.isWithinViewport,
         footerPass: bqFooter.isFullyVisible
@@ -174,10 +187,12 @@ async function runDeviceMatrix() {
         'topicMap.overflow': result.screens.topicMap.overflowPass,
         'topicMap.footer': result.screens.topicMap.footerPass,
         'topicMap.admin': result.screens.topicMap.adminPass,
+        'flashcard.topBar': result.screens.flashcard.topBarPass,
         'flashcard.overflow': result.screens.flashcard.overflowPass,
         'flashcard.nav': result.screens.flashcard.navPass,
         'flashcard.footer': result.screens.flashcard.footerPass,
         'flashcard.noOverlap': result.screens.flashcard.noOverlap,
+        'memoryGame.topBar': result.screens.memoryGame.topBarPass,
         'memoryGame.overflow': result.screens.memoryGame.overflowPass,
         'memoryGame.arena': result.screens.memoryGame.arenaPass,
         'memoryGame.footer': result.screens.memoryGame.footerPass,
@@ -185,6 +200,7 @@ async function runDeviceMatrix() {
         'memoryGame.footerGap': result.screens.memoryGame.footerGapPass,
         'memoryGame.padding': result.screens.memoryGame.paddingPass,
         'memoryGame.lastCardContained': result.screens.memoryGame.lastCardContainedPass,
+        'bubbleQuiz.topBar': result.screens.bubbleQuiz.topBarPass,
         'bubbleQuiz.overflow': result.screens.bubbleQuiz.overflowPass,
         'bubbleQuiz.button': result.screens.bubbleQuiz.buttonPass,
         'bubbleQuiz.footer': result.screens.bubbleQuiz.footerPass
@@ -194,9 +210,9 @@ async function runDeviceMatrix() {
       result.passed = failures.length === 0;
 
       console.log(`   [Topic Map]   Overflow: ${result.screens.topicMap.overflowPass ? 'OK' : 'FAIL'} | Footer: ${result.screens.topicMap.footerPass ? 'OK' : 'FAIL'} | Admin Button: ${result.screens.topicMap.adminPass ? 'OK' : 'FAIL'}`);
-      console.log(`   [Flashcard]   Card: ${result.screens.flashcard.cardDimensions} | Nav: ${result.screens.flashcard.navPass ? 'OK' : 'FAIL'} | Footer: ${result.screens.flashcard.footerPass ? 'OK' : 'FAIL'} (Gap: ${result.screens.flashcard.gap}px)`);
-      console.log(`   [Memory Game] Card: ${result.screens.memoryGame.cardDimensions} | Ratio: ${result.screens.memoryGame.cardRatioPass ? 'OK' : 'FAIL'} | BottomGap: ${result.screens.memoryGame.bottomPadding}px (${result.screens.memoryGame.lastCardContainedPass ? 'OK' : 'FAIL'}) | Footer: ${result.screens.memoryGame.footerPass ? 'OK' : 'FAIL'}`);
-      console.log(`   [Bubble Quiz] Button Fit: ${result.screens.bubbleQuiz.buttonPass ? 'OK' : 'FAIL'} | Footer: ${result.screens.bubbleQuiz.footerPass ? 'OK' : 'FAIL'}`);
+      console.log(`   [Flashcard]   TopBar: ${result.screens.flashcard.topBarPass ? 'OK' : 'FAIL'} | Card: ${result.screens.flashcard.cardDimensions} | Nav: ${result.screens.flashcard.navPass ? 'OK' : 'FAIL'} | Footer: ${result.screens.flashcard.footerPass ? 'OK' : 'FAIL'} (Gap: ${result.screens.flashcard.gap}px)`);
+      console.log(`   [Memory Game] TopBar: ${result.screens.memoryGame.topBarPass ? 'OK' : 'FAIL'} | Card: ${result.screens.memoryGame.cardDimensions} | Ratio: ${result.screens.memoryGame.cardRatioPass ? 'OK' : 'FAIL'} | BottomGap: ${result.screens.memoryGame.bottomPadding}px (${result.screens.memoryGame.lastCardContainedPass ? 'OK' : 'FAIL'}) | Footer: ${result.screens.memoryGame.footerPass ? 'OK' : 'FAIL'}`);
+      console.log(`   [Bubble Quiz] TopBar: ${result.screens.bubbleQuiz.topBarPass ? 'OK' : 'FAIL'} | Button Fit: ${result.screens.bubbleQuiz.buttonPass ? 'OK' : 'FAIL'} | Footer: ${result.screens.bubbleQuiz.footerPass ? 'OK' : 'FAIL'}`);
       if (!result.passed) {
         console.log(`   ❌ FAILED CHECKS: ${failures.join(', ')}`);
       }

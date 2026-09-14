@@ -8,12 +8,17 @@ backend/data/*.sqlite
 backend/data/*.sqlite-journal
 backend/data/*.sqlite-wal
 backend/data/*.sqlite-shm
+
 *.db
 *.sqlite
 
 # Media uploads: user-created media is ignored, seed media is tracked
 backend/uploads/user/
 !backend/uploads/seed/
+
+# Backup archives
+backend/backup/
+backend/data/*.sqlite.bak_*
 
 # Environment variables
 .env

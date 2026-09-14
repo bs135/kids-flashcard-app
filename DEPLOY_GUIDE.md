@@ -192,16 +192,24 @@ To update directly on the VPS without pushing code, synchronize seed cards, or p
   ```
   Synchronizes database topics and default flashcards without wiping existing progress or user cards.
 
-- **Full clean reset and re-seed from scratch (with automatic backup):**
+- **Backup and clean reset database and user uploads (with automatic archives):**
   ```bash
-  ./deploy.sh --seed --reset
+  ./deploy.sh --reset
   ```
-  When both `--seed` and `--reset` are provided, the script safely:
-  1. Creates an automatic timestamped backup of your SQLite database:
-     `backend/data/database.sqlite.bak_YYYYMMDD_HHMMSS` (including `-wal` and `-shm` files if present).
-  2. Cleans up the old SQLite database files to guarantee a fresh initialization.
-  3. Pulls latest code and rebuilds the `app` container.
-  4. Re-initializes tables and seeds all 115 standard flashcards from scratch using local assets in `backend/uploads/seed/`.
+  The `--reset` option operates independently to safely:
+  1. Pulls and verifies the latest Git revision first.
+  2. Quiesces the running `app` container to avoid database locks and in-flight writes.
+  3. Creates timestamped compressed archives in `backend/backup/`:
+     - Database archive: `backend/backup/data.bak_YYYYMMDD_HHMMSS.tar.gz`
+     - User uploads archive: `backend/backup/user_uploads.bak_YYYYMMDD_HHMMSS.tar.gz`
+  4. Once all archives are successfully created and verified, cleans runtime SQLite files (`database.sqlite*`) and recreates empty `backend/uploads/user/`.
+  5. Rebuilds and restarts the container.
+
+- **Full clean reset and re-seed from scratch:**
+  ```bash
+  ./deploy.sh --reset --seed
+  ```
+  Safely backs up and resets the database and uploads as described above, rebuilds the container, and then populates default topics and 115 standard flashcards from `backend/uploads/seed/`.
 
 ---
 

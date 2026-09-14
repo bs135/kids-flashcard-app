@@ -8,6 +8,23 @@ export class BubbleQuizPage extends BasePage {
     this.startButton = page.locator('button:has-text("BẮT ĐẦU CHƠI NGAY")').first();
   }
 
+  async getTopBarMetrics() {
+    await this.backButton.waitFor({ state: 'visible', timeout: 5000 });
+    const box = await this.backButton.boundingBox();
+    const viewport = this.page.viewportSize();
+    const viewportHeight = viewport ? viewport.height : 800;
+    const viewportWidth = viewport ? viewport.width : 1280;
+    return {
+      top: box ? Math.round(box.y) : 0,
+      bottom: box ? Math.round(box.y + box.height) : 0,
+      left: box ? Math.round(box.x) : 0,
+      right: box ? Math.round(box.x + box.width) : 0,
+      viewportHeight,
+      viewportWidth,
+      isWithinViewport: box ? box.y >= 0 && box.y + box.height <= viewportHeight && box.x >= 0 && box.x + box.width <= viewportWidth : false
+    };
+  }
+
   async waitForReady() {
     await this.startButton.waitFor({ state: 'visible', timeout: 10000 });
     await this.page.waitForTimeout(600);

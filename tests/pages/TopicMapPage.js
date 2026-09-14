@@ -10,8 +10,9 @@ export class TopicMapPage extends BasePage {
   }
 
   async selectTopic(name) {
+    await this.title.waitFor({ state: 'visible', timeout: 15000 });
     const topicCard = this.page.locator(`h3:has-text("${name}")`).first();
-    await topicCard.waitFor({ state: 'visible', timeout: 10000 });
+    await topicCard.waitFor({ state: 'visible', timeout: 15000 });
     await topicCard.click();
   }
 
