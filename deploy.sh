@@ -39,6 +39,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+echo "🚀 [1/4] Pulling latest source code from Git..."
+git pull origin main
+
 # ==============================================================================
 # Block 1: Independent Database & User Uploads Reset (--reset)
 # ==============================================================================
@@ -48,48 +51,59 @@ if [ "$RESET_DB" = true ]; then
   mkdir -p "$BACKUP_DIR"
   BACKUP_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-  # 1. Backup & reset database directory (backend/data/)
+  # Quiesce app container if running to avoid SQLite WAL locks or in-flight writes
+  if docker compose ps -q app 2>/dev/null | grep -q .; then
+    echo "⏸️  [Quiesce] Stopping running app container to ensure consistent backup..."
+    docker compose stop app
+  fi
+
+  DATA_BACKUP_FILE="$BACKUP_DIR/data.bak_${BACKUP_TIMESTAMP}.tar.gz"
+  UPLOADS_BACKUP_FILE="$BACKUP_DIR/user_uploads.bak_${BACKUP_TIMESTAMP}.tar.gz"
+  DATA_NEEDS_CLEAN=false
+  UPLOADS_NEEDS_CLEAN=false
+
+  # Step 1: Create backup archives atomically before performing any destructive deletions
   if [ -d "backend/data" ]; then
-    DATA_BACKUP_FILE="$BACKUP_DIR/data.bak_${BACKUP_TIMESTAMP}.tar.gz"
-    echo "💾 [Backup] Archiving backend/data to ${DATA_BACKUP_FILE}..."
+    echo "💾 [Backup 1/2] Archiving backend/data to ${DATA_BACKUP_FILE}..."
     if tar -czf "$DATA_BACKUP_FILE" -C backend data; then
       ARCHIVE_SIZE=$(du -h "$DATA_BACKUP_FILE" | cut -f1)
       echo "   ✓ Successfully created data archive: ${DATA_BACKUP_FILE} (${ARCHIVE_SIZE})"
-
-      echo "🗑️  [Reset] Cleaning SQLite database runtime files..."
-      rm -f backend/data/database.sqlite backend/data/database.sqlite-wal backend/data/database.sqlite-shm backend/data/database.sqlite-journal
-      echo "   ✓ Database runtime files removed for fresh initialization."
+      DATA_NEEDS_CLEAN=true
     else
-      echo "❌ [ERROR] Failed to archive backend/data! Aborting database removal."
+      echo "❌ [ERROR] Failed to archive backend/data! Aborting reset to protect data."
       exit 1
     fi
   fi
 
-  # 2. Backup & reset user uploads (backend/uploads/user)
   USER_UPLOADS_DIR="backend/uploads/user"
-  if [ -d "$USER_UPLOADS_DIR" ]; then
-    if [ "$(ls -A "$USER_UPLOADS_DIR" 2>/dev/null)" ]; then
-      UPLOADS_BACKUP_FILE="$BACKUP_DIR/user_uploads.bak_${BACKUP_TIMESTAMP}.tar.gz"
-      echo "💾 [Backup] Archiving user uploads to ${UPLOADS_BACKUP_FILE}..."
-      if tar -czf "$UPLOADS_BACKUP_FILE" -C backend/uploads user; then
-        ARCHIVE_SIZE=$(du -h "$UPLOADS_BACKUP_FILE" | cut -f1)
-        echo "   ✓ Successfully created user uploads archive: ${UPLOADS_BACKUP_FILE} (${ARCHIVE_SIZE})"
-      else
-        echo "❌ [ERROR] Failed to archive user uploads! Aborting uploads reset."
-        exit 1
-      fi
+  if [ -d "$USER_UPLOADS_DIR" ] && [ "$(ls -A "$USER_UPLOADS_DIR" 2>/dev/null)" ]; then
+    echo "💾 [Backup 2/2] Archiving user uploads to ${UPLOADS_BACKUP_FILE}..."
+    if tar -czf "$UPLOADS_BACKUP_FILE" -C backend/uploads user; then
+      ARCHIVE_SIZE=$(du -h "$UPLOADS_BACKUP_FILE" | cut -f1)
+      echo "   ✓ Successfully created user uploads archive: ${UPLOADS_BACKUP_FILE} (${ARCHIVE_SIZE})"
+      UPLOADS_NEEDS_CLEAN=true
     else
-      echo "ℹ️  [Backup] No user uploads found in ${USER_UPLOADS_DIR}, skipping archive."
+      echo "❌ [ERROR] Failed to archive user uploads! Aborting reset to protect uploads."
+      exit 1
     fi
+  else
+    echo "ℹ️  [Backup 2/2] No user uploads found in ${USER_UPLOADS_DIR}, skipping archive."
+    [ -d "$USER_UPLOADS_DIR" ] && UPLOADS_NEEDS_CLEAN=true
+  fi
 
+  # Step 2: Now that all archives have been successfully validated, execute cleanups
+  if [ "$DATA_NEEDS_CLEAN" = true ]; then
+    echo "🗑️  [Reset] Cleaning SQLite database runtime files..."
+    rm -f backend/data/database.sqlite backend/data/database.sqlite-wal backend/data/database.sqlite-shm backend/data/database.sqlite-journal
+    echo "   ✓ Database runtime files removed for fresh initialization."
+  fi
+
+  if [ "$UPLOADS_NEEDS_CLEAN" = true ]; then
     echo "🗑️  [Reset] Cleaning and recreating ${USER_UPLOADS_DIR}..."
     rm -rf "$USER_UPLOADS_DIR" && mkdir -p "$USER_UPLOADS_DIR"
     echo "   ✓ Recreated empty user uploads directory."
   fi
 fi
-
-echo "🚀 [1/4] Pulling latest source code from Git..."
-git pull origin main
 
 echo "📦 [2/4] Building and restarting app container..."
 docker compose up -d --build app

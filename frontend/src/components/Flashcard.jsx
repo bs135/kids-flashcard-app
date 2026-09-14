@@ -28,7 +28,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
         onClick={handleCardClick}
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ duration: 0.6, type: 'spring', stiffness: 260, damping: 20 }}
-        className="w-full h-full max-h-full aspect-[3/4] sm:aspect-[4/5] relative transform-style-3d shadow-2xl rounded-3xl flex flex-col mx-auto"
+        className="h-full max-h-full w-auto max-w-full aspect-[3/4] sm:aspect-[4/5] relative transform-style-3d shadow-2xl rounded-3xl flex flex-col mx-auto"
       >
         {/* ==================== FRONT SIDE ==================== */}
         <div className="absolute inset-0 w-full h-full backface-hidden bg-white border-3 sm:border-4 border-amber-300 rounded-3xl p-2.5 sm:p-5 flex flex-col items-center justify-between shadow-bouncy overflow-hidden">

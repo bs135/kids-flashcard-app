@@ -233,10 +233,18 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
           </motion.button>
         </div>
 
-        {/* Card grid container (centered horizontally and vertically with exact 3:4 card ratio math) */}
+        {/* Card grid container (dynamically derived aspect-ratio and grid geometry based on card count) */}
         {!isWon ? (
           <div className="flex-1 min-h-0 w-full flex items-center justify-center p-1 sm:p-2 overflow-hidden">
-            <div className="grid grid-cols-3 sm:grid-cols-4 grid-rows-4 sm:grid-rows-3 gap-1.5 sm:gap-2.5 h-full max-h-full w-auto max-w-full aspect-[9/16] sm:aspect-square mx-auto my-auto items-center justify-items-center">
+            <div 
+              className={`grid gap-1.5 sm:gap-2.5 h-full max-h-full w-auto max-w-full mx-auto my-auto items-center justify-items-center ${
+                gameCards.length <= 8
+                  ? 'grid-cols-2 sm:grid-cols-4 grid-rows-4 sm:grid-rows-2 aspect-[3/8] sm:aspect-[3/2]'
+                  : gameCards.length <= 10
+                  ? 'grid-cols-2 sm:grid-cols-5 grid-rows-5 sm:grid-rows-2 aspect-[3/10] sm:aspect-[15/8]'
+                  : 'grid-cols-3 sm:grid-cols-4 grid-rows-4 sm:grid-rows-3 aspect-[9/16] sm:aspect-square'
+              }`}
+            >
               {gameCards.map((card, index) => {
                 const isFlipped = flippedIndices.includes(index) || matchedIds.has(card.cardId);
                 const isMatched = matchedIds.has(card.cardId);

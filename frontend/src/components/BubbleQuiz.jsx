@@ -295,7 +295,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
                       whileHover={{ scale: 1.08 }}
                       whileTap={{ scale: 0.92 }}
                       onClick={() => handleBubbleClick(b)}
-                      className={`relative w-full h-full max-w-[110px] max-h-[110px] sm:max-w-[140px] sm:max-h-[140px] aspect-square rounded-full bg-gradient-to-br ${b.color} border-3 sm:border-4 p-2 sm:p-3.5 flex items-center justify-center shadow-lg cursor-pointer select-none overflow-hidden mx-auto my-auto`}
+                      className={`relative w-auto h-full max-w-[110px] max-h-[110px] sm:max-w-[140px] sm:max-h-[140px] aspect-square rounded-full bg-gradient-to-br ${b.color} border-3 sm:border-4 p-2 sm:p-3.5 flex items-center justify-center shadow-lg cursor-pointer select-none overflow-hidden mx-auto my-auto`}
                     >
                       {/* Bubble shine highlight reflection */}
                       <div className="absolute top-2 left-3 w-5 h-2.5 sm:w-6 sm:h-3 bg-white/75 rounded-full rotate-[-35deg] pointer-events-none z-10" />
