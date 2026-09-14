@@ -12,12 +12,31 @@ set -e
 SHOULD_SEED=false
 RESET_DB=false
 
-for arg in "$@"; do
-  if [ "$arg" == "--seed" ]; then
-    SHOULD_SEED=true
-  elif [ "$arg" == "--reset" ]; then
-    RESET_DB=true
-  fi
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -s|--seed)
+      SHOULD_SEED=true
+      shift
+      ;;
+    -r|--reset)
+      RESET_DB=true
+      shift
+      ;;
+    -h|--help)
+      echo "Usage: ./deploy.sh [OPTIONS]"
+      echo ""
+      echo "Options:"
+      echo "  -r, --reset   Backup and clean SQLite database and user uploads"
+      echo "  -s, --seed    Seed default topics and standard flashcards"
+      echo "  -h, --help    Display this help message and exit"
+      exit 0
+      ;;
+    *)
+      echo "❌ [ERROR] Unknown option: $1"
+      echo "Run './deploy.sh --help' to see available options."
+      exit 1
+      ;;
+  esac
 done
 
 # ==============================================================================
