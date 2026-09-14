@@ -193,7 +193,7 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.2 }}
-              className="w-full h-full flex-1 flex items-center justify-center"
+              className="w-full h-full min-h-0 max-h-full flex items-center justify-center overflow-hidden"
             >
               {/* 3D Flashcard Component */}
               <Flashcard

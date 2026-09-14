@@ -269,8 +269,8 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
             </div>
 
             {/* Bubble floating area */}
-            <div className="relative flex-1 w-full flex items-center justify-center min-h-[200px] sm:min-h-[320px] overflow-hidden">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-6 items-center justify-center px-1 sm:px-8 py-1 sm:py-4">
+            <div className="relative flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden p-1 sm:p-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-6 items-center justify-center h-full max-h-full aspect-[4/3] sm:aspect-[16/7] w-auto max-w-full px-1 sm:px-6 py-1">
                 {bubbles.map((b) => {
                   const isShaking = shakingBubbleId === b.id;
 
@@ -295,13 +295,13 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
                       whileHover={{ scale: 1.08 }}
                       whileTap={{ scale: 0.92 }}
                       onClick={() => handleBubbleClick(b)}
-                      className={`relative w-22 h-22 xs:w-26 xs:h-26 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br ${b.color} border-3 sm:border-4 p-2 sm:p-4 flex items-center justify-center shadow-lg cursor-pointer select-none overflow-hidden`}
+                      className={`relative w-full h-full max-w-[110px] max-h-[110px] sm:max-w-[140px] sm:max-h-[140px] aspect-square rounded-full bg-gradient-to-br ${b.color} border-3 sm:border-4 p-2 sm:p-3.5 flex items-center justify-center shadow-lg cursor-pointer select-none overflow-hidden mx-auto my-auto`}
                     >
                       {/* Bubble shine highlight reflection */}
-                      <div className="absolute top-2.5 left-3.5 w-6 h-3 bg-white/75 rounded-full rotate-[-35deg] pointer-events-none z-10" />
+                      <div className="absolute top-2 left-3 w-5 h-2.5 sm:w-6 sm:h-3 bg-white/75 rounded-full rotate-[-35deg] pointer-events-none z-10" />
 
                       {/* Center card image */}
-                      <div className="w-full h-full flex items-center justify-center p-1">
+                      <div className="w-full h-full flex items-center justify-center p-0.5">
                         <img
                           src={`${b.card.image_url}?t=${b.card.id}`}
                           alt={b.card.word}
