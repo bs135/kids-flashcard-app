@@ -19,22 +19,43 @@ for arg in "$@"; do
   fi
 done
 
-# If --seed and --reset are both present, backup and reset the SQLite database
+# If --seed and --reset are both present, backup and reset database and user uploads
 if [ "$SHOULD_SEED" = true ] && [ "$RESET_DB" = true ]; then
   echo "⚠️  [WARNING] Database reset flag detected (--seed --reset)!"
-  DB_FILE="backend/data/database.sqlite"
+  BACKUP_DIR="backend/backup"
+  mkdir -p "$BACKUP_DIR"
   BACKUP_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-  if [ -f "$DB_FILE" ]; then
-    BACKUP_FILE="${DB_FILE}.bak_${BACKUP_TIMESTAMP}"
-    echo "💾 [Backup] Creating database backup: ${BACKUP_FILE}..."
-    cp "$DB_FILE" "$BACKUP_FILE"
-    # Also backup journal/wal files if present
-    [ -f "${DB_FILE}-wal" ] && cp "${DB_FILE}-wal" "${BACKUP_FILE}-wal" || true
-    [ -f "${DB_FILE}-shm" ] && cp "${DB_FILE}-shm" "${BACKUP_FILE}-shm" || true
-    
-    echo "🗑️  [Reset] Removing existing database to ensure clean re-initialization..."
-    rm -f "$DB_FILE" "${DB_FILE}-wal" "${DB_FILE}-shm" "${DB_FILE}-journal"
+  # 1. Backup & reset database directory (backend/data/)
+  if [ -d "backend/data" ]; then
+    DATA_BACKUP_FILE="$BACKUP_DIR/data.bak_${BACKUP_TIMESTAMP}.tar.gz"
+    echo "💾 [Backup] Archiving backend/data to ${DATA_BACKUP_FILE}..."
+    tar -czf "$DATA_BACKUP_FILE" -C backend data
+    ARCHIVE_SIZE=$(du -h "$DATA_BACKUP_FILE" | cut -f1)
+    echo "   ✓ Successfully created data archive: ${DATA_BACKUP_FILE} (${ARCHIVE_SIZE})"
+
+    echo "🗑️  [Reset] Cleaning SQLite database runtime files..."
+    rm -f backend/data/database.sqlite backend/data/database.sqlite-wal backend/data/database.sqlite-shm backend/data/database.sqlite-journal
+    echo "   ✓ Database runtime files removed for fresh initialization."
+  fi
+
+  # 2. Backup & reset user uploads (backend/uploads/user)
+  USER_UPLOADS_DIR="backend/uploads/user"
+  if [ -d "$USER_UPLOADS_DIR" ]; then
+    # Check if there are any files inside user uploads directory
+    if [ "$(ls -A "$USER_UPLOADS_DIR" 2>/dev/null)" ]; then
+      UPLOADS_BACKUP_FILE="$BACKUP_DIR/user_uploads.bak_${BACKUP_TIMESTAMP}.tar.gz"
+      echo "💾 [Backup] Archiving user uploads to ${UPLOADS_BACKUP_FILE}..."
+      tar -czf "$UPLOADS_BACKUP_FILE" -C backend/uploads user
+      ARCHIVE_SIZE=$(du -h "$UPLOADS_BACKUP_FILE" | cut -f1)
+      echo "   ✓ Successfully created user uploads archive: ${UPLOADS_BACKUP_FILE} (${ARCHIVE_SIZE})"
+    else
+      echo "ℹ️  [Backup] No user uploads found in ${USER_UPLOADS_DIR}, skipping archive."
+    fi
+
+    echo "🗑️  [Reset] Cleaning and recreating ${USER_UPLOADS_DIR}..."
+    rm -rf "$USER_UPLOADS_DIR" && mkdir -p "$USER_UPLOADS_DIR"
+    echo "   ✓ Recreated empty user uploads directory."
   fi
 fi
 
