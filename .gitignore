@@ -8,6 +8,10 @@ backend/data/*.sqlite
 backend/data/*.sqlite-journal
 backend/data/*.sqlite-wal
 backend/data/*.sqlite-shm
+backend/data/*.sqlite.bak_*
+backend/data/*.sqlite.bak_*-shm
+backend/data/*.sqlite.bak_*-wal
+
 *.db
 *.sqlite
 
