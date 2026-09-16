@@ -12,9 +12,9 @@ initDatabase();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-console.log('🌱 Populating database and verifying media assets for 8 topics and 115 standard cards...');
+console.log('🌱 Populating database and verifying media assets for 11 topics and 154 standard cards...');
 
-// 1. List of 8 standardized topics by slug
+// 1. List of 11 standardized topics by slug
 export const topics = [
   {
     id: 'colors',
@@ -79,6 +79,30 @@ export const topics = [
     icon: '🍕',
     color_theme: 'rose',
     display_order: 8
+  },
+  {
+    id: 'instruments',
+    name_en: 'Musical Instruments',
+    name_vi: 'Nhạc Cụ',
+    icon: '🎸',
+    color_theme: 'purple',
+    display_order: 9
+  },
+  {
+    id: 'school',
+    name_en: 'School Supplies',
+    name_vi: 'Đồ Dùng Học Tập',
+    icon: '📚',
+    color_theme: 'sky',
+    display_order: 10
+  },
+  {
+    id: 'toys',
+    name_en: 'Toys',
+    name_vi: 'Đồ Chơi',
+    icon: '🧸',
+    color_theme: 'amber',
+    display_order: 11
   }
 ];
 
@@ -1148,6 +1172,369 @@ export const rawFlashcards = [
     meaning_vi: 'Món sushi',
     example_en: 'Colorful cute sushi rolls look like little art.',
     example_vi: 'Những cuộn sushi xinh xắn như tác phẩm nghệ thuật nhỏ.',
+    difficulty: 1
+  },
+
+  // ==========================================
+  // 9. Musical Instruments (Nhạc Cụ) - 11 từ
+  // ==========================================
+  {
+    topic_id: 'instruments',
+    word: 'Cymbals',
+    phonetic: '/ˈsɪm.bəlz/',
+    meaning_vi: 'Chũm chọe',
+    example_en: 'Crash the golden cymbals together loud and clear.',
+    example_vi: 'Đập đôi chũm chọe vàng vang lên tiếng rộn rã.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'instruments',
+    word: 'Drum',
+    phonetic: '/drʌm/',
+    meaning_vi: 'Cái trống',
+    example_en: 'Tap the bright drum to the bouncy beat.',
+    example_vi: 'Gõ chiếc trống rực rỡ theo nhịp điệu rộn ràng.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'instruments',
+    word: 'Guitar',
+    phonetic: '/ɡɪˈtɑːr/',
+    meaning_vi: 'Đàn ghi-ta',
+    example_en: 'Strum the cheerful guitar strings gently.',
+    example_vi: 'Gảy những dây đàn ghi-ta vui tươi nhẹ nhàng.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'instruments',
+    word: 'Harmonica',
+    phonetic: '/hɑːˈmɒn.ɪ.kə/',
+    meaning_vi: 'Kèn harmonica',
+    example_en: 'Blow sweet tunes through the shiny harmonica.',
+    example_vi: 'Thổi những giai điệu êm dịu qua cây kèn harmonica sáng bóng.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'instruments',
+    word: 'Maracas',
+    phonetic: '/məˈræk.əs/',
+    meaning_vi: 'Bộ lục lạc / Maracas',
+    example_en: 'Shake the colorful maracas to make a fun rhythm.',
+    example_vi: 'Lắc những chiếc lục lạc sắc màu tạo nhịp điệu vui tươi.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'instruments',
+    word: 'Piano',
+    phonetic: '/piˈæn.əʊ/',
+    meaning_vi: 'Đàn pi-a-nô',
+    example_en: 'Press the black and white piano keys softly.',
+    example_vi: 'Nhấn nhẹ nhàng lên các phím đàn pi-a-nô đen trắng.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'instruments',
+    word: 'Tambourine',
+    phonetic: '/ˌtæm.bəˈriːn/',
+    meaning_vi: 'Trống lắc tay',
+    example_en: 'Tap and shake the tambourine in your hand.',
+    example_vi: 'Gõ và lắc chiếc trống lục lạc trong tay bạn.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'instruments',
+    word: 'Triangle',
+    phonetic: '/ˈtraɪ.æŋ.ɡəl/',
+    meaning_vi: 'Kẻng tam giác',
+    example_en: 'Strike the steel triangle for a crisp clear chime.',
+    example_vi: 'Gõ vào thanh tam giác phát ra tiếng leng keng trong veo.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'instruments',
+    word: 'Trumpet',
+    phonetic: '/ˈtrʌm.pɪt/',
+    meaning_vi: 'Kèn tơ-rưng-pét',
+    example_en: 'The golden trumpet plays a bright triumphant tune.',
+    example_vi: 'Cây kèn đồng thổi lên giai điệu vang rực rỡ.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'instruments',
+    word: 'Violin',
+    phonetic: '/ˌvaɪəˈlɪn/',
+    meaning_vi: 'Đàn vĩ cầm',
+    example_en: 'Draw the graceful bow across the wooden violin.',
+    example_vi: 'Kéo chiếc vĩ duyên dáng qua cây đàn vĩ cầm gỗ.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'instruments',
+    word: 'Xylophone',
+    phonetic: '/ˈzaɪ.lə.fəʊn/',
+    meaning_vi: 'Đàn mộc cầm',
+    example_en: 'Tap the rainbow wooden bars of the xylophone.',
+    example_vi: 'Gõ lên những thanh gỗ sắc màu của chiếc đàn mộc cầm.',
+    difficulty: 1
+  },
+
+  // ==========================================
+  // 10. School Supplies (Đồ Dùng Học Tập) - 14 từ
+  // ==========================================
+  {
+    topic_id: 'school',
+    word: 'Bag',
+    phonetic: '/bæɡ/',
+    meaning_vi: 'Cặp sách',
+    example_en: 'Zip up your backpack and head to class.',
+    example_vi: 'Kéo khóa cặp sách lại và cùng đến lớp nào.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'school',
+    word: 'Book',
+    phonetic: '/bʊk/',
+    meaning_vi: 'Quyển sách',
+    example_en: 'Open the exciting storybook and read along.',
+    example_vi: 'Mở cuốn sách truyện thú vị ra và cùng đọc nhé.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'school',
+    word: 'Chair',
+    phonetic: '/tʃeər/',
+    meaning_vi: 'Cái ghế',
+    example_en: 'Sit comfortably on the small classroom chair.',
+    example_vi: 'Ngồi thoải mái trên chiếc ghế nhỏ trong lớp học.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'school',
+    word: 'Computer',
+    phonetic: '/kəmˈpjuː.tər/',
+    meaning_vi: 'Máy vi tính',
+    example_en: 'We learn wonderful new things on the computer.',
+    example_vi: 'Chúng mình học nhiều điều tuyệt vời trên máy tính.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'school',
+    word: 'Crayon',
+    phonetic: '/ˈkreɪ.ɒn/',
+    meaning_vi: 'Bút màu sáp',
+    example_en: 'Color a sunny picture with your bright wax crayon.',
+    example_vi: 'Tô bức tranh rực rỡ với chiếc bút màu sáp.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'school',
+    word: 'Eraser',
+    phonetic: '/ɪˈreɪ.zər/',
+    meaning_vi: 'Cục tẩy',
+    example_en: 'The soft eraser wipes away little pencil marks.',
+    example_vi: 'Cục tẩy mềm mại lau sạch những vết chì nhỏ.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'school',
+    word: 'Glue',
+    phonetic: '/ɡluː/',
+    meaning_vi: 'Hồ dán / Keo dán',
+    example_en: 'Stick shapes neatly onto paper using glue.',
+    example_vi: 'Dán những hình khối ngay ngắn lên giấy bằng keo dán.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'school',
+    word: 'Lunchbox',
+    phonetic: '/ˈlʌntʃ.bɒks/',
+    meaning_vi: 'Hộp cơm trưa',
+    example_en: 'Pack healthy yummy snacks inside your lunchbox.',
+    example_vi: 'Xếp những món ăn nhẹ ngon lành vào hộp cơm trưa.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'school',
+    word: 'Paint',
+    phonetic: '/peɪnt/',
+    meaning_vi: 'Màu vẽ',
+    example_en: 'Dip your paintbrush into colorful paint.',
+    example_vi: 'Nhúng cọ vẽ vào lọ màu rực rỡ sắc màu.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'school',
+    word: 'Pen',
+    phonetic: '/pen/',
+    meaning_vi: 'Bút mực',
+    example_en: 'Write your neat name with the blue pen.',
+    example_vi: 'Viết tên nắn nót của bạn bằng cây bút mực xanh.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'school',
+    word: 'Pencil',
+    phonetic: '/ˈpen.səl/',
+    meaning_vi: 'Bút chì',
+    example_en: 'Draw cute sketches using a sharp yellow pencil.',
+    example_vi: 'Vẽ phác thảo đáng yêu bằng cây bút chì vàng chuốt nhọn.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'school',
+    word: 'Table',
+    phonetic: '/ˈteɪ.bəl/',
+    meaning_vi: 'Cái bàn',
+    example_en: 'Keep your notebooks neat on the study table.',
+    example_vi: 'Giữ vở học tập thật ngăn nắp trên bàn học.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'school',
+    word: 'Teacher',
+    phonetic: '/ˈtiː.tʃər/',
+    meaning_vi: 'Thầy / Cô giáo',
+    example_en: 'Our kind teacher teaches fun stories every day.',
+    example_vi: 'Cô giáo hiền hậu kể những câu chuyện vui mỗi ngày.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'school',
+    word: 'Whiteboard',
+    phonetic: '/ˈwaɪt.bɔːd/',
+    meaning_vi: 'Bảng trắng',
+    example_en: 'The teacher writes alphabet letters on the whiteboard.',
+    example_vi: 'Cô giáo viết những chữ cái lên bảng trắng.',
+    difficulty: 1
+  },
+
+  // ==========================================
+  // 11. Toys & Play (Đồ Chơi & Giải Trí) - 14 từ
+  // ==========================================
+  {
+    topic_id: 'toys',
+    word: 'Ball',
+    phonetic: '/bɔːl/',
+    meaning_vi: 'Quả bóng',
+    example_en: 'Bounce the bouncy red ball across the green lawn.',
+    example_vi: 'Nảy quả bóng đỏ tưng tưng trên bãi cỏ xanh.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'toys',
+    word: 'Blocks',
+    phonetic: '/blɒks/',
+    meaning_vi: 'Khối xếp hình',
+    example_en: 'Stack wooden blocks high to build a tall castle.',
+    example_vi: 'Xếp những khối gỗ lên cao để xây lâu đài thật đồ sộ.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'toys',
+    word: 'Car',
+    phonetic: '/kɑːr/',
+    meaning_vi: 'Ô tô đồ chơi',
+    example_en: 'The speedy toy car zooms across the playroom floor.',
+    example_vi: 'Chiếc ô tô đồ chơi chạy vèo qua sàn phòng chơi.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'toys',
+    word: 'Cards',
+    phonetic: '/kɑːdz/',
+    meaning_vi: 'Thẻ bài / Thẻ chơi',
+    example_en: 'Play fun matching picture cards with best friends.',
+    example_vi: 'Chơi ghép các thẻ bài hình ngộ nghĩnh cùng bạn thân.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'toys',
+    word: 'Doll',
+    phonetic: '/dɒl/',
+    meaning_vi: 'Búp bê',
+    example_en: 'The sweet doll wears a pretty pink floral dress.',
+    example_vi: 'Búp bê xinh xắn mặc chiếc váy hoa màu hồng đáng yêu.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'toys',
+    word: 'Drum',
+    phonetic: '/drʌm/',
+    meaning_vi: 'Trống đồ chơi',
+    example_en: 'March like a proud soldier beating the toy drum.',
+    example_vi: 'Bước đều như chú lính và gõ chiếc trống đồ chơi.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'toys',
+    word: 'Games',
+    phonetic: '/ɡeɪmz/',
+    meaning_vi: 'Trò chơi bàn cờ',
+    example_en: 'Family board games bring endless cheerful laughter.',
+    example_vi: 'Những trò chơi cờ gia đình mang lại tiếng cười giòn giã.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'toys',
+    word: 'Marbles',
+    phonetic: '/ˈmɑː.bəlz/',
+    meaning_vi: 'Viên bi ve',
+    example_en: 'Roll shining glass marbles across the smooth floor.',
+    example_vi: 'Lăn những viên bi ve trong suốt lấp lánh trên sàn nhà.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'toys',
+    word: 'Puzzle',
+    phonetic: '/ˈpʌz.əl/',
+    meaning_vi: 'Bộ ghép hình',
+    example_en: 'Fit the jigsaw puzzle pieces into a lovely picture.',
+    example_vi: 'Lắp ghép các mảnh hình để tạo thành bức tranh đẹp.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'toys',
+    word: 'Rattle',
+    phonetic: '/ˈræt.əl/',
+    meaning_vi: 'Lục lạc đồ chơi',
+    example_en: 'The baby giggles happily shaking the bright rattle.',
+    example_vi: 'Em bé cười khúc khích khi lắc chiếc lục lạc xinh xắn.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'toys',
+    word: 'Robot',
+    phonetic: '/ˈrəʊ.bɒt/',
+    meaning_vi: 'Người máy',
+    example_en: 'The smart toy robot walks and flashes cool lights.',
+    example_vi: 'Chú người máy thông minh bước đi và chớp đèn lấp lánh.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'toys',
+    word: 'Teddy Bear',
+    phonetic: '/ˈted.i beər/',
+    meaning_vi: 'Gấu bông',
+    example_en: 'Hug your soft warm teddy bear tight before bedtime.',
+    example_vi: 'Ôm chú gấu bông mềm mại ấm áp thật chặt trước khi ngủ.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'toys',
+    word: 'Train',
+    phonetic: '/treɪn/',
+    meaning_vi: 'Đoàn tàu hỏa',
+    example_en: 'The wooden toy train chugs along its winding track.',
+    example_vi: 'Đoàn tàu hỏa gỗ xình xịch chạy trên đường ray quanh co.',
+    difficulty: 1
+  },
+  {
+    topic_id: 'toys',
+    word: 'Xylophone',
+    phonetic: '/ˈzaɪ.lə.fəʊn/',
+    meaning_vi: 'Đàn mộc cầm đồ chơi',
+    example_en: 'Make happy music playing the colorful toy xylophone.',
+    example_vi: 'Tạo nên những nốt nhạc vui cùng chiếc đàn mộc cầm xinh đẹp.',
     difficulty: 1
   }
 ];

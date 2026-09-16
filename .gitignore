@@ -63,3 +63,23 @@ test-results/
 playwright-report/
 blob-report/
 tests/screenshots/
+
+# Python & uv Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Model & cache files
+.u2net/
+.cache/

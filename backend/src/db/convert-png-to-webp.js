@@ -6,7 +6,8 @@ import db, { initDatabase } from './schema.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const imagesRoot = path.resolve(__dirname, '../../uploads/images');
+// Scan both legacy uploads/images and modular uploads/{seed,user}/images
+const uploadsRoot = path.resolve(__dirname, '../../uploads');
 
 initDatabase();
 
@@ -38,8 +39,8 @@ function formatBytes(bytes) {
 }
 
 async function convertPngToWebp() {
-  console.log('🔍 Recursively scanning for .png files in:', imagesRoot);
-  const pngFiles = getAllPngFiles(imagesRoot);
+  console.log('🔍 Recursively scanning for .png files in:', uploadsRoot);
+  const pngFiles = getAllPngFiles(uploadsRoot);
 
   console.log(`📌 Found a total of: ${pngFiles.length} .png files.\n`);
 
@@ -57,7 +58,7 @@ async function convertPngToWebp() {
 
   for (let i = 0; i < pngFiles.length; i++) {
     const pngPath = pngFiles[i];
-    const relativePath = path.relative(imagesRoot, pngPath);
+    const relativePath = path.relative(uploadsRoot, pngPath);
     const originalSize = fs.statSync(pngPath).size;
     totalOriginalSize += originalSize;
 
