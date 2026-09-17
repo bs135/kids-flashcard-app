@@ -92,7 +92,28 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
               <p className="text-xs text-emerald-100 font-medium leading-normal">Nghe từ & nối ảnh đúng</p>
             </div>
           </div>
-          <div className="shrink-0 whitespace-nowrap bg-white text-emerald-800 font-black text-xs sm:text-sm px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full shadow-sm">
+        </motion.div>
+
+        {/* Game 4: Eye Spy */}
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => {
+            if (onSelectGame) onSelectGame('eye_spy');
+          }}
+          className="bg-gradient-to-r from-fuchsia-500 to-pink-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg border-3 border-fuchsia-300 flex items-center justify-between gap-2 sm:gap-3 cursor-pointer select-none"
+        >
+          <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl sm:text-3xl shadow-inner">
+              🔍
+            </div>
+            <div className="flex-1 min-w-0 pr-1">
+              <div className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-fuchsia-100">Mini Game 4</div>
+              <h4 className="text-base sm:text-lg lg:text-xl font-black font-kids leading-tight">Ai Tinh Mắt?</h4>
+              <p className="text-xs text-fuchsia-100 font-medium leading-normal">Lắng nghe & tìm đồ vật</p>
+            </div>
+          </div>
+          <div className="shrink-0 whitespace-nowrap bg-white text-fuchsia-800 font-black text-xs sm:text-sm px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full shadow-sm">
             Chơi Ngay ➔
           </div>
         </motion.div>

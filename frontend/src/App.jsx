@@ -8,6 +8,7 @@ import VirtualPetModal from './components/VirtualPetModal';
 import BubbleQuiz from './components/BubbleQuiz';
 import MemoryGame from './components/MemoryGame';
 import AudioMatchGame from './components/AudioMatchGame';
+import EyeSpyGame from './components/EyeSpyGame';
 import { fetchTopics, fetchTopicCards, fetchUserProgress } from './services/api';
 import { soundEffects } from './services/soundEffects';
 
@@ -177,6 +178,16 @@ export default function App() {
           /* Type 1: App / Game Screen */
           <div className="w-full h-full flex flex-col justify-between overflow-hidden p-2 sm:p-4 max-w-4xl mx-auto">
             <AudioMatchGame
+              topics={topics}
+              initialTopic={selectedTopic}
+              onBack={handleBackToMap}
+              onEarnStar={handleEarnStar}
+            />
+          </div>
+        ) : activeGame === 'eye_spy' ? (
+          /* Type 1: App / Game Screen */
+          <div className="w-full h-full flex flex-col justify-between overflow-hidden p-2 sm:p-4 max-w-4xl mx-auto">
+            <EyeSpyGame
               topics={topics}
               initialTopic={selectedTopic}
               onBack={handleBackToMap}
