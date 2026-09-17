@@ -142,7 +142,7 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
               </div>
 
               <h3 className="text-2xl font-bold text-slate-800 font-kids mb-1">
-                Tất cả (All Topics)
+                Ngẫu Nhiên
               </h3>
               <p className="text-lg text-slate-600 font-semibold mb-4">
                 Khám phá tổng hợp mọi chủ đề
@@ -155,7 +155,7 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
                   <span>{allProgressPercent}%</span>
                 </div>
                 <div className="w-full h-3.5 bg-white rounded-full overflow-hidden border border-amber-200 p-0.5 shadow-inner">
-                  <div 
+                  <div
                     className="h-full bg-gradient-to-r from-amber-400 via-yellow-400 to-emerald-400 rounded-full transition-all duration-500"
                     style={{ width: `${allProgressPercent}%` }}
                   />
@@ -197,9 +197,8 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
                   onSelectTopic(topic);
                 }
               }}
-              className={`relative overflow-hidden rounded-3xl border-4 bg-white p-6 shadow-bouncy transition-all cursor-pointer select-none ${
-                isUnlocked ? 'border-amber-200 hover:border-amber-400' : 'opacity-60 cursor-not-allowed border-slate-200'
-              }`}
+              className={`relative overflow-hidden rounded-3xl border-4 bg-white p-6 shadow-bouncy transition-all cursor-pointer select-none ${isUnlocked ? 'border-amber-200 hover:border-amber-400' : 'opacity-60 cursor-not-allowed border-slate-200'
+                }`}
             >
               <div className="flex items-start justify-between">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center text-4xl shadow-inner mb-4">
@@ -224,7 +223,7 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
                   <span>{progressPercent}%</span>
                 </div>
                 <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200 p-0.5">
-                  <div 
+                  <div
                     className="h-full bg-gradient-to-r from-yellow-400 to-emerald-400 rounded-full transition-all duration-500"
                     style={{ width: `${progressPercent}%` }}
                   />
