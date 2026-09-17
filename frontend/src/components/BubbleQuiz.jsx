@@ -16,7 +16,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
   const [targetCard, setTargetCard] = useState(null);
   const [bubbles, setBubbles] = useState([]);
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(60);
+  const [timeLeft, setTimeLeft] = useState(25);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [shakingBubbleId, setShakingBubbleId] = useState(null);
@@ -43,13 +43,13 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
   const startGame = () => {
     soundEffects.playPop();
     setScore(0);
-    setTimeLeft(60);
+    setTimeLeft(25);
     setIsGameOver(false);
     setIsPlaying(true);
     pickNextQuestion();
   };
 
-  // 60-second countdown timer
+  // 25-second countdown timer
   useEffect(() => {
     if (isPlaying && timeLeft > 0) {
       timerRef.current = setInterval(() => {
