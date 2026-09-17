@@ -41,12 +41,17 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   // Session Timer (30s)
   const [totalTimeLeft, setTotalTimeLeft] = useState(30);
   const totalTimerRef = useRef(null);
+  
+  const speakTimeoutRef = useRef(null);
+  const nextRoundTimeoutRef = useRef(null);
 
   useEffect(() => {
     return () => {
       stopSpeech();
       if (roundTimerRef.current) clearInterval(roundTimerRef.current);
       if (totalTimerRef.current) clearInterval(totalTimerRef.current);
+      if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
+      if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
     };
   }, []);
 
@@ -71,6 +76,10 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   const handleSessionTimeout = () => {
     if (totalTimerRef.current) clearInterval(totalTimerRef.current);
     if (roundTimerRef.current) clearInterval(roundTimerRef.current);
+    if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
+    if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
+    stopSpeech();
+    
     setIsGameOver(true);
     setIsChecking(false);
     try { if (soundEffects.playWin) soundEffects.playWin(); } catch (e) {}
@@ -84,7 +93,8 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
     try { if (soundEffects.playWrong) soundEffects.playWrong(); } catch (e) {}
 
     // 3. Tự động chuyển ngay sang từ & hình mới sau 400ms
-    setTimeout(() => {
+    if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
+    nextRoundTimeoutRef.current = setTimeout(() => {
       nextRound(); // Gọi hàm bốc từ và sinh câu hỏi ngẫu nhiên mới
     }, 400);
   };
@@ -163,7 +173,8 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
       });
     }, 1000);
     
-    setTimeout(() => {
+    if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
+    speakTimeoutRef.current = setTimeout(() => {
       speakWord(promptText);
     }, 300);
   };
@@ -181,7 +192,11 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
          const newCount = c + 1;
          if (newCount >= 10) {
             if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-            setTimeout(() => {
+            if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
+            if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
+            stopSpeech();
+            
+            nextRoundTimeoutRef.current = setTimeout(() => {
               setIsWon(true);
               setIsChecking(false);
               if (soundEffects.playWin) soundEffects.playWin();
@@ -194,7 +209,8 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
               if (onEarnStar) onEarnStar(1);
             }, 600);
          } else {
-            setTimeout(() => {
+            if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
+            nextRoundTimeoutRef.current = setTimeout(() => {
               nextRound();
             }, 600);
          }

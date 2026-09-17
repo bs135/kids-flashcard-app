@@ -92,6 +92,9 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
               <p className="text-xs text-emerald-100 font-medium leading-normal">Nghe từ & nối ảnh đúng</p>
             </div>
           </div>
+          <div className="shrink-0 whitespace-nowrap bg-white text-emerald-800 font-black text-xs sm:text-sm px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full shadow-sm">
+            Chơi Ngay ➔
+          </div>
         </motion.div>
 
         {/* Game 4: Eye Spy */}
