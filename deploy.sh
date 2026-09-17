@@ -135,7 +135,7 @@ docker compose up -d --build app
 # Block 2: Independent Seed Data Ingestion (--seed)
 # ==============================================================================
 if [ "$SHOULD_SEED" = true ]; then
-  echo "🌱 [Seed] Populating default data (8 topics & 115 standard flashcards)..."
+  echo "🌱 [Seed] Populating default data (11 topics & 154 standard flashcards)..."
   docker compose exec app npm run seed
   echo "   ✓ Default seed data loaded successfully."
 fi

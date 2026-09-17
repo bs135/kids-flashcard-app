@@ -30,7 +30,7 @@ targetDirs.forEach(dir => {
   }
 });
 
-// 2. Build map of default 115 seed flashcards for identification
+// 2. Build map of default seed flashcards for identification
 const seedMap = new Map();
 rawFlashcards.forEach(card => {
   const key = `${slugify(card.topic_id)}:${slugify(card.word)}`;

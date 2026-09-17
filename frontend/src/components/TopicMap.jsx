@@ -156,6 +156,7 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
             sky: 'from-sky-400 to-blue-500 border-sky-300 text-sky-900 bg-sky-50',
             emerald: 'from-emerald-400 to-green-500 border-emerald-300 text-emerald-900 bg-emerald-50',
             rose: 'from-rose-400 to-pink-500 border-rose-300 text-rose-900 bg-rose-50',
+            purple: 'from-purple-400 to-indigo-500 border-purple-300 text-purple-900 bg-purple-50',
           };
 
           const cardTheme = themeColors[topic.color_theme] || themeColors.amber;

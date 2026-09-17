@@ -17,7 +17,7 @@ An interactive, visual, and engaging web app for kids and toddlers learning Engl
 ## 🚀 Key Features
 
 ### 🎨 Kid Experience
-- **Topic Map**: Visual interface featuring 8 popular themes (Colors, Wild Animals, Pets, Sea Creatures, Fruits, Vegetables, Shapes, Foods) plus an "All Words" exploration mode.
+- **Topic Map**: Visual interface featuring 11 popular themes (Colors, Wild Animals, Pets, Sea Creatures, Fruits, Vegetables, Shapes, Foods, Instruments, School, Toys) plus an "All Words" exploration mode.
 - **Interactive Flashcard Viewer**:
   - Smooth 3D card flip animation (`Framer Motion`).
   - Child-friendly card aspect ratio with rounded, playful aesthetics.
@@ -36,7 +36,7 @@ An interactive, visual, and engaging web app for kids and toddlers learning Engl
   - IP-based daily rate limiting for AI card generation.
   - Toggle switches for AI image generation vs. manual uploads.
 - **Seed Data Protection**:
-  - Full protection for the 115 initial seed cards (prevents accidental deletion).
+  - Full protection for the 154 initial seed cards (prevents accidental deletion).
   - Word field locked on edit to preserve media link integrity (`.webp`, `.mp3`).
   - Safe deletion of custom user-created flashcards with automatic orphaned disk file cleanup.
   - Manual image upload support with automatic Sharp compression and conversion to `.webp`.
@@ -64,7 +64,7 @@ kids-flashcard-app/
 ├── backend/
 │   ├── data/                 # SQLite database file (database.sqlite)
 │   ├── src/
-│   │   ├── db/               # Schema, migrations & 115 seed flashcards
+│   │   ├── db/               # Schema, migrations & 154 seed flashcards
 │   │   ├── services/         # Gemini AI, Edge-TTS, image processing & Sharp
 │   │   ├── utils/            # Slugify, helpers
 │   │   └── server.js         # Fastify API server & SPA fallback static handler
@@ -108,7 +108,7 @@ npm install
 # Copy .env and configure GEMINI_API_KEY
 cp .env.example .env
 
-# Seed standard data (8 topics, 115 cards)
+# Seed standard data (11 topics, 154 cards)
 npm run seed
 
 # Start backend development server (port 3001)
@@ -126,6 +126,48 @@ npm run dev
 ```
 
 Open your browser at: `http://localhost:5173`
+
+---
+
+## 🖼️ Media & Image Optimization Tools
+
+The project provides dedicated utility scripts to process, standardize, and optimize image assets:
+
+### 1. AI Transparent Background & WebP Converter (`scripts/process_seed_images.py`)
+Standardizes seed image assets in `backend/uploads/seed/images/`:
+- Uses AI U2-Net (`rembg`) to remove solid/white backgrounds and create crisp transparent images (while preserving natural palettes for `colors/`).
+- Encodes output into optimized WebP (`quality=90`, `method=6`).
+- Deletes source `.png` files only after successful WebP generation and verification.
+- Preserves `default-placeholder.webp`.
+
+**Prerequisites:**
+- [uv](https://github.com/astral-sh/uv) installed on your system.
+
+**Manual Execution:**
+```bash
+# Set up Python virtual environment with uv (from project root)
+uv venv .venv
+
+# Install dependencies (rembg with U2-Net model & Pillow)
+uv pip install "rembg[cpu]" pillow
+
+# Run the batch optimization script
+uv run scripts/process_seed_images.py
+```
+
+### 2. General PNG to WebP Converter & DB Sync (`backend/src/db/convert-png-to-webp.js`)
+Utility script to scan `backend/uploads/` for any legacy or uploaded `.png` images, convert them to WebP using `sharp` (`quality=85`), remove the original `.png` files, and synchronize database records (`image_url` fields in SQLite). Each file conversion and database URL update is executed atomically per image within a SQLite transaction.
+
+> [!TIP]
+> In production environments with active traffic, quiesce the application container (`docker compose stop app`) before running bulk file migrations to prevent transient locks or in-flight requests.
+
+**Manual Execution:**
+```bash
+cd backend
+
+# Run directly via Node.js
+node src/db/convert-png-to-webp.js
+```
 
 ---
 

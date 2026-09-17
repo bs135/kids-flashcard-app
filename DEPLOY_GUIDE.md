@@ -142,7 +142,7 @@ docker compose logs -f app
 ```
 
 ### 3.6. Populate Initial Seed Data (Seed Database)
-If this is the first deployment or the database contains no cards yet, run the following command to populate 8 standard topics and 115 vocabulary cards (with WebP images and Edge-TTS audio):
+If this is the first deployment or the database contains no cards yet, run the following command to populate 11 standard topics and 154 vocabulary cards (with WebP images and Edge-TTS audio):
 ```bash
 docker compose exec app npm run seed
 ```
@@ -186,7 +186,7 @@ To update directly on the VPS without pushing code, synchronize seed cards, or p
   3. Prunes dangling Docker images (`docker image prune -f`).
   4. Displays container status.
 
-- **Update code and synchronize 115 default seed flashcards:**
+- **Update code and synchronize 154 default seed flashcards:**
   ```bash
   ./deploy.sh --seed
   ```
@@ -209,7 +209,7 @@ To update directly on the VPS without pushing code, synchronize seed cards, or p
   ```bash
   ./deploy.sh --reset --seed
   ```
-  Safely backs up and resets the database and uploads as described above, rebuilds the container, and then populates default topics and 115 standard flashcards from `backend/uploads/seed/`.
+  Safely backs up and resets the database and uploads as described above, rebuilds the container, and then populates default topics and 154 standard flashcards from `backend/uploads/seed/`.
 
 ---
 

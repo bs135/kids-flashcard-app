@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { slugify } from './slugify.js';
@@ -68,6 +69,139 @@ export function getMediaPath({
     filename,
     publicUrl
   };
+}
+
+// In-flight media mutex locks to serialize operations (e.g. check-and-unlink, updates) per target file
+const pendingMediaOps = new Map();
+
+/**
+ * Executes a function with a lock on a specific disk path to prevent race conditions.
+ * @param {string} fullDiskPath 
+ * @param {Function} operation 
+ */
+export async function withMediaLock(fullDiskPath, operation) {
+  const previousLock = pendingMediaOps.get(fullDiskPath) || Promise.resolve();
+
+  const currentOperation = (async () => {
+    try {
+      await previousLock;
+    } catch (_) {
+      // Ignore errors from previous operations in the queue
+    }
+
+    try {
+      return await operation();
+    } finally {
+      if (pendingMediaOps.get(fullDiskPath) === currentOperation) {
+        pendingMediaOps.delete(fullDiskPath);
+      }
+    }
+  })();
+
+  pendingMediaOps.set(fullDiskPath, currentOperation);
+  return currentOperation;
+}
+
+/**
+ * Acquires a media lock using a public URL to synchronize with file deletions.
+ * @param {string} mediaUrl 
+ * @param {Function} operation 
+ */
+export async function withMediaUrlLock(mediaUrl, operation) {
+  if (!mediaUrl || typeof mediaUrl !== 'string') {
+    return operation();
+  }
+
+  const rawUrl = mediaUrl.split('?')[0].trim();
+  if (!rawUrl.startsWith('/uploads/')) {
+    return operation();
+  }
+  const cleanUrl = path.posix.normalize(rawUrl);
+
+  const relativePath = cleanUrl.replace(/^\/uploads\//, '');
+  const fullDiskPath = path.resolve(BASE_UPLOADS_DIR, relativePath);
+  if (!fullDiskPath.startsWith(BASE_UPLOADS_DIR + path.sep) && fullDiskPath !== BASE_UPLOADS_DIR) {
+    return operation();
+  }
+
+  return withMediaLock(fullDiskPath, operation);
+}
+
+/**
+ * Safely deletes a user-generated media file from local disk.
+ * Safety rules:
+ * 1. Strictly ignores seed media files (/uploads/seed/...) and default-placeholder.webp.
+ * 2. Only deletes if URL belongs to user uploads (/uploads/user/...).
+ * 3. Checks if any other flashcards reference the same media URL before deleting.
+ * 4. Serializes check-and-delete operations per file path to prevent race conditions.
+ * 5. Asynchronous and handles errors gracefully without throwing to caller.
+ * 
+ * @param {string} mediaUrl Public URL of the media file
+ * @param {import('better-sqlite3').Database} db Database instance
+ * @param {'image'|'audio'} mediaType Media type for reference checking
+ * @param {any} [logger=console] Logger instance (fastify.log or console)
+ * @param {{ skipLock?: boolean }} [options]
+ * @returns {Promise<boolean>} True if file was deleted, false otherwise
+ */
+export async function safeDeleteUserMediaFile(mediaUrl, db, mediaType, logger = console, options = {}) {
+  if (!mediaUrl || typeof mediaUrl !== 'string') return false;
+
+  let cleanUrl = mediaUrl.split('?')[0].trim();
+  // Normalize the URL path to eliminate dot segments (. and ..) and represent the canonical URL
+  cleanUrl = path.posix.normalize(cleanUrl);
+
+  // Strict safety check: Never delete default placeholder or seed assets
+  if (cleanUrl === '/uploads/seed/images/default-placeholder.webp' || cleanUrl.startsWith('/uploads/seed/')) {
+    return false;
+  }
+
+  // Must reside in user uploads
+  if (!cleanUrl.startsWith('/uploads/user/')) {
+    return false;
+  }
+
+  const USER_UPLOADS_DIR = path.resolve(BASE_UPLOADS_DIR, 'user');
+  const relativePath = cleanUrl.replace(/^\/uploads\//, '');
+  const fullDiskPath = path.resolve(BASE_UPLOADS_DIR, relativePath);
+
+  // Prevent path traversal attacks and strictly enforce user upload boundary
+  // e.g. prevents /uploads/user/../seed/... escaping into seed assets
+  if (!fullDiskPath.startsWith(USER_UPLOADS_DIR + path.sep) && fullDiskPath !== USER_UPLOADS_DIR) {
+    logger.warn?.(`[Safe Delete] Security warning: Path traversal attempt prevented for ${cleanUrl}`);
+    return false;
+  }
+
+  const deleteOperation = async () => {
+    try {
+      // Check within serialization: Does any flashcard in DB still reference this media URL?
+      if (db) {
+        // Query if any record matches clean URL or URL with query parameters
+        const countStmt = mediaType === 'audio'
+          ? db.prepare('SELECT COUNT(*) as count FROM flashcards WHERE audio_url = ? OR audio_url LIKE ?')
+          : db.prepare('SELECT COUNT(*) as count FROM flashcards WHERE image_url = ? OR image_url LIKE ?');
+        const existingRefs = countStmt.get(cleanUrl, `${cleanUrl}?%`)?.count || 0;
+        if (existingRefs > 0) {
+          logger.info?.(`[Safe Delete] Media file ${cleanUrl} is still referenced by ${existingRefs} cards. Skipping deletion.`);
+          return false;
+        }
+      }
+
+      if (fs.existsSync(fullDiskPath)) {
+        await fs.promises.unlink(fullDiskPath);
+        logger.info?.(`[Safe Delete] Successfully removed orphaned user media file: ${fullDiskPath}`);
+        return true;
+      }
+    } catch (err) {
+      logger.warn?.(`[Safe Delete] Failed to delete user media file ${cleanUrl}: ${err.message}`);
+    }
+    return false;
+  };
+
+  if (options.skipLock) {
+    return deleteOperation();
+  }
+
+  return withMediaLock(fullDiskPath, deleteOperation);
 }
 
 /**

@@ -450,6 +450,7 @@ export default function AdminPanel({ topics = [], onBack, onTopicUpdated }) {
                     <option value="sky">Xanh trời (Sky)</option>
                     <option value="emerald">Xanh lá (Emerald)</option>
                     <option value="rose">Hồng đào (Rose)</option>
+                    <option value="purple">Tím mộng mơ (Purple)</option>
                   </select>
                 </div>
               </div>
