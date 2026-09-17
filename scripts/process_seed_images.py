@@ -15,7 +15,6 @@ import sys
 import time
 from pathlib import Path
 from PIL import Image
-import rembg
 
 # Ensure stdout and stderr support UTF-8 characters on Windows consoles
 if hasattr(sys.stdout, "reconfigure"):
@@ -66,16 +65,18 @@ def get_dir_size(root_dir: Path) -> int:
     return total_size
 
 
-def process_single_image(png_path: Path, session: rembg.new_session = None) -> tuple[bool, int, int, str]:
+def process_single_image(png_path: Path, session=None) -> tuple[bool, int, int, str]:
     """
     Process a single PNG file:
     - If in 'colors' topic: convert PNG directly to WebP (preserving existing alpha).
     - Other topics: use rembg to remove solid/white background, then save as WebP.
-    - Delete PNG upon success.
+    - Uses an atomic temp file to ensure existing WebP assets are not destroyed if conversion fails.
+    - Delete PNG only upon verified success.
     Returns: (success: bool, original_size: int, webp_size: int, message: str)
     """
     original_size = png_path.stat().st_size
     webp_path = png_path.with_suffix(".webp")
+    temp_webp_path = png_path.with_suffix(".tmp.webp")
     topic_name = png_path.parent.name.lower()
 
     try:
@@ -86,29 +87,33 @@ def process_single_image(png_path: Path, session: rembg.new_session = None) -> t
 
             if topic_name == "colors":
                 # 'colors' already has transparent background
-                img.save(webp_path, format="WEBP", quality=90, method=6)
+                img.save(temp_webp_path, format="WEBP", quality=90, method=6)
             else:
+                import rembg
                 # Remove opaque/white background with rembg
                 output_img = rembg.remove(img, session=session)
-                output_img.save(webp_path, format="WEBP", quality=90, method=6)
+                output_img.save(temp_webp_path, format="WEBP", quality=90, method=6)
 
-        # Validate newly generated WebP file
-        if not webp_path.exists():
-            raise FileNotFoundError(f"Generated WebP file not found: {webp_path}")
+        # Validate newly generated temporary WebP file
+        if not temp_webp_path.exists():
+            raise FileNotFoundError(f"Generated WebP file not found: {temp_webp_path}")
 
-        webp_size = webp_path.stat().st_size
+        webp_size = temp_webp_path.stat().st_size
         if webp_size == 0:
-            raise ValueError(f"Generated WebP file is empty: {webp_path}")
+            raise ValueError(f"Generated WebP file is empty: {temp_webp_path}")
+
+        # Atomically replace target WebP file
+        temp_webp_path.replace(webp_path)
 
         # Safe removal of original PNG file
         png_path.unlink()
         return True, original_size, webp_size, "Success"
 
     except Exception as exc:
-        # Clean up corrupted WebP if failed
-        if webp_path.exists():
+        # Clean up temporary WebP if failed, preserving any pre-existing WebP file
+        if temp_webp_path.exists():
             try:
-                webp_path.unlink()
+                temp_webp_path.unlink()
             except Exception:
                 pass
         return False, original_size, 0, str(exc)
@@ -135,11 +140,19 @@ def main():
         print("✨ No PNG files found to convert. Directory is already standardized!")
         sys.exit(0)
 
-    # Initialize rembg session once to preload u2net model weights
-    print("🧠 Initializing rembg AI model (u2net)...")
-    start_init = time.time()
-    session = rembg.new_session("u2net")
-    print(f"✅ AI Model ready in {time.time() - start_init:.2f}s.\n")
+    # Check whether non-colors topics are present to decide if rembg U2-Net initialization is required
+    requires_rembg = any(p.parent.name.lower() != "colors" for p in png_files)
+    session = None
+
+    if requires_rembg:
+        import rembg
+        # Initialize rembg session once to preload u2net model weights
+        print("🧠 Initializing rembg AI model (u2net)...")
+        start_init = time.time()
+        session = rembg.new_session("u2net")
+        print(f"✅ AI Model ready in {time.time() - start_init:.2f}s.\n")
+    else:
+        print("ℹ️ All PNG files are in 'colors' (palette only). Skipping U2-Net model initialization.\n")
 
     success_count = 0
     fail_count = 0

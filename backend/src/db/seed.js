@@ -7,12 +7,8 @@ import { downloadWordAudio } from '../services/edgeTtsService.js';
 import { slugify } from '../utils/slugify.js';
 import { getMediaPath } from '../utils/mediaPath.js';
 
-initDatabase();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-console.log('🌱 Populating database and verifying media assets for 11 topics and 154 standard cards...');
 
 // 1. List of 11 standardized topics by slug
 export const topics = [
@@ -106,7 +102,7 @@ export const topics = [
   }
 ];
 
-// 2. Danh sách 115 thẻ từ vựng thực tế với nghĩa tiếng Việt, phiên âm và ví dụ cho trẻ em
+// 2. Danh sách 154 thẻ từ vựng thực tế với nghĩa tiếng Việt, phiên âm và ví dụ cho trẻ em
 export const rawFlashcards = [
   // ==========================================
   // 1. Colors (Màu Sắc) - 10 từ
@@ -1562,6 +1558,8 @@ function checkLocalMediaFile(type, topicSlug, wordSlug) {
 }
 
 export async function seedData() {
+  initDatabase();
+  console.log(`🌱 Populating database and verifying media assets for ${topics.length} topics and ${rawFlashcards.length} standard cards...`);
   console.log(`\n📌 1. Populating and synchronizing ${topics.length} topics in SQLite database...`);
 
   // 1. Insert topics
@@ -1671,7 +1669,11 @@ export async function seedData() {
   console.log('================================================================\n');
 }
 
-seedData().catch(err => {
-  console.error('❌ Error during seed import:', err);
-  process.exit(1);
-});
+const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename);
+
+if (isMainModule) {
+  seedData().catch(err => {
+    console.error('❌ Error during seed import:', err);
+    process.exit(1);
+  });
+}

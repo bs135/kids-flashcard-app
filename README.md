@@ -64,7 +64,7 @@ kids-flashcard-app/
 ├── backend/
 │   ├── data/                 # SQLite database file (database.sqlite)
 │   ├── src/
-│   │   ├── db/               # Schema, migrations & 115 seed flashcards
+│   │   ├── db/               # Schema, migrations & 154 seed flashcards
 │   │   ├── services/         # Gemini AI, Edge-TTS, image processing & Sharp
 │   │   ├── utils/            # Slugify, helpers
 │   │   └── server.js         # Fastify API server & SPA fallback static handler
@@ -156,7 +156,10 @@ uv run scripts/process_seed_images.py
 ```
 
 ### 2. General PNG to WebP Converter & DB Sync (`backend/src/db/convert-png-to-webp.js`)
-Utility script to scan `backend/uploads/` for any legacy or uploaded `.png` images, convert them to WebP using `sharp` (`quality=85`), remove the original `.png` files, and synchronize database records (`image_url` fields in SQLite):
+Utility script to scan `backend/uploads/` for any legacy or uploaded `.png` images, convert them to WebP using `sharp` (`quality=85`), remove the original `.png` files, and synchronize database records (`image_url` fields in SQLite). Each file conversion and database URL update is executed atomically per image within a SQLite transaction.
+
+> [!TIP]
+> In production environments with active traffic, quiesce the application container (`docker compose stop app`) before running bulk file migrations to prevent transient locks or in-flight requests.
 
 **Manual Execution:**
 ```bash

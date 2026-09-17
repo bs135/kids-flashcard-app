@@ -53,6 +53,7 @@ async function convertPngToWebp() {
   let totalWebpSize = 0;
   let successCount = 0;
   let failCount = 0;
+  let dbUpdatedCount = 0;
 
   const convertedList = [];
 
@@ -64,21 +65,39 @@ async function convertPngToWebp() {
 
     // Destination .webp path with same name in same directory
     const webpPath = pngPath.substring(0, pngPath.lastIndexOf('.')) + '.webp';
+    const tempWebpPath = pngPath.substring(0, pngPath.lastIndexOf('.')) + '.tmp.webp';
+
+    // Formulate the corresponding public URL path (e.g. /uploads/seed/images/...)
+    const normalizedRelativePath = relativePath.replace(/\\/g, '/');
+    const oldPublicUrl = `/uploads/${normalizedRelativePath}`;
+    const newPublicUrl = oldPublicUrl.substring(0, oldPublicUrl.lastIndexOf('.')) + '.webp';
 
     try {
-      // 1. Convert to WebP using sharp with quality: 85
+      // 1. Convert to WebP using sharp with quality: 85 into a temporary file
       await sharp(pngPath)
         .webp({ quality: 85 })
-        .toFile(webpPath);
+        .toFile(tempWebpPath);
 
-      // 2. Validate newly generated .webp file: exists and non-empty
-      if (fs.existsSync(webpPath)) {
-        const webpSize = fs.statSync(webpPath).size;
+      // 2. Validate newly generated .tmp.webp file: exists and non-empty
+      if (fs.existsSync(tempWebpPath)) {
+        const webpSize = fs.statSync(tempWebpPath).size;
         if (webpSize > 0) {
           totalWebpSize += webpSize;
 
-          // Delete original .png file once WebP is verified
-          fs.unlinkSync(pngPath);
+          // Replace final .webp file atomically
+          fs.renameSync(tempWebpPath, webpPath);
+
+          // Atomic file-and-database sync: Update DB record and delete PNG in a coordinated transaction
+          const syncCardTx = db.transaction(() => {
+            const result = db.prepare('UPDATE flashcards SET image_url = ? WHERE image_url = ?').run(newPublicUrl, oldPublicUrl);
+            if (result.changes > 0) {
+              dbUpdatedCount += result.changes;
+            }
+            // Delete original .png file once WebP and DB are verified
+            fs.unlinkSync(pngPath);
+          });
+          syncCardTx();
+
           successCount++;
 
           const savedBytes = originalSize - webpSize;
@@ -101,24 +120,33 @@ async function convertPngToWebp() {
       }
     } catch (err) {
       failCount++;
+      if (fs.existsSync(tempWebpPath)) {
+        try { fs.unlinkSync(tempWebpPath); } catch (_) {}
+      }
       console.error(`[${i + 1}/${pngFiles.length}] ❌ Error processing ${relativePath}:`, err.message);
     }
   }
 
-  // 3. Synchronize SQLite database
-  console.log('\n🗄️ Checking and synchronizing image_url fields in SQLite database...');
+  // Synchronize any remaining matching records whose WebP counterpart already exists on disk
+  console.log('\n🗄️ Verifying image_url consistency in SQLite database...');
   const allCards = db.prepare('SELECT id, image_url FROM flashcards').all();
-  let dbUpdatedCount = 0;
 
   const updateCardStmt = db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?');
-
-  for (const card of allCards) {
-    if (card.image_url && card.image_url.toLowerCase().includes('.png')) {
-      const updatedUrl = card.image_url.replace(/\.png/gi, '.webp');
-      updateCardStmt.run(updatedUrl, card.id);
-      dbUpdatedCount++;
+  const syncRemainingTx = db.transaction(() => {
+    for (const card of allCards) {
+      if (card.image_url && card.image_url.toLowerCase().endsWith('.png')) {
+        const potentialWebpUrl = card.image_url.substring(0, card.image_url.lastIndexOf('.')) + '.webp';
+        const relativeDiskPath = potentialWebpUrl.replace(/^\/uploads\//, '');
+        const targetDiskFile = path.join(uploadsRoot, relativeDiskPath);
+        // Only update database if the corresponding WebP file actually exists on disk
+        if (fs.existsSync(targetDiskFile) && fs.statSync(targetDiskFile).size > 0) {
+          updateCardStmt.run(potentialWebpUrl, card.id);
+          dbUpdatedCount++;
+        }
+      }
     }
-  }
+  });
+  syncRemainingTx();
 
   console.log(`✅ Synchronized ${dbUpdatedCount} flashcard records from .png to .webp in SQLite.`);
 
