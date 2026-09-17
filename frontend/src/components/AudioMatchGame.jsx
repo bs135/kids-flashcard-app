@@ -8,8 +8,16 @@ import { speakWord, stopSpeech } from '../services/speech';
 export default function AudioMatchGame({ topics = [], initialTopic = null, onBack, onEarnStar }) {
   const [selectedTopicId, setSelectedTopicId] = useState(() => {
     if (initialTopic && initialTopic.id) return initialTopic.id;
+    const saved = localStorage.getItem('kids_flashcard_last_topic_audiomatch');
+    if (saved && topics.some(t => t.id === saved)) return saved;
     return topics[0]?.id || 'colors';
   });
+
+  useEffect(() => {
+    if (selectedTopicId) {
+      localStorage.setItem('kids_flashcard_last_topic_audiomatch', selectedTopicId);
+    }
+  }, [selectedTopicId]);
 
   const [cardsPool, setCardsPool] = useState([]);
   const [leftAudioCards, setLeftAudioCards] = useState([]);
@@ -87,7 +95,7 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
       if (matchedIds.size + 1 === 4) {
         setTimeout(() => {
           setIsWon(true);
-          soundEffects.playTada();
+          soundEffects.playWin();
           confetti({
             particleCount: 150,
             spread: 80,
@@ -99,7 +107,7 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
       }
     } else {
       // Mismatch!
-      soundEffects.playError();
+      soundEffects.playWrong();
       setShakeId(rightId);
       
       setTimeout(() => {
