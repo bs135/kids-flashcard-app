@@ -82,27 +82,59 @@ async function convertPngToWebp() {
       if (fs.existsSync(tempWebpPath)) {
         const webpSize = fs.statSync(tempWebpPath).size;
         if (webpSize > 0) {
-          totalWebpSize += webpSize;
+          const webpExistedBefore = fs.existsSync(webpPath);
+          const backupWebpPath = `${webpPath}.bak`;
 
-          // Replace final .webp file atomically
-          fs.renameSync(tempWebpPath, webpPath);
+          // Stage existing webp if present for compensating recovery
+          if (webpExistedBefore) {
+            fs.copyFileSync(webpPath, backupWebpPath);
+          }
 
-          // Atomic file-and-database sync: Update DB record and delete PNG in a coordinated transaction
-          const syncCardTx = db.transaction(() => {
-            // Match exact URL or URL with query parameters (e.g., ?t=...)
-            const result = db.prepare(`
-              UPDATE flashcards 
-              SET image_url = ? 
-              WHERE image_url = ? OR image_url LIKE ?
-            `).run(newPublicUrl, oldPublicUrl, `${oldPublicUrl}?%`);
-            if (result.changes > 0) {
-              dbUpdatedCount += result.changes;
-            }
-            // Delete original .png file once WebP and DB are verified
+          try {
+            // Promote new WebP into place
+            fs.renameSync(tempWebpPath, webpPath);
+
+            // Execute SQLite update transaction
+            const syncCardTx = db.transaction(() => {
+              // Match exact URL or URL with query parameters (e.g., ?t=...)
+              const result = db.prepare(`
+                UPDATE flashcards 
+                SET image_url = ? 
+                WHERE image_url = ? OR image_url LIKE ?
+              `).run(newPublicUrl, oldPublicUrl, `${oldPublicUrl}?%`);
+              if (result.changes > 0) {
+                dbUpdatedCount += result.changes;
+              }
+            });
+            syncCardTx();
+
+            // Only delete original PNG after DB update succeeds
             fs.unlinkSync(pngPath);
-          });
-          syncCardTx();
 
+            // Clean up temporary backup of old WebP upon success
+            if (webpExistedBefore && fs.existsSync(backupWebpPath)) {
+              try { fs.unlinkSync(backupWebpPath); } catch (_) {}
+            }
+          } catch (txOrFileErr) {
+            // Reconcile filesystem state if DB transaction or subsequent step fails:
+            // 1. Remove newly placed WebP file
+            try {
+              if (fs.existsSync(webpPath)) {
+                fs.unlinkSync(webpPath);
+              }
+            } catch (_) {}
+
+            // 2. Restore previous WebP file if one existed before
+            if (webpExistedBefore && fs.existsSync(backupWebpPath)) {
+              try {
+                fs.renameSync(backupWebpPath, webpPath);
+              } catch (_) {}
+            }
+
+            throw txOrFileErr;
+          }
+
+          totalWebpSize += webpSize;
           successCount++;
 
           const savedBytes = originalSize - webpSize;

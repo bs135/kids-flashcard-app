@@ -104,11 +104,13 @@ export async function safeDeleteUserMediaFile(mediaUrl, db, mediaType, logger = 
     return false;
   }
 
+  const USER_UPLOADS_DIR = path.resolve(BASE_UPLOADS_DIR, 'user');
   const relativePath = cleanUrl.replace(/^\/uploads\//, '');
   const fullDiskPath = path.resolve(BASE_UPLOADS_DIR, relativePath);
 
-  // Prevent path traversal attacks
-  if (!fullDiskPath.startsWith(BASE_UPLOADS_DIR)) {
+  // Prevent path traversal attacks and strictly enforce user upload boundary
+  // e.g. prevents /uploads/user/../seed/... escaping into seed assets
+  if (!fullDiskPath.startsWith(USER_UPLOADS_DIR + path.sep) && fullDiskPath !== USER_UPLOADS_DIR) {
     logger.warn?.(`[Safe Delete] Security warning: Path traversal attempt prevented for ${cleanUrl}`);
     return false;
   }
