@@ -112,11 +112,17 @@ export async function withMediaUrlLock(mediaUrl, operation) {
     return operation();
   }
 
-  let cleanUrl = mediaUrl.split('?')[0].trim();
-  cleanUrl = path.posix.normalize(cleanUrl);
+  const rawUrl = mediaUrl.split('?')[0].trim();
+  if (!rawUrl.startsWith('/uploads/')) {
+    return operation();
+  }
+  const cleanUrl = path.posix.normalize(rawUrl);
 
   const relativePath = cleanUrl.replace(/^\/uploads\//, '');
   const fullDiskPath = path.resolve(BASE_UPLOADS_DIR, relativePath);
+  if (!fullDiskPath.startsWith(BASE_UPLOADS_DIR + path.sep) && fullDiskPath !== BASE_UPLOADS_DIR) {
+    return operation();
+  }
 
   return withMediaLock(fullDiskPath, operation);
 }
@@ -134,9 +140,10 @@ export async function withMediaUrlLock(mediaUrl, operation) {
  * @param {import('better-sqlite3').Database} db Database instance
  * @param {'image'|'audio'} mediaType Media type for reference checking
  * @param {any} [logger=console] Logger instance (fastify.log or console)
+ * @param {{ skipLock?: boolean }} [options]
  * @returns {Promise<boolean>} True if file was deleted, false otherwise
  */
-export async function safeDeleteUserMediaFile(mediaUrl, db, mediaType, logger = console) {
+export async function safeDeleteUserMediaFile(mediaUrl, db, mediaType, logger = console, options = {}) {
   if (!mediaUrl || typeof mediaUrl !== 'string') return false;
 
   let cleanUrl = mediaUrl.split('?')[0].trim();
@@ -144,7 +151,7 @@ export async function safeDeleteUserMediaFile(mediaUrl, db, mediaType, logger = 
   cleanUrl = path.posix.normalize(cleanUrl);
 
   // Strict safety check: Never delete default placeholder or seed assets
-  if (cleanUrl.includes('default-placeholder.webp') || cleanUrl.includes('/uploads/seed/')) {
+  if (cleanUrl === '/uploads/seed/images/default-placeholder.webp' || cleanUrl.startsWith('/uploads/seed/')) {
     return false;
   }
 
@@ -164,13 +171,14 @@ export async function safeDeleteUserMediaFile(mediaUrl, db, mediaType, logger = 
     return false;
   }
 
-  return withMediaLock(fullDiskPath, async () => {
+  const deleteOperation = async () => {
     try {
       // Check within serialization: Does any flashcard in DB still reference this media URL?
       if (db) {
-        const column = mediaType === 'audio' ? 'audio_url' : 'image_url';
         // Query if any record matches clean URL or URL with query parameters
-        const countStmt = db.prepare(`SELECT COUNT(*) as count FROM flashcards WHERE ${column} = ? OR ${column} LIKE ?`);
+        const countStmt = mediaType === 'audio'
+          ? db.prepare('SELECT COUNT(*) as count FROM flashcards WHERE audio_url = ? OR audio_url LIKE ?')
+          : db.prepare('SELECT COUNT(*) as count FROM flashcards WHERE image_url = ? OR image_url LIKE ?');
         const existingRefs = countStmt.get(cleanUrl, `${cleanUrl}?%`)?.count || 0;
         if (existingRefs > 0) {
           logger.info?.(`[Safe Delete] Media file ${cleanUrl} is still referenced by ${existingRefs} cards. Skipping deletion.`);
@@ -187,7 +195,13 @@ export async function safeDeleteUserMediaFile(mediaUrl, db, mediaType, logger = 
       logger.warn?.(`[Safe Delete] Failed to delete user media file ${cleanUrl}: ${err.message}`);
     }
     return false;
-  });
+  };
+
+  if (options.skipLock) {
+    return deleteOperation();
+  }
+
+  return withMediaLock(fullDiskPath, deleteOperation);
 }
 
 /**

@@ -84,6 +84,22 @@ function incrementRateLimit(request, amount = 1) {
   }
 }
 
+async function withMediaUrlLocks(mediaUrls, operation) {
+  const lockUrls = [...new Set((mediaUrls || [])
+    .filter(url => typeof url === 'string' && url.trim().length > 0)
+    .map(url => url.trim())
+    .sort())];
+
+  const executeWithLock = async (index) => {
+    if (index >= lockUrls.length) {
+      return operation();
+    }
+    return withMediaUrlLock(lockUrls[index], async () => executeWithLock(index + 1));
+  };
+
+  return executeWithLock(0);
+}
+
 const fastify = Fastify({
   logger: true
 });
@@ -385,29 +401,32 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
       const cleanWord = item.word.trim();
       fastify.log.info(`[Admin Generate] Downloading media assets for: ${cleanWord}`);
 
-      // Image processing: fetch AI image only if IMAGE_AI_GENERATE_ENABLE is true
-      let imageUrl = '/uploads/seed/images/default-placeholder.webp';
-      if (imageAiActive) {
-        imageUrl = await downloadAndConvertKidImage(cleanWord, topic_id, image_source, false, 'user');
-      }
+      const imageLockUrl = imageAiActive
+        ? getMediaPath({ type: 'image', scope: 'user', topicSlug: topic_id, word: cleanWord, ext: 'webp' }).publicUrl
+        : null;
+      const audioLockUrl = getMediaPath({ type: 'audio', scope: 'user', topicSlug: topic_id, word: cleanWord, ext: 'mp3' }).publicUrl;
 
-      // Generate local Edge-TTS MP3 under user scope
-      const audioUrl = await downloadWordAudio(cleanWord, topic_id, 'en-US-AnaNeural', 'user');
+      await withMediaUrlLock(imageLockUrl, async () => {
+        await withMediaUrlLock(audioLockUrl, async () => {
+          // Image processing: fetch AI image only if IMAGE_AI_GENERATE_ENABLE is true
+          let imageUrl = '/uploads/seed/images/default-placeholder.webp';
+          if (imageAiActive) {
+            imageUrl = await downloadAndConvertKidImage(cleanWord, topic_id, image_source, false, 'user');
+          }
 
-      const cardPayload = {
-        topic_id,
-        word: cleanWord,
-        phonetic: item.phonetic,
-        meaning_vi: item.meaning_vi,
-        example_en: item.example_en,
-        example_vi: item.example_vi,
-        image_url: imageUrl,
-        audio_url: audioUrl
-      };
+          // Generate local Edge-TTS MP3 under user scope
+          const audioUrl = await downloadWordAudio(cleanWord, topic_id, 'en-US-AnaNeural', 'user');
 
-      await withMediaUrlLock(imageUrl, async () => {
-        await withMediaUrlLock(audioUrl, async () => {
-          upsertCard.run(cardPayload);
+          upsertCard.run({
+            topic_id,
+            word: cleanWord,
+            phonetic: item.phonetic,
+            meaning_vi: item.meaning_vi,
+            example_en: item.example_en,
+            example_vi: item.example_vi,
+            image_url: imageUrl,
+            audio_url: audioUrl
+          });
         });
       });
 
@@ -457,24 +476,48 @@ fastify.post('/api/v1/admin/cards/:id/regenerate-image', async (request, reply) 
 
     // Determine target scope (preserve seed scope for default cards, user scope for custom cards)
     const targetScope = card.is_custom === 1 ? 'user' : 'seed';
+    const imageLockUrl = getMediaPath({
+      type: 'image',
+      scope: targetScope,
+      topicSlug: card.topic_id,
+      word: card.word,
+      ext: 'webp'
+    }).publicUrl;
 
-    // Download and convert new image (force overwrite file on disk)
-    const newImageUrl = await downloadAndConvertKidImage(card.word, card.topic_id, imageSource, true, targetScope);
+    return await withMediaUrlLock(imageLockUrl, async () => {
+      // 1. Re-query card existence and latest state inside lock
+      const currentCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+      if (!currentCard) {
+        return reply.status(404).send({ error: 'NOT_FOUND', message: `Flashcard with ID ${id} not found or was deleted` });
+      }
 
-    // Update SQLite database (save canonical relative path)
-    await withMediaUrlLock(newImageUrl, async () => {
-      db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(newImageUrl, id);
+      // 2. Download and convert new image (force overwrite file on disk)
+      const currentScope = currentCard.is_custom === 1 ? 'user' : 'seed';
+      const newImageUrl = await downloadAndConvertKidImage(currentCard.word, currentCard.topic_id, imageSource, true, currentScope);
+
+      // 3. Execute UPDATE and verify affected rows
+      const updateResult = db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(newImageUrl, id);
+      if (updateResult.changes === 0) {
+        // Clean up orphan file if card was deleted before DB update
+        await safeDeleteUserMediaFile(newImageUrl, db, 'image', fastify.log, { skipLock: true });
+        return reply.status(404).send({ error: 'NOT_FOUND', message: `Flashcard with ID ${id} no longer exists` });
+      }
+
+      // 4. Fetch fresh card safely
+      const updatedCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+      if (!updatedCard) {
+        return reply.status(404).send({ error: 'NOT_FOUND', message: `Flashcard with ID ${id} not found after update` });
+      }
+
+      // Append timestamp query parameter so client browser refreshes immediately
+      updatedCard.image_url = `${updatedCard.image_url}?t=${Date.now()}`;
+
+      return reply.send({
+        success: true,
+        message: `Successfully regenerated image for "${currentCard.word}"!`,
+        card: updatedCard
+      });
     });
-
-    const updatedCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
-    // Append timestamp query parameter so client browser refreshes immediately
-    updatedCard.image_url = `${updatedCard.image_url}?t=${Date.now()}`;
-
-    return {
-      success: true,
-      message: `Successfully regenerated image for "${card.word}"!`,
-      card: updatedCard
-    };
   } catch (err) {
     fastify.log.error(err);
     return reply.status(500).send({ error: 'Error regenerating image: ' + err.message });
@@ -504,10 +547,19 @@ fastify.put('/api/v1/cards/:id', async (request, reply) => {
       updatedImageUrl = parts.join('?');
     }
 
-    // Lock the word field to preserve media file path integrity (.webp, .mp3)
-    // Wrap database update in media URL lock to prevent race conditions with deletion checks
-    await withMediaUrlLock(updatedImageUrl, async () => {
-      db.prepare(`
+    let oldImageUrlToDelete = null;
+
+    const result = await withMediaUrlLocks([card.image_url, updatedImageUrl], async () => {
+      // 1. Re-query card existence and latest state inside lock
+      const currentCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+      if (!currentCard) {
+        return reply.status(404).send({ error: 'NOT_FOUND', message: `Flashcard with ID ${id} not found or was deleted` });
+      }
+
+      const effectiveImageUrl = updatedImageUrl !== undefined ? updatedImageUrl : currentCard.image_url;
+
+      // 2. Execute UPDATE and verify affected rows
+      const updateResult = db.prepare(`
         UPDATE flashcards 
         SET 
           phonetic = ?, 
@@ -521,17 +573,37 @@ fastify.put('/api/v1/cards/:id', async (request, reply) => {
         updatedMeaningVi,
         updatedExampleEn,
         updatedExampleVi,
-        updatedImageUrl,
+        effectiveImageUrl,
         id
       );
+
+      if (updateResult.changes === 0) {
+        return reply.status(404).send({ error: 'NOT_FOUND', message: `Flashcard with ID ${id} no longer exists` });
+      }
+
+      // Check if old image should be cleaned up after update
+      if (currentCard.image_url && currentCard.image_url !== effectiveImageUrl) {
+        oldImageUrlToDelete = currentCard.image_url;
+      }
+
+      // 3. Fetch fresh card safely
+      const freshCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+      if (!freshCard) {
+        return reply.status(404).send({ error: 'NOT_FOUND', message: `Flashcard with ID ${id} not found after update` });
+      }
+
+      return reply.send({
+        success: true,
+        message: 'Flashcard updated successfully!',
+        card: freshCard
+      });
     });
 
-    const freshCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
-    return reply.send({
-      success: true,
-      message: 'Flashcard updated successfully!',
-      card: freshCard
-    });
+    if (oldImageUrlToDelete) {
+      await safeDeleteUserMediaFile(oldImageUrlToDelete, db, 'image', fastify.log);
+    }
+
+    return result;
   } catch (err) {
     fastify.log.error(err);
     return reply.status(500).send({ error: 'Error updating card: ' + err.message });
@@ -575,27 +647,43 @@ fastify.post('/api/v1/cards/:id/upload-image', async (request, reply) => {
 
     const basePublicUrl = mediaInfo.publicUrl;
 
-    await withMediaUrlLock(basePublicUrl, async () => {
-      // Convert and compress to .webp with quality 85 using Sharp
+    return await withMediaUrlLock(basePublicUrl, async () => {
+      // 1. Re-query card existence inside lock
+      const currentCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+      if (!currentCard) {
+        return reply.status(404).send({ error: 'NOT_FOUND', message: `Flashcard with ID ${id} not found or was deleted` });
+      }
+
+      // 2. Convert and compress to .webp with quality 85 using Sharp
       await sharp(buffer)
         .resize(400, 400, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
         .webp({ quality: 85 })
         .toFile(mediaInfo.filePath);
 
-      // Update image_url field in SQLite database (save canonical path)
-      db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(basePublicUrl, id);
-    });
+      // 3. Update image_url field in SQLite database (save canonical path)
+      const updateResult = db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(basePublicUrl, id);
+      if (updateResult.changes === 0) {
+        // Clean up orphan file if card was deleted before DB update
+        await safeDeleteUserMediaFile(basePublicUrl, db, 'image', fastify.log, { skipLock: true });
+        return reply.status(404).send({ error: 'NOT_FOUND', message: `Flashcard with ID ${id} no longer exists` });
+      }
 
-    const freshCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
-    // Append timestamp query parameter for immediate client cache-busting
-    const freshUrlWithTimestamp = `${basePublicUrl}?t=${Date.now()}`;
-    freshCard.image_url = freshUrlWithTimestamp;
+      // 4. Fetch fresh card safely
+      const freshCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
+      if (!freshCard) {
+        return reply.status(404).send({ error: 'NOT_FOUND', message: `Flashcard with ID ${id} not found after update` });
+      }
 
-    return reply.send({
-      success: true,
-      message: 'Image uploaded and converted successfully!',
-      image_url: freshUrlWithTimestamp,
-      card: freshCard
+      // Append timestamp query parameter for immediate client cache-busting
+      const freshUrlWithTimestamp = `${basePublicUrl}?t=${Date.now()}`;
+      freshCard.image_url = freshUrlWithTimestamp;
+
+      return reply.send({
+        success: true,
+        message: 'Image uploaded and converted successfully!',
+        image_url: freshUrlWithTimestamp,
+        card: freshCard
+      });
     });
   } catch (err) {
     fastify.log.error(err);
@@ -621,27 +709,29 @@ fastify.delete('/api/v1/cards/:id', async (request, reply) => {
       });
     }
 
-    // Delete record from SQLite within a transaction
-    const deleteTx = db.transaction(() => {
-      db.prepare('DELETE FROM flashcards WHERE id = ?').run(id);
-    });
-    deleteTx();
+    await withMediaUrlLocks([card.image_url, card.audio_url], async () => {
+      // Delete record from SQLite within a transaction
+      const deleteTx = db.transaction(() => {
+        db.prepare('DELETE FROM flashcards WHERE id = ?').run(id);
+      });
+      deleteTx();
 
-    // Clean up local disk files if present (prevent orphan storage leaks)
-    // Protected by safeDeleteUserMediaFile:
-    // 1. Strictly ignores /uploads/seed/ assets and default-placeholder.webp
-    // 2. Only deletes /uploads/user/ assets
-    // 3. Verifies no other flashcards in SQLite share the same media URL
-    try {
-      if (card.image_url) {
-        await safeDeleteUserMediaFile(card.image_url, db, 'image', fastify.log);
+      // Clean up local disk files if present (prevent orphan storage leaks)
+      // Protected by safeDeleteUserMediaFile:
+      // 1. Strictly ignores /uploads/seed/ assets and default-placeholder.webp
+      // 2. Only deletes /uploads/user/ assets
+      // 3. Verifies no other flashcards in SQLite share the same media URL
+      try {
+        if (card.image_url) {
+          await safeDeleteUserMediaFile(card.image_url, db, 'image', fastify.log, { skipLock: true });
+        }
+        if (card.audio_url) {
+          await safeDeleteUserMediaFile(card.audio_url, db, 'audio', fastify.log, { skipLock: true });
+        }
+      } catch (cleanupErr) {
+        fastify.log.warn(`[Delete Card] Error cleaning orphan media files: ${cleanupErr.message}`);
       }
-      if (card.audio_url) {
-        await safeDeleteUserMediaFile(card.audio_url, db, 'audio', fastify.log);
-      }
-    } catch (cleanupErr) {
-      fastify.log.warn(`[Delete Card] Error cleaning orphan media files: ${cleanupErr.message}`);
-    }
+    });
 
     return reply.send({
       success: true,

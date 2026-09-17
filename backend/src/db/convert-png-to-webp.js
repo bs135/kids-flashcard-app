@@ -43,10 +43,8 @@ async function convertPngToWebp() {
   const pngFiles = getAllPngFiles(uploadsRoot);
 
   console.log(`📌 Found a total of: ${pngFiles.length} .png files.\n`);
-
   if (pngFiles.length === 0) {
-    console.log('✨ No .png files require conversion.');
-    return;
+    console.log('✨ No .png files require conversion. Running consistency sync only...');
   }
 
   let totalOriginalSize = 0;
@@ -90,6 +88,8 @@ async function convertPngToWebp() {
             fs.copyFileSync(webpPath, backupWebpPath);
           }
 
+          let syncedChanges = 0;
+          let dbSyncApplied = false;
           try {
             // Promote new WebP into place
             fs.renameSync(tempWebpPath, webpPath);
@@ -102,11 +102,10 @@ async function convertPngToWebp() {
                 SET image_url = ? 
                 WHERE image_url = ? OR image_url LIKE ?
               `).run(newPublicUrl, oldPublicUrl, `${oldPublicUrl}?%`);
-              if (result.changes > 0) {
-                dbUpdatedCount += result.changes;
-              }
+              syncedChanges = result.changes || 0;
             });
             syncCardTx();
+            dbSyncApplied = true;
 
             // Only delete original PNG after DB update succeeds
             fs.unlinkSync(pngPath);
@@ -115,7 +114,21 @@ async function convertPngToWebp() {
             if (webpExistedBefore && fs.existsSync(backupWebpPath)) {
               try { fs.unlinkSync(backupWebpPath); } catch (_) {}
             }
+
+            if (syncedChanges > 0) {
+              dbUpdatedCount += syncedChanges;
+            }
           } catch (txOrFileErr) {
+            if (dbSyncApplied) {
+              try {
+                db.prepare(`
+                  UPDATE flashcards
+                  SET image_url = ?
+                  WHERE image_url = ?
+                `).run(oldPublicUrl, newPublicUrl);
+              } catch (_) {}
+            }
+
             // Reconcile filesystem state if DB transaction or subsequent step fails:
             // 1. Remove newly placed WebP file
             try {

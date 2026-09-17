@@ -77,6 +77,7 @@ def process_single_image(png_path: Path, session=None) -> tuple[bool, int, int, 
     original_size = png_path.stat().st_size
     webp_path = png_path.with_suffix(".webp")
     temp_webp_path = png_path.with_suffix(".tmp.webp")
+    backup_webp_path = png_path.with_suffix(".backup.webp")
     topic_name = png_path.parent.name.lower()
 
     try:
@@ -102,11 +103,25 @@ def process_single_image(png_path: Path, session=None) -> tuple[bool, int, int, 
         if webp_size == 0:
             raise ValueError(f"Generated WebP file is empty: {temp_webp_path}")
 
-        # Atomically replace target WebP file
-        temp_webp_path.replace(webp_path)
+        had_existing_webp = webp_path.exists()
+        if had_existing_webp:
+            webp_path.replace(backup_webp_path)
 
-        # Safe removal of original PNG file
-        png_path.unlink()
+        try:
+            # Atomically replace target WebP file
+            temp_webp_path.replace(webp_path)
+
+            # Safe removal of original PNG file
+            png_path.unlink()
+        except Exception:
+            if webp_path.exists():
+                webp_path.unlink()
+            if had_existing_webp and backup_webp_path.exists():
+                backup_webp_path.replace(webp_path)
+            raise
+
+        if had_existing_webp and backup_webp_path.exists():
+            backup_webp_path.unlink()
         return True, original_size, webp_size, "Success"
 
     except Exception as exc:
@@ -114,6 +129,11 @@ def process_single_image(png_path: Path, session=None) -> tuple[bool, int, int, 
         if temp_webp_path.exists():
             try:
                 temp_webp_path.unlink()
+            except Exception:
+                pass
+        if backup_webp_path.exists() and not webp_path.exists():
+            try:
+                backup_webp_path.replace(webp_path)
             except Exception:
                 pass
         return False, original_size, 0, str(exc)
