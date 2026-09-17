@@ -12,7 +12,7 @@ import { generateVocabularyData } from './services/geminiService.js';
 import { downloadAndConvertKidImage } from './services/imageService.js';
 import { downloadWordAudio } from './services/edgeTtsService.js';
 import { slugify } from './utils/slugify.js';
-import { getMediaPath } from './utils/mediaPath.js';
+import { getMediaPath, safeDeleteUserMediaFile } from './utils/mediaPath.js';
 
 dotenv.config();
 
@@ -603,34 +603,23 @@ fastify.delete('/api/v1/cards/:id', async (request, reply) => {
       });
     }
 
-    // Delete record from SQLite
-    db.prepare('DELETE FROM flashcards WHERE id = ?').run(id);
+    // Delete record from SQLite within a transaction
+    const deleteTx = db.transaction(() => {
+      db.prepare('DELETE FROM flashcards WHERE id = ?').run(id);
+    });
+    deleteTx();
 
     // Clean up local disk files if present (prevent orphan storage leaks)
-    // Note: Never delete default placeholder image
+    // Protected by safeDeleteUserMediaFile:
+    // 1. Strictly ignores /uploads/seed/ assets and default-placeholder.webp
+    // 2. Only deletes /uploads/user/ assets
+    // 3. Verifies no other flashcards in SQLite share the same media URL
     try {
-      if (card.image_url && !card.image_url.includes('default-placeholder.webp')) {
-        const cleanImagePath = card.image_url.split('?')[0];
-        if (cleanImagePath.startsWith('/uploads/')) {
-          const relativePath = cleanImagePath.replace('/uploads/', '');
-          const fullDiskPath = path.resolve(__dirname, '../uploads', relativePath);
-          if (fs.existsSync(fullDiskPath)) {
-            fs.unlinkSync(fullDiskPath);
-            fastify.log.info(`[Delete Card] Deleted local image: ${fullDiskPath}`);
-          }
-        }
+      if (card.image_url) {
+        await safeDeleteUserMediaFile(card.image_url, db, 'image', fastify.log);
       }
-
       if (card.audio_url) {
-        const cleanAudioPath = card.audio_url.split('?')[0];
-        if (cleanAudioPath.startsWith('/uploads/')) {
-          const relativePath = cleanAudioPath.replace('/uploads/', '');
-          const fullDiskPath = path.resolve(__dirname, '../uploads', relativePath);
-          if (fs.existsSync(fullDiskPath)) {
-            fs.unlinkSync(fullDiskPath);
-            fastify.log.info(`[Delete Card] Deleted local audio: ${fullDiskPath}`);
-          }
-        }
+        await safeDeleteUserMediaFile(card.audio_url, db, 'audio', fastify.log);
       }
     } catch (cleanupErr) {
       fastify.log.warn(`[Delete Card] Error cleaning orphan media files: ${cleanupErr.message}`);

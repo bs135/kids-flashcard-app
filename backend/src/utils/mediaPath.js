@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { slugify } from './slugify.js';
@@ -68,6 +69,69 @@ export function getMediaPath({
     filename,
     publicUrl
   };
+}
+
+/**
+ * Safely deletes a user-generated media file from local disk.
+ * Safety rules:
+ * 1. Strictly ignores seed media files (/uploads/seed/...) and default-placeholder.webp.
+ * 2. Only deletes if URL belongs to user uploads (/uploads/user/...).
+ * 3. Checks if any other flashcards reference the same media URL before deleting.
+ * 4. Asynchronous and handles errors gracefully without throwing to caller.
+ * 
+ * @param {string} mediaUrl Public URL of the media file
+ * @param {import('better-sqlite3').Database} db Database instance
+ * @param {'image'|'audio'} mediaType Media type for reference checking
+ * @param {any} [logger=console] Logger instance (fastify.log or console)
+ * @returns {Promise<boolean>} True if file was deleted, false otherwise
+ */
+export async function safeDeleteUserMediaFile(mediaUrl, db, mediaType, logger = console) {
+  if (!mediaUrl || typeof mediaUrl !== 'string') return false;
+
+  const cleanUrl = mediaUrl.split('?')[0].trim();
+
+  // Strict safety check: Never delete default placeholder or seed assets
+  if (cleanUrl.includes('default-placeholder.webp') || cleanUrl.includes('/uploads/seed/')) {
+    return false;
+  }
+
+  // Must reside in user uploads
+  if (!cleanUrl.startsWith('/uploads/user/')) {
+    return false;
+  }
+
+  try {
+    // Check if any other flashcard still references this same URL
+    if (db) {
+      const column = mediaType === 'audio' ? 'audio_url' : 'image_url';
+      // Query if any record contains this URL (ignoring query parameters)
+      const countStmt = db.prepare(`SELECT COUNT(*) as count FROM flashcards WHERE ${column} LIKE ?`);
+      const existingRefs = countStmt.get(`${cleanUrl}%`)?.count || 0;
+      if (existingRefs > 0) {
+        logger.info?.(`[Safe Delete] Media file ${cleanUrl} is still referenced by ${existingRefs} cards. Skipping deletion.`);
+        return false;
+      }
+    }
+
+    const relativePath = cleanUrl.replace(/^\/uploads\//, '');
+    const fullDiskPath = path.resolve(BASE_UPLOADS_DIR, relativePath);
+
+    // Prevent path traversal attacks
+    if (!fullDiskPath.startsWith(BASE_UPLOADS_DIR)) {
+      logger.warn?.(`[Safe Delete] Security warning: Path traversal attempt prevented for ${cleanUrl}`);
+      return false;
+    }
+
+    if (fs.existsSync(fullDiskPath)) {
+      await fs.promises.unlink(fullDiskPath);
+      logger.info?.(`[Safe Delete] Successfully removed orphaned user media file: ${fullDiskPath}`);
+      return true;
+    }
+  } catch (err) {
+    logger.warn?.(`[Safe Delete] Failed to delete user media file ${cleanUrl}: ${err.message}`);
+  }
+
+  return false;
 }
 
 /**
