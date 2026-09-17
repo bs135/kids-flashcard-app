@@ -87,7 +87,7 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
       if (matchedIds.size + 1 === 4) {
         setTimeout(() => {
           setIsWon(true);
-          soundEffects.playTada();
+          soundEffects.playWin();
           confetti({
             particleCount: 150,
             spread: 80,
@@ -99,7 +99,7 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
       }
     } else {
       // Mismatch!
-      soundEffects.playError();
+      soundEffects.playWrong();
       setShakeId(rightId);
       
       setTimeout(() => {
