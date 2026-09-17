@@ -71,8 +71,55 @@ export function getMediaPath({
   };
 }
 
-// In-flight deletion mutex locks to serialize check-and-unlink per target file
-const pendingDeletions = new Map();
+// In-flight media mutex locks to serialize operations (e.g. check-and-unlink, updates) per target file
+const pendingMediaOps = new Map();
+
+/**
+ * Executes a function with a lock on a specific disk path to prevent race conditions.
+ * @param {string} fullDiskPath 
+ * @param {Function} operation 
+ */
+export async function withMediaLock(fullDiskPath, operation) {
+  const previousLock = pendingMediaOps.get(fullDiskPath) || Promise.resolve();
+
+  const currentOperation = (async () => {
+    try {
+      await previousLock;
+    } catch (_) {
+      // Ignore errors from previous operations in the queue
+    }
+
+    try {
+      return await operation();
+    } finally {
+      if (pendingMediaOps.get(fullDiskPath) === currentOperation) {
+        pendingMediaOps.delete(fullDiskPath);
+      }
+    }
+  })();
+
+  pendingMediaOps.set(fullDiskPath, currentOperation);
+  return currentOperation;
+}
+
+/**
+ * Acquires a media lock using a public URL to synchronize with file deletions.
+ * @param {string} mediaUrl 
+ * @param {Function} operation 
+ */
+export async function withMediaUrlLock(mediaUrl, operation) {
+  if (!mediaUrl || typeof mediaUrl !== 'string') {
+    return operation();
+  }
+
+  let cleanUrl = mediaUrl.split('?')[0].trim();
+  cleanUrl = path.posix.normalize(cleanUrl);
+
+  const relativePath = cleanUrl.replace(/^\/uploads\//, '');
+  const fullDiskPath = path.resolve(BASE_UPLOADS_DIR, relativePath);
+
+  return withMediaLock(fullDiskPath, operation);
+}
 
 /**
  * Safely deletes a user-generated media file from local disk.
@@ -92,7 +139,9 @@ const pendingDeletions = new Map();
 export async function safeDeleteUserMediaFile(mediaUrl, db, mediaType, logger = console) {
   if (!mediaUrl || typeof mediaUrl !== 'string') return false;
 
-  const cleanUrl = mediaUrl.split('?')[0].trim();
+  let cleanUrl = mediaUrl.split('?')[0].trim();
+  // Normalize the URL path to eliminate dot segments (. and ..) and represent the canonical URL
+  cleanUrl = path.posix.normalize(cleanUrl);
 
   // Strict safety check: Never delete default placeholder or seed assets
   if (cleanUrl.includes('default-placeholder.webp') || cleanUrl.includes('/uploads/seed/')) {
@@ -115,16 +164,7 @@ export async function safeDeleteUserMediaFile(mediaUrl, db, mediaType, logger = 
     return false;
   }
 
-  // Serialize check-and-unlink per file path to eliminate race conditions
-  const previousLock = pendingDeletions.get(fullDiskPath) || Promise.resolve();
-
-  const currentOperation = (async () => {
-    try {
-      await previousLock;
-    } catch (_) {
-      // Ignore errors from previous operations
-    }
-
+  return withMediaLock(fullDiskPath, async () => {
     try {
       // Check within serialization: Does any flashcard in DB still reference this media URL?
       if (db) {
@@ -145,16 +185,9 @@ export async function safeDeleteUserMediaFile(mediaUrl, db, mediaType, logger = 
       }
     } catch (err) {
       logger.warn?.(`[Safe Delete] Failed to delete user media file ${cleanUrl}: ${err.message}`);
-    } finally {
-      if (pendingDeletions.get(fullDiskPath) === currentOperation) {
-        pendingDeletions.delete(fullDiskPath);
-      }
     }
     return false;
-  })();
-
-  pendingDeletions.set(fullDiskPath, currentOperation);
-  return currentOperation;
+  });
 }
 
 /**

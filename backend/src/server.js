@@ -12,7 +12,7 @@ import { generateVocabularyData } from './services/geminiService.js';
 import { downloadAndConvertKidImage } from './services/imageService.js';
 import { downloadWordAudio } from './services/edgeTtsService.js';
 import { slugify } from './utils/slugify.js';
-import { getMediaPath, safeDeleteUserMediaFile } from './utils/mediaPath.js';
+import { getMediaPath, safeDeleteUserMediaFile, withMediaUrlLock } from './utils/mediaPath.js';
 
 dotenv.config();
 
@@ -405,7 +405,11 @@ fastify.post('/api/v1/admin/generate-batch', async (request, reply) => {
         audio_url: audioUrl
       };
 
-      upsertCard.run(cardPayload);
+      await withMediaUrlLock(imageUrl, async () => {
+        await withMediaUrlLock(audioUrl, async () => {
+          upsertCard.run(cardPayload);
+        });
+      });
 
       // Re-fetch record from DB to obtain correct ID
       const savedCard = db.prepare('SELECT * FROM flashcards WHERE topic_id = ? AND word = ? COLLATE NOCASE').get(topic_id, cleanWord);
@@ -458,7 +462,9 @@ fastify.post('/api/v1/admin/cards/:id/regenerate-image', async (request, reply) 
     const newImageUrl = await downloadAndConvertKidImage(card.word, card.topic_id, imageSource, true, targetScope);
 
     // Update SQLite database (save canonical relative path)
-    db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(newImageUrl, id);
+    await withMediaUrlLock(newImageUrl, async () => {
+      db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(newImageUrl, id);
+    });
 
     const updatedCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
     // Append timestamp query parameter so client browser refreshes immediately
@@ -490,26 +496,35 @@ fastify.put('/api/v1/cards/:id', async (request, reply) => {
     const updatedMeaningVi = meaning_vi !== undefined ? String(meaning_vi).trim() : card.meaning_vi;
     const updatedExampleEn = example_en !== undefined ? String(example_en).trim() : card.example_en;
     const updatedExampleVi = example_vi !== undefined ? String(example_vi).trim() : card.example_vi;
-    const updatedImageUrl = image_url !== undefined ? String(image_url).trim() : card.image_url;
+    let updatedImageUrl = image_url !== undefined ? String(image_url).trim() : card.image_url;
+
+    if (updatedImageUrl) {
+      const parts = updatedImageUrl.split('?');
+      parts[0] = path.posix.normalize(parts[0]);
+      updatedImageUrl = parts.join('?');
+    }
 
     // Lock the word field to preserve media file path integrity (.webp, .mp3)
-    db.prepare(`
-      UPDATE flashcards 
-      SET 
-        phonetic = ?, 
-        meaning_vi = ?, 
-        example_en = ?, 
-        example_vi = ?, 
-        image_url = ?
-      WHERE id = ?
-    `).run(
-      updatedPhonetic,
-      updatedMeaningVi,
-      updatedExampleEn,
-      updatedExampleVi,
-      updatedImageUrl,
-      id
-    );
+    // Wrap database update in media URL lock to prevent race conditions with deletion checks
+    await withMediaUrlLock(updatedImageUrl, async () => {
+      db.prepare(`
+        UPDATE flashcards 
+        SET 
+          phonetic = ?, 
+          meaning_vi = ?, 
+          example_en = ?, 
+          example_vi = ?, 
+          image_url = ?
+        WHERE id = ?
+      `).run(
+        updatedPhonetic,
+        updatedMeaningVi,
+        updatedExampleEn,
+        updatedExampleVi,
+        updatedImageUrl,
+        id
+      );
+    });
 
     const freshCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
     return reply.send({
@@ -558,15 +573,18 @@ fastify.post('/api/v1/cards/:id/upload-image', async (request, reply) => {
       fs.mkdirSync(mediaInfo.dirPath, { recursive: true });
     }
 
-    // Convert and compress to .webp with quality 85 using Sharp
-    await sharp(buffer)
-      .resize(400, 400, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
-      .webp({ quality: 85 })
-      .toFile(mediaInfo.filePath);
-
-    // Update image_url field in SQLite database (save canonical path)
     const basePublicUrl = mediaInfo.publicUrl;
-    db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(basePublicUrl, id);
+
+    await withMediaUrlLock(basePublicUrl, async () => {
+      // Convert and compress to .webp with quality 85 using Sharp
+      await sharp(buffer)
+        .resize(400, 400, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+        .webp({ quality: 85 })
+        .toFile(mediaInfo.filePath);
+
+      // Update image_url field in SQLite database (save canonical path)
+      db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?').run(basePublicUrl, id);
+    });
 
     const freshCard = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
     // Append timestamp query parameter for immediate client cache-busting
