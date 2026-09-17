@@ -8,8 +8,16 @@ import { speakWord, stopSpeech } from '../services/speech';
 export default function MemoryGame({ topics = [], initialTopic = null, onBack, onEarnStar }) {
   const [selectedTopicId, setSelectedTopicId] = useState(() => {
     if (initialTopic && initialTopic.id) return initialTopic.id;
+    const saved = localStorage.getItem('kids_flashcard_last_topic_memory');
+    if (saved && topics.some(t => t.id === saved)) return saved;
     return topics[0]?.id || 'colors';
   });
+
+  useEffect(() => {
+    if (selectedTopicId) {
+      localStorage.setItem('kids_flashcard_last_topic_memory', selectedTopicId);
+    }
+  }, [selectedTopicId]);
 
   const [cardsPool, setCardsPool] = useState([]);
   const [gameCards, setGameCards] = useState([]);

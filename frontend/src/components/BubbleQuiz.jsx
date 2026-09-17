@@ -9,8 +9,16 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
   // Currently selected topic
   const [selectedTopicId, setSelectedTopicId] = useState(() => {
     if (initialTopic && initialTopic.id) return initialTopic.id;
+    const saved = localStorage.getItem('kids_flashcard_last_topic_bubble');
+    if (saved && topics.some(t => t.id === saved)) return saved;
     return topics[0]?.id || 'colors';
   });
+
+  useEffect(() => {
+    if (selectedTopicId) {
+      localStorage.setItem('kids_flashcard_last_topic_bubble', selectedTopicId);
+    }
+  }, [selectedTopicId]);
 
   const [cards, setCards] = useState([]);
   const [targetCard, setTargetCard] = useState(null);
