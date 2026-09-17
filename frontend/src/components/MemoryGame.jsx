@@ -286,9 +286,6 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
                                     loading="eager"
                                   />
                                 </div>
-                                <span className="text-[9px] sm:text-[10px] font-extrabold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0">
-                                  HÌNH ẢNH
-                               </span>
                               </div>
                             ) : (
                               <div className="w-full h-full max-w-full flex flex-col items-center justify-between py-0.5 sm:py-1 animate-fade-in overflow-hidden">
@@ -302,9 +299,6 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
                                     {card.word}
                                   </span>
                                 </div>
-                                <span className="text-[9px] sm:text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0">
-                                  TỪ VỰNG
-                                </span>
                               </div>
                             )
                           ) : (

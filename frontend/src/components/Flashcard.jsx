@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Volume2, RotateCw, Sparkles, BookOpen } from 'lucide-react';
-import { speakWord } from '../services/speech';
+import { speakWord, stopSpeech } from '../services/speech';
 import { soundEffects } from '../services/soundEffects';
 
 export default function Flashcard({ card, isFlipped, onFlip }) {
@@ -126,13 +126,27 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
           )}
 
           {/* Pronunciation replay button */}
-          <button
-            onClick={handleAudioPlay}
-            className="mt-1 sm:mt-2 flex items-center gap-1.5 sm:gap-2 bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-full shadow-md transition-transform transform active:scale-95 text-xs sm:text-sm shrink-0"
-          >
-            <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>Nghe lại từ "{card.word}"</span>
-          </button>
+          {card.example_en ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                stopSpeech();
+                speakWord(card.example_en);
+              }}
+              className="mt-1 sm:mt-2 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-sky-500 hover:bg-sky-600 text-white rounded-full shadow-md transition-transform transform active:scale-95 shrink-0"
+              title="Nghe câu ví dụ"
+            >
+              <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+          ) : (
+            <button
+              onClick={handleAudioPlay}
+              className="mt-1 sm:mt-2 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-sky-500 hover:bg-sky-600 text-white rounded-full shadow-md transition-transform transform active:scale-95 shrink-0"
+              title="Nghe lại từ"
+            >
+              <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+          )}
         </div>
       </motion.div>
     </div>
