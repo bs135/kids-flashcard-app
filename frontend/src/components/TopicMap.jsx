@@ -21,7 +21,7 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
       </div>
 
       {/* Mini-Games Section Banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mb-6 sm:mb-8">
         {/* Game 1: Bubble Pop */}
         <motion.div
           whileHover={{ scale: 1.02, translateY: -2 }}
@@ -39,7 +39,7 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
             <div className="flex-1 min-w-0 pr-1">
               <div className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-sky-100">Mini Game 1</div>
               <h4 className="text-base sm:text-lg lg:text-xl font-black font-kids leading-tight">Bong Bóng Từ Vựng</h4>
-              <p className="text-xs text-sky-100 font-medium leading-normal">Lắng nghe & nổ bóng đúng từ</p>
+              <p className="text-xs text-sky-100 font-medium leading-normal">Lắng nghe & nổ bóng</p>
             </div>
           </div>
           <div className="shrink-0 whitespace-nowrap bg-white text-sky-700 font-black text-xs sm:text-sm px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full shadow-sm">
@@ -68,6 +68,31 @@ export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
             </div>
           </div>
           <div className="shrink-0 whitespace-nowrap bg-white text-amber-800 font-black text-xs sm:text-sm px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full shadow-sm">
+            Chơi Ngay ➔
+          </div>
+        </motion.div>
+
+        {/* Game 3: Audio Match */}
+        <motion.div
+          whileHover={{ scale: 1.02, translateY: -2 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => {
+            soundEffects.playPop();
+            if (onSelectGame) onSelectGame('audio_match');
+          }}
+          className="bg-gradient-to-r from-emerald-400 to-green-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg border-3 border-emerald-300 flex items-center justify-between gap-2 sm:gap-3 cursor-pointer select-none"
+        >
+          <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl sm:text-3xl shadow-inner">
+              🎧
+            </div>
+            <div className="flex-1 min-w-0 pr-1">
+              <div className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-emerald-100">Mini Game 3</div>
+              <h4 className="text-base sm:text-lg lg:text-xl font-black font-kids leading-tight">Nghe Âm Đoán Hình</h4>
+              <p className="text-xs text-emerald-100 font-medium leading-normal">Nghe từ & nối ảnh đúng</p>
+            </div>
+          </div>
+          <div className="shrink-0 whitespace-nowrap bg-white text-emerald-800 font-black text-xs sm:text-sm px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full shadow-sm">
             Chơi Ngay ➔
           </div>
         </motion.div>
