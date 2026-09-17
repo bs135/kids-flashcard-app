@@ -71,13 +71,17 @@ export function getMediaPath({
   };
 }
 
+// In-flight deletion mutex locks to serialize check-and-unlink per target file
+const pendingDeletions = new Map();
+
 /**
  * Safely deletes a user-generated media file from local disk.
  * Safety rules:
  * 1. Strictly ignores seed media files (/uploads/seed/...) and default-placeholder.webp.
  * 2. Only deletes if URL belongs to user uploads (/uploads/user/...).
  * 3. Checks if any other flashcards reference the same media URL before deleting.
- * 4. Asynchronous and handles errors gracefully without throwing to caller.
+ * 4. Serializes check-and-delete operations per file path to prevent race conditions.
+ * 5. Asynchronous and handles errors gracefully without throwing to caller.
  * 
  * @param {string} mediaUrl Public URL of the media file
  * @param {import('better-sqlite3').Database} db Database instance
@@ -100,38 +104,55 @@ export async function safeDeleteUserMediaFile(mediaUrl, db, mediaType, logger = 
     return false;
   }
 
-  try {
-    // Check if any other flashcard still references this same URL
-    if (db) {
-      const column = mediaType === 'audio' ? 'audio_url' : 'image_url';
-      // Query if any record contains this URL (ignoring query parameters)
-      const countStmt = db.prepare(`SELECT COUNT(*) as count FROM flashcards WHERE ${column} LIKE ?`);
-      const existingRefs = countStmt.get(`${cleanUrl}%`)?.count || 0;
-      if (existingRefs > 0) {
-        logger.info?.(`[Safe Delete] Media file ${cleanUrl} is still referenced by ${existingRefs} cards. Skipping deletion.`);
-        return false;
-      }
-    }
+  const relativePath = cleanUrl.replace(/^\/uploads\//, '');
+  const fullDiskPath = path.resolve(BASE_UPLOADS_DIR, relativePath);
 
-    const relativePath = cleanUrl.replace(/^\/uploads\//, '');
-    const fullDiskPath = path.resolve(BASE_UPLOADS_DIR, relativePath);
-
-    // Prevent path traversal attacks
-    if (!fullDiskPath.startsWith(BASE_UPLOADS_DIR)) {
-      logger.warn?.(`[Safe Delete] Security warning: Path traversal attempt prevented for ${cleanUrl}`);
-      return false;
-    }
-
-    if (fs.existsSync(fullDiskPath)) {
-      await fs.promises.unlink(fullDiskPath);
-      logger.info?.(`[Safe Delete] Successfully removed orphaned user media file: ${fullDiskPath}`);
-      return true;
-    }
-  } catch (err) {
-    logger.warn?.(`[Safe Delete] Failed to delete user media file ${cleanUrl}: ${err.message}`);
+  // Prevent path traversal attacks
+  if (!fullDiskPath.startsWith(BASE_UPLOADS_DIR)) {
+    logger.warn?.(`[Safe Delete] Security warning: Path traversal attempt prevented for ${cleanUrl}`);
+    return false;
   }
 
-  return false;
+  // Serialize check-and-unlink per file path to eliminate race conditions
+  const previousLock = pendingDeletions.get(fullDiskPath) || Promise.resolve();
+
+  const currentOperation = (async () => {
+    try {
+      await previousLock;
+    } catch (_) {
+      // Ignore errors from previous operations
+    }
+
+    try {
+      // Check within serialization: Does any flashcard in DB still reference this media URL?
+      if (db) {
+        const column = mediaType === 'audio' ? 'audio_url' : 'image_url';
+        // Query if any record matches clean URL or URL with query parameters
+        const countStmt = db.prepare(`SELECT COUNT(*) as count FROM flashcards WHERE ${column} = ? OR ${column} LIKE ?`);
+        const existingRefs = countStmt.get(cleanUrl, `${cleanUrl}?%`)?.count || 0;
+        if (existingRefs > 0) {
+          logger.info?.(`[Safe Delete] Media file ${cleanUrl} is still referenced by ${existingRefs} cards. Skipping deletion.`);
+          return false;
+        }
+      }
+
+      if (fs.existsSync(fullDiskPath)) {
+        await fs.promises.unlink(fullDiskPath);
+        logger.info?.(`[Safe Delete] Successfully removed orphaned user media file: ${fullDiskPath}`);
+        return true;
+      }
+    } catch (err) {
+      logger.warn?.(`[Safe Delete] Failed to delete user media file ${cleanUrl}: ${err.message}`);
+    } finally {
+      if (pendingDeletions.get(fullDiskPath) === currentOperation) {
+        pendingDeletions.delete(fullDiskPath);
+      }
+    }
+    return false;
+  })();
+
+  pendingDeletions.set(fullDiskPath, currentOperation);
+  return currentOperation;
 }
 
 /**

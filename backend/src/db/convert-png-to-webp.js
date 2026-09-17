@@ -89,7 +89,12 @@ async function convertPngToWebp() {
 
           // Atomic file-and-database sync: Update DB record and delete PNG in a coordinated transaction
           const syncCardTx = db.transaction(() => {
-            const result = db.prepare('UPDATE flashcards SET image_url = ? WHERE image_url = ?').run(newPublicUrl, oldPublicUrl);
+            // Match exact URL or URL with query parameters (e.g., ?t=...)
+            const result = db.prepare(`
+              UPDATE flashcards 
+              SET image_url = ? 
+              WHERE image_url = ? OR image_url LIKE ?
+            `).run(newPublicUrl, oldPublicUrl, `${oldPublicUrl}?%`);
             if (result.changes > 0) {
               dbUpdatedCount += result.changes;
             }
@@ -134,14 +139,18 @@ async function convertPngToWebp() {
   const updateCardStmt = db.prepare('UPDATE flashcards SET image_url = ? WHERE id = ?');
   const syncRemainingTx = db.transaction(() => {
     for (const card of allCards) {
-      if (card.image_url && card.image_url.toLowerCase().endsWith('.png')) {
-        const potentialWebpUrl = card.image_url.substring(0, card.image_url.lastIndexOf('.')) + '.webp';
-        const relativeDiskPath = potentialWebpUrl.replace(/^\/uploads\//, '');
-        const targetDiskFile = path.join(uploadsRoot, relativeDiskPath);
-        // Only update database if the corresponding WebP file actually exists on disk
-        if (fs.existsSync(targetDiskFile) && fs.statSync(targetDiskFile).size > 0) {
-          updateCardStmt.run(potentialWebpUrl, card.id);
-          dbUpdatedCount++;
+      if (card.image_url) {
+        // Strip query string (e.g. ?t=...) to normalize URL comparison
+        const cleanImageUrl = card.image_url.split('?')[0].trim();
+        if (cleanImageUrl.toLowerCase().endsWith('.png')) {
+          const potentialWebpUrl = cleanImageUrl.substring(0, cleanImageUrl.lastIndexOf('.')) + '.webp';
+          const relativeDiskPath = potentialWebpUrl.replace(/^\/uploads\//, '');
+          const targetDiskFile = path.join(uploadsRoot, relativeDiskPath);
+          // Only update database if the corresponding WebP file actually exists on disk
+          if (fs.existsSync(targetDiskFile) && fs.statSync(targetDiskFile).size > 0) {
+            updateCardStmt.run(potentialWebpUrl, card.id);
+            dbUpdatedCount++;
+          }
         }
       }
     }
