@@ -1,0 +1,22 @@
+[project]
+name = "kids-flashcard-app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "bs", email = "thanhhai135@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pillow>=12.3.0",
+    "pymupdf>=1.28.2",
+    "pytesseract>=0.3.13",
+    "rembg[cpu]>=2.0.84",
+]
+
+[project.scripts]
+kids-flashcard-app = "kids_flashcard_app:main"
+
+[build-system]
+requires = ["uv_build>=0.12.15,<0.13.0"]
+build-backend = "uv_build"
