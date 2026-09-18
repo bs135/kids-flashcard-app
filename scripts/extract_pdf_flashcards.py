@@ -39,10 +39,12 @@ class Stats:
 
 def clean_word(word: str) -> str:
     """Clean the extracted OCR word for use as a filename."""
-    # Remove non-alphanumeric characters except spaces
-    cleaned = re.sub(r'[^a-zA-Z0-9\s]', '', word)
-    # Convert to lowercase and replace spaces with underscores
-    cleaned = "_".join(cleaned.lower().split())
+    # Replace underscores with spaces so they get split correctly
+    word = word.replace('_', ' ')
+    # Remove non-alphanumeric characters except spaces and hyphens
+    cleaned = re.sub(r'[^a-zA-Z0-9\s\-]', '', word)
+    # Convert to lowercase and replace spaces with hyphens
+    cleaned = "-".join(cleaned.lower().split())
     return cleaned if cleaned else "unknown"
 
 def process_pdf(pdf_path: Path, stats: Stats):
@@ -138,13 +140,14 @@ def process_pdf(pdf_path: Path, stats: Stats):
 
                 # Use Tesseract with configurations to improve accuracy
                 # --psm 6: Assume a single uniform block of text.
-                custom_config = r'--psm 6'
+                # --psm 7: Treat the image as a single text line.
+                custom_config = r'--psm 7'
                 ocr_text = pytesseract.image_to_string(text_region_gray, config=custom_config).strip()
                 word = clean_word(ocr_text)
 
                 # Fallback if OCR fails
                 if word == "unknown":
-                    word = f"word_{item['index']:03d}"
+                    word = f"word-{item['index']:03d}"
                     stats.unknown += 1
                     print(f"  ❌ OCR failed for image {raw_img_path.name}, using fallback word: '{word}'")
                 else:
