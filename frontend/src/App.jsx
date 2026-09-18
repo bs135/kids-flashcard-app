@@ -281,6 +281,9 @@ export default function App() {
         onClose={() => setIsParentalGateOpen(false)}
         onSuccess={() => {
           setIsParentalGateOpen(false);
+          // setIsAdminOpen(true);
+          // setSelectedTopic(null);
+          // setActiveGame(null);
           setTimeout(() => {
             setToastMsg('Tính năng tạo thẻ bằng AI đang được phát triển...');
           }, 100);
