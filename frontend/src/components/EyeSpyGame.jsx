@@ -277,22 +277,16 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
             <div className="flex flex-col h-full flex-1 min-h-0 relative z-20">
               {/* Target Prompt Box */}
               <div className="shrink-0 text-center my-1 sm:my-2 px-1 flex flex-col items-center gap-2">
-                <div className="flex items-center justify-center gap-3 sm:gap-6 w-full">
+                <div className="flex items-center justify-center w-full">
                   <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-black text-xs sm:text-sm border-2 transition-colors ${
                     totalTimeLeft <= 10 ? 'bg-rose-100 border-rose-300 text-rose-600 animate-pulse' : 'bg-indigo-100 border-indigo-300 text-indigo-800'
                     }`}>
-                    <span>⏳ Tổng:</span>
+                    <span>⏳ </span>
                     <span>{totalTimeLeft}s</span>
-                  </div>
-                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-black text-xs sm:text-sm border-2 transition-colors ${
-                    turnTimeLeft <= 2 ? 'bg-rose-100 border-rose-300 text-rose-600 animate-pulse' : 'bg-amber-100 border-amber-300 text-amber-800'
-                    }`}>
-                    <span>⏱️ Vòng:</span>
-                    <span>{turnTimeLeft}s</span>
                   </div>
                 </div>
 
-                <div className="inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-3 bg-white/95 border-2 sm:border-3 border-fuchsia-300 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl sm:rounded-full shadow-md max-w-full mx-auto">
+                <div className="inline-flex flex-row items-center gap-2 sm:gap-4 bg-white/95 border-2 sm:border-3 border-fuchsia-300 px-2 sm:px-3 py-2 sm:py-3 rounded-full shadow-md max-w-full mx-auto">
                   <button
                     onClick={() => {
                       soundEffects.playPop();
@@ -303,15 +297,22 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
                   >
                     <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
                   </button>
-                  <div className="text-center sm:text-left min-w-0">
+
+                  <div className="text-center min-w-[120px] px-1">
                     <div className="text-lg sm:text-2xl font-black text-slate-800 font-kids tracking-wide truncate">
                       {currentPrompt}
                     </div>
                     {targetCard && (
                       <div className={`text-[10px] sm:text-xs font-bold uppercase tracking-wide ${turnTimeLeft === 0 ? 'text-rose-600' : 'text-fuchsia-600'}`}>
-                        {turnTimeLeft === 0 ? "Hết giờ rồi, thử câu tiếp theo nhé!" : `Bé hãy tìm "${targetCard.meaning_vi}" nhé!`}
+                        {turnTimeLeft === 0 ? "Hết giờ, qua câu mới!" : `Bé tìm "${targetCard.meaning_vi}"!`}
                       </div>
                     )}
+                  </div>
+
+                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 flex items-center justify-center font-black text-sm sm:text-base shadow-sm shrink-0 transition-colors ${
+                    turnTimeLeft <= 3 ? 'bg-rose-100 border-rose-300 text-rose-600 animate-pulse' : 'bg-amber-100 border-amber-300 text-amber-800'
+                  }`}>
+                    {turnTimeLeft}
                   </div>
                 </div>
               </div>
