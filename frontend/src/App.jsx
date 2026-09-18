@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
 import Header from './components/Header';
 import TopicMap from './components/TopicMap';
 import FlashcardViewer from './components/FlashcardViewer';
@@ -28,6 +30,14 @@ export default function App() {
   // Virtual Pet & Mini-Games state management
   const [isPetOpen, setIsPetOpen] = useState(false);
   const [activeGame, setActiveGame] = useState(null); // 'bubble' | 'memory' | null
+  const [toastMsg, setToastMsg] = useState('');
+
+  useEffect(() => {
+    if (toastMsg) {
+      const timer = setTimeout(() => setToastMsg(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMsg]);
 
   // Dynamically update --app-height on iOS / Mobile browser address bar changes
   useEffect(() => {
@@ -223,6 +233,40 @@ export default function App() {
         )}
       </main>
 
+      {/* Custom Toast */}
+      <AnimatePresence>
+        {toastMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed inset-0 z-[100] pointer-events-none flex justify-center items-start pt-6 sm:pt-10 px-4"
+          >
+            <div className="pointer-events-auto bg-slate-800 text-white px-4 sm:px-6 py-4 rounded-3xl shadow-2xl border-2 border-slate-700 flex items-start gap-3 sm:gap-4 w-full max-w-md relative">
+              <button
+                onClick={() => setToastMsg('')}
+                className="absolute top-2 right-2 p-1.5 sm:p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-colors"
+                title="Đóng"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+              
+              <span className="text-3xl sm:text-4xl animate-bounce pt-1 shrink-0">🚧</span>
+              <div className="flex flex-col gap-1.5 min-w-0 break-words pr-4 sm:pr-6">
+                <div className="font-bold text-base sm:text-lg text-amber-400 border-b border-slate-600 pb-1.5 leading-tight">
+                  🔒 Khu Vực Phụ Huynh
+                  <span className="text-amber-200/70 text-xs sm:text-sm font-medium block mt-0.5">Parents Area</span>
+                </div>
+                <div className="text-[13px] sm:text-sm font-medium text-slate-200 space-y-1.5 pt-0.5">
+                  <p>Tính năng tạo thẻ bằng AI đang được phát triển... Vui lòng quay lại sau.</p>
+                  <p className="text-slate-400/90 italic text-xs">AI flashcard generation is under development... Please check back later.</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Virtual Pet Modal */}
       <VirtualPetModal
         isOpen={isPetOpen}
@@ -237,9 +281,12 @@ export default function App() {
         onClose={() => setIsParentalGateOpen(false)}
         onSuccess={() => {
           setIsParentalGateOpen(false);
-          setIsAdminOpen(true);
-          setSelectedTopic(null);
-          setActiveGame(null);
+          // setIsAdminOpen(true);
+          // setSelectedTopic(null);
+          // setActiveGame(null);
+          setTimeout(() => {
+            setToastMsg('Tính năng tạo thẻ bằng AI đang được phát triển...');
+          }, 100);
         }}
       />
 
