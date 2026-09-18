@@ -112,8 +112,10 @@ def process_pdf(pdf_path: Path, stats: Stats):
     # Initialize rembg session once if there are images
     session = None
     if extracted_images:
-        print("\nInitializing rembg u2net session...")
-        session = rembg.new_session("u2net")
+        # print("\nInitializing rembg u2net session...")
+        # session = rembg.new_session("u2net")
+        print("\nInitializing rembg isnet-general-use session...")
+        session = rembg.new_session("isnet-general-use")
 
     # Process each extracted image
     for item in extracted_images:
@@ -164,7 +166,14 @@ def process_pdf(pdf_path: Path, stats: Stats):
                 # -------------------------------------------------------------
                 print(f"  Removing background...")
                 # rembg expects PIL image, returns PIL image with transparent background (RGBA)
-                transparent_img = rembg.remove(clean_img, session=session)
+                transparent_img = rembg.remove(
+                    clean_img, 
+                    session=session,
+                    # alpha_matting=True,
+                    # alpha_matting_foreground_threshold=240,
+                    # alpha_matting_background_threshold=10,
+                    # alpha_matting_erode_size=10
+                )
 
                 # Make Square (Padding with transparent background)
                 t_width, t_height = transparent_img.size
