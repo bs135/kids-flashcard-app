@@ -28,20 +28,20 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   const [isWon, setIsWon] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  
+
   const [targetCard, setTargetCard] = useState(null);
   const [displayCards, setDisplayCards] = useState([]);
   const [shakingCardId, setShakingCardId] = useState(null);
   const [currentPrompt, setCurrentPrompt] = useState('');
 
-  // Turn Timer (5s)
-  const [turnTimeLeft, setTurnTimeLeft] = useState(5);
+  // Turn Timer (10s)
+  const [turnTimeLeft, setTurnTimeLeft] = useState(10);
   const roundTimerRef = useRef(null);
 
-  // Session Timer (30s)
-  const [totalTimeLeft, setTotalTimeLeft] = useState(30);
+  // Session Timer (45s)
+  const [totalTimeLeft, setTotalTimeLeft] = useState(45);
   const totalTimerRef = useRef(null);
-  
+
   const speakTimeoutRef = useRef(null);
   const nextRoundTimeoutRef = useRef(null);
 
@@ -79,7 +79,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
     if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
     if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
     stopSpeech();
-    
+
     setIsGameOver(true);
     setIsChecking(false);
     try { if (soundEffects.playWin) soundEffects.playWin(); } catch (e) {}
@@ -87,7 +87,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
 
   const handleTimeout = () => {
     if (roundTimerRef.current) clearInterval(roundTimerRef.current);
-    
+
     // 1. Tuyệt đối KHÔNG tăng điểm hay tăng số hình đã đúng
     // 2. Phát âm thanh báo hết giờ
     try { if (soundEffects.playWrong) soundEffects.playWrong(); } catch (e) {}
@@ -107,9 +107,9 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
     setIsWon(false);
     setIsGameOver(false);
     setIsChecking(false);
-    
+
     if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-    setTotalTimeLeft(30);
+    setTotalTimeLeft(45);
     totalTimerRef.current = setInterval(() => {
       setTotalTimeLeft((prev) => {
         if (prev <= 1) {
@@ -127,31 +127,31 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   const nextRound = (poolOverride = null) => {
     const pool = poolOverride || cardsPoolRef.current;
     if (!pool || pool.length === 0) return;
-    
+
     setIsChecking(false);
-    
+
     const target = pool[Math.floor(Math.random() * pool.length)];
     let distractors = pool.filter(c => c.id !== target.id);
     distractors = distractors.sort(() => 0.5 - Math.random());
-    
+
     // Pick 4 distractors (5 cards total)
     let selectedDistractors = distractors.slice(0, 4);
     while (selectedDistractors.length < 4 && pool.length > 1) {
-       selectedDistractors.push(distractors[Math.floor(Math.random() * distractors.length)]);
+      selectedDistractors.push(distractors[Math.floor(Math.random() * distractors.length)]);
     }
 
     const allRoundCards = [target, ...selectedDistractors].sort(() => 0.5 - Math.random());
-    
+
     const jitteredCards = allRoundCards.map((c, i) => {
-       const scale = Number((0.7 + Math.random() * 0.6).toFixed(2));
-       return {
-         ...c,
-         uniqueKey: `${c.id}-${i}-${Date.now()}`,
-         scale: scale,
-         rotate: Math.random() * 30 - 15,
-         offsetX: Math.random() * 20 - 10,
-         offsetY: Math.random() * 20 - 10
-       };
+      const scale = Number((0.7 + Math.random() * 0.6).toFixed(2));
+      return {
+        ...c,
+        uniqueKey: `${c.id}-${i}-${Date.now()}`,
+        scale: scale,
+        rotate: Math.random() * 30 - 15,
+        offsetX: Math.random() * 20 - 10,
+        offsetY: Math.random() * 20 - 10
+      };
     });
 
     const promptText = generateQuestionPrompt(target, selectedTopicId);
@@ -159,9 +159,9 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
     setTargetCard(target);
     setDisplayCards(jitteredCards);
     setCurrentPrompt(promptText);
-    
+
     if (roundTimerRef.current) clearInterval(roundTimerRef.current);
-    setTurnTimeLeft(5);
+    setTurnTimeLeft(10);
     roundTimerRef.current = setInterval(() => {
       setTurnTimeLeft((prev) => {
         if (prev <= 1) {
@@ -172,7 +172,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
         return prev - 1;
       });
     }, 1000);
-    
+
     if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
     speakTimeoutRef.current = setTimeout(() => {
       speakWord(promptText);
@@ -186,35 +186,35 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
       setIsChecking(true);
       if (roundTimerRef.current) clearInterval(roundTimerRef.current);
       if (soundEffects.playCorrect) soundEffects.playCorrect();
-      
+
       setScore(s => s + 10);
       setCorrectCount(c => {
-         const newCount = c + 1;
-         if (newCount >= 10) {
-            if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-            if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
-            if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
-            stopSpeech();
-            
-            nextRoundTimeoutRef.current = setTimeout(() => {
-              setIsWon(true);
-              setIsChecking(false);
-              if (soundEffects.playWin) soundEffects.playWin();
-              confetti({
-                particleCount: 150,
-                spread: 80,
-                origin: { y: 0.6 },
-                colors: ['#FBBF24', '#34D399', '#60A5FA', '#F87171']
-              });
-              if (onEarnStar) onEarnStar(1);
-            }, 600);
-         } else {
-            if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
-            nextRoundTimeoutRef.current = setTimeout(() => {
-              nextRound();
-            }, 600);
-         }
-         return newCount;
+        const newCount = c + 1;
+        if (newCount >= 10) {
+          if (totalTimerRef.current) clearInterval(totalTimerRef.current);
+          if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
+          if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
+          stopSpeech();
+
+          nextRoundTimeoutRef.current = setTimeout(() => {
+            setIsWon(true);
+            setIsChecking(false);
+            if (soundEffects.playWin) soundEffects.playWin();
+            confetti({
+              particleCount: 150,
+              spread: 80,
+              origin: { y: 0.6 },
+              colors: ['#FBBF24', '#34D399', '#60A5FA', '#F87171']
+            });
+            if (onEarnStar) onEarnStar(1);
+          }, 600);
+        } else {
+          if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
+          nextRoundTimeoutRef.current = setTimeout(() => {
+            nextRound();
+          }, 600);
+        }
+        return newCount;
       });
     } else {
       if (soundEffects.playWrong) soundEffects.playWrong();
@@ -260,9 +260,9 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
             }}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-colors ${
               selectedTopicId === t.id 
-                ? 'bg-fuchsia-100 text-fuchsia-700 border-2 border-fuchsia-300' 
+                ? 'bg-fuchsia-100 text-fuchsia-700 border-2 border-fuchsia-300'
                 : 'bg-slate-50 text-slate-600 border-2 border-transparent hover:bg-slate-100'
-            }`}
+              }`}
           >
             {t.icon} {t.name_vi}
           </button>
@@ -272,7 +272,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
       {/* Zone 2: Center Workspace */}
       <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col p-1.5 sm:p-3 relative">
         <div className="relative flex-1 min-h-0 w-full bg-gradient-to-b from-fuchsia-50 via-purple-50 to-white rounded-2xl sm:rounded-3xl border-3 sm:border-4 border-fuchsia-300 shadow-bouncy overflow-hidden p-1.5 sm:p-4 flex flex-col">
-          
+
           {(!isWon && !isGameOver) ? (
             <div className="flex flex-col h-full flex-1 min-h-0 relative z-20">
               {/* Target Prompt Box */}
@@ -280,13 +280,13 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
                 <div className="flex items-center justify-center gap-3 sm:gap-6 w-full">
                   <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-black text-xs sm:text-sm border-2 transition-colors ${
                     totalTimeLeft <= 10 ? 'bg-rose-100 border-rose-300 text-rose-600 animate-pulse' : 'bg-indigo-100 border-indigo-300 text-indigo-800'
-                  }`}>
+                    }`}>
                     <span>⏳ Tổng:</span>
                     <span>{totalTimeLeft}s</span>
                   </div>
                   <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-black text-xs sm:text-sm border-2 transition-colors ${
                     turnTimeLeft <= 2 ? 'bg-rose-100 border-rose-300 text-rose-600 animate-pulse' : 'bg-amber-100 border-amber-300 text-amber-800'
-                  }`}>
+                    }`}>
                     <span>⏱️ Vòng:</span>
                     <span>{turnTimeLeft}s</span>
                   </div>
@@ -330,7 +330,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
                           isShaking
                             ? { x: [-8, 8, -6, 6, -3, 3, 0] }
                             : isCorrect
-                            ? { scale: [1, 1.2, 1], rotate: [c.rotate, 0, c.rotate] }
+                              ? { scale: [1, 1.2, 1], rotate: [c.rotate, 0, c.rotate] }
                             : { y: [0, -4, 0], transition: { repeat: Infinity, duration: 2 + Math.random()*2 } }
                         }
                         style={{
@@ -344,7 +344,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
                         onClick={() => handleCardClick(c)}
                         className={`relative w-[100px] h-[100px] sm:w-[130px] sm:h-[130px] aspect-square rounded-2xl sm:rounded-3xl bg-white border-4 shadow-md hover:shadow-lg flex items-center justify-center cursor-pointer select-none overflow-hidden shrink-0 ${
                           isCorrect ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.8)] z-20' : 'border-white/80 hover:border-fuchsia-300'
-                        }`}
+                          }`}
                       >
                         <img
                           src={`${c.image_url}?t=${c.id}`}
@@ -417,7 +417,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
       {/* Zone 3: Bottom Controls (shrink-0) */}
       <div className="shrink-0 p-3 sm:p-4 bg-white/80 border-t border-slate-200 flex items-center justify-between">
         <div className="text-slate-600 font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 truncate mr-2">
-           <Search className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-500 shrink-0" /> <span className="truncate">Hãy chạm vào đúng hình bé nghe thấy!</span>
+          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-500 shrink-0" /> <span className="truncate">Hãy chạm vào đúng hình bé nghe thấy!</span>
         </div>
         <div className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border-2 shadow-sm font-extrabold text-xs sm:text-sm shrink-0 bg-white border-fuchsia-200 text-fuchsia-800">
           <span>✅ Đã tìm: {correctCount}/10</span>
