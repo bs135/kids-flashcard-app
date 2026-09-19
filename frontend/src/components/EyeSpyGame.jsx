@@ -34,8 +34,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   const [shakingCardId, setShakingCardId] = useState(null);
   const [currentPrompt, setCurrentPrompt] = useState('');
 
-  // Total session countdown timer (30s)
-  const [totalTimeLeft, setTotalTimeLeft] = useState(45);
+const [totalTimeLeft, setTotalTimeLeft] = useState(30);
   const totalTimerRef = useRef(null);
 
   const speakTimeoutRef = useRef(null);
