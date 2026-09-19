@@ -219,12 +219,12 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
           <button
             key={t.id}
             onClick={() => {
-              if (!isPlaying) {
+              if (!isPlaying || isWon) {
                 if (soundEffects.playPop) soundEffects.playPop();
                 setSelectedTopicId(t.id);
               }
             }}
-            disabled={isPlaying}
+            disabled={isPlaying && !isWon}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-colors ${
               selectedTopicId === t.id 
                 ? 'bg-amber-100 text-amber-700 border-2 border-amber-300' 
