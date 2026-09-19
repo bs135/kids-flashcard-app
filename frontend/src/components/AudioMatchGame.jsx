@@ -29,6 +29,7 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
   
   const [isChecking, setIsChecking] = useState(false);
   const [score, setScore] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isWon, setIsWon] = useState(false);
   const [shakeId, setShakeId] = useState(null); // for mismatch animation
 
@@ -44,7 +45,8 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
           const data = await res.json();
           const list = data.cards || [];
           setCardsPool(list);
-          initBoard(list);
+          setIsPlaying(false);
+          setIsWon(false);
         }
       } catch (e) {
         console.error('Error loading cards for AudioMatchGame:', e);
@@ -52,6 +54,13 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
     }
     loadTopicCards();
   }, [selectedTopicId]);
+
+    const startGame = () => {
+    if (soundEffects.playPop) soundEffects.playPop();
+    setIsPlaying(true);
+    setIsWon(false);
+    initBoard(cardsPool);
+  };
 
   const initBoard = (pool) => {
     if (!pool || pool.length < 4) return;
@@ -179,12 +188,18 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
         {topics.map(topic => (
           <button
             key={topic.id}
-            onClick={() => setSelectedTopicId(topic.id)}
+            onClick={() => {
+              if (!isPlaying) {
+                if (soundEffects.playPop) soundEffects.playPop();
+                setSelectedTopicId(topic.id);
+              }
+            }}
+            disabled={isPlaying}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-colors ${
               selectedTopicId === topic.id 
                 ? 'bg-sky-100 text-sky-700 border-2 border-sky-300' 
                 : 'bg-slate-50 text-slate-600 border-2 border-transparent hover:bg-slate-100'
-            }`}
+            } ${isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {topic.icon} {topic.name_vi}
           </button>
@@ -197,6 +212,26 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
           <div className="text-center p-6 bg-white rounded-3xl shadow-sm">
             <p className="text-lg font-bold text-slate-500">Chủ đề này chưa đủ 4 thẻ để chơi.</p>
             <p className="text-sm text-slate-400 mt-2">Vui lòng chọn chủ đề khác!</p>
+          </div>
+        ) : !isPlaying && !isWon ? (
+          <div className="relative z-20 my-auto text-center py-4 sm:py-8 animate-fade-in flex flex-col items-center justify-center h-full w-full">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-4 rounded-3xl bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center text-3xl sm:text-5xl shadow-lg border-4 border-white animate-bounce">
+              🎧
+            </div>
+            <h3 className="text-2xl sm:text-4xl font-black text-slate-800 font-kids mb-1.5 sm:mb-2">
+              Nghe Âm Đoán Hình
+            </h3>
+            <p className="text-slate-600 max-w-md mx-auto text-xs sm:text-base font-medium mb-4 sm:mb-6 px-2">
+              Lắng nghe âm thanh phát ra từ chiếc loa và chạm vào hình ảnh tương ứng để ghép cặp chuẩn xác nhé! 🎵
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={startGame}
+              className="bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-sm sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3.5 rounded-full shadow-lg border-2 sm:border-3 border-amber-300 cursor-pointer"
+            >
+              BẮT ĐẦU CHƠI NGAY 🚀
+            </motion.button>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full h-full max-h-full items-stretch">

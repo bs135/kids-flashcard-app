@@ -24,6 +24,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
   const [flippedIndices, setFlippedIndices] = useState([]);
   const [matchedIds, setMatchedIds] = useState(new Set());
   const [moves, setMoves] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isWon, setIsWon] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
@@ -43,7 +44,8 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
           const data = await res.json();
           const list = data.cards || [];
           setCardsPool(list);
-          initBoard(list);
+          setIsPlaying(false);
+          setIsWon(false);
         }
       } catch (e) {
         console.error('Error loading cards for Memory Game:', e);
@@ -53,6 +55,13 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
   }, [selectedTopicId]);
 
   // Initialize board (pick 4-6 pairs = 8 or 12 cards)
+    const startGame = () => {
+    if (soundEffects.playPop) soundEffects.playPop();
+    setIsPlaying(true);
+    setIsWon(false);
+    initBoard(cardsPool);
+  };
+
   const initBoard = (pool) => {
     if (!pool || pool.length < 4) return;
 
@@ -210,14 +219,17 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
           <button
             key={t.id}
             onClick={() => {
-              soundEffects.playPop();
-              setSelectedTopicId(t.id);
+              if (!isPlaying) {
+                if (soundEffects.playPop) soundEffects.playPop();
+                setSelectedTopicId(t.id);
+              }
             }}
+            disabled={isPlaying}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-colors ${
               selectedTopicId === t.id 
                 ? 'bg-amber-100 text-amber-700 border-2 border-amber-300' 
                 : 'bg-slate-50 text-slate-600 border-2 border-transparent hover:bg-slate-100'
-            }`}
+            } ${isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {t.icon} {t.name_vi}
           </button>
@@ -229,7 +241,65 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
         <div className="memory-arena relative flex-1 min-h-0 w-full bg-gradient-to-b from-amber-50 via-orange-50 to-white rounded-2xl sm:rounded-3xl border-3 sm:border-4 border-amber-300 shadow-bouncy overflow-hidden p-1 sm:p-3 flex flex-col justify-between">
           
           {/* Card grid container (dynamically derived aspect-ratio and grid geometry based on card count) */}
-          {!isWon ? (
+          {cardsPool.length < 4 ? (
+            <div className="text-center p-6 bg-white rounded-3xl shadow-sm m-auto">
+              <p className="text-lg font-bold text-slate-500">Chủ đề này chưa đủ thẻ để chơi.</p>
+              <p className="text-sm text-slate-400 mt-2">Vui lòng chọn chủ đề khác!</p>
+            </div>
+          ) : !isPlaying ? (
+            <div className="relative z-20 my-auto text-center py-4 sm:py-8 animate-fade-in flex flex-col items-center justify-center h-full w-full">
+              <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-4 rounded-3xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-3xl sm:text-5xl shadow-lg border-4 border-white animate-bounce">
+                🧩
+              </div>
+              <h3 className="text-2xl sm:text-4xl font-black text-slate-800 font-kids mb-1.5 sm:mb-2">
+                Lật Thẻ Trí Nhớ
+              </h3>
+              <p className="text-slate-600 max-w-md mx-auto text-xs sm:text-base font-medium mb-4 sm:mb-6 px-2">
+                Lật mở từng cặp thẻ để tìm ra hình ảnh và từ vựng tương ứng. Hãy thử tài trí nhớ siêu phàm của bé nào! ✨
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={startGame}
+                className="bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-sm sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3.5 rounded-full shadow-lg border-2 sm:border-3 border-amber-300 cursor-pointer"
+              >
+                BẮT ĐẦU CHƠI NGAY 🚀
+              </motion.button>
+            </div>
+          ) : isWon ? (
+            /* Victory celebration screen */
+            <div className="relative z-20 my-auto text-center py-8 animate-fade-in flex flex-col h-full items-center justify-center">
+              <div className="text-5xl sm:text-7xl mb-3 animate-bounce shrink-0">🎉</div>
+              <h3 className="text-2xl sm:text-4xl font-black text-slate-800 font-kids mb-2 shrink-0">
+                Bé Có Trí Nhớ Siêu Đỉnh!
+              </h3>
+              <p className="text-slate-600 font-semibold mb-6 text-sm sm:text-base px-2 shrink-0">
+                Bé đã tìm đúng toàn bộ các cặp từ vựng và hình ảnh sau <strong>{moves}</strong> lượt lật!
+              </p>
+
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-100 to-yellow-200 border-2 border-amber-300 px-6 py-2.5 rounded-2xl shadow-sm mb-6 shrink-0">
+                <Star className="w-6 h-6 sm:w-7 sm:h-7 text-amber-500 fill-amber-400" />
+                <span className="text-lg sm:text-xl font-black text-amber-950 font-kids">
+                  Thưởng Nóng: +5 Sao
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full px-4 shrink-0">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    if (soundEffects.playPop) soundEffects.playPop();
+                    initBoard(cardsPool);
+                  }}
+                  className="flex items-center justify-center gap-2 w-full sm:w-auto bg-gradient-to-r from-emerald-400 to-teal-500 text-white font-black text-sm sm:text-base px-6 py-3 rounded-full shadow-md border-2 border-emerald-300 cursor-pointer shrink-0"
+                >
+                  <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Chơi Lại Ván Mới</span>
+                </motion.button>
+              </div>
+            </div>
+          ) : (
             <div className="flex-1 min-h-0 w-full flex items-center justify-center p-1 sm:p-2 overflow-hidden">
               <div 
                 className={`grid gap-1.5 sm:gap-2.5 h-full max-h-full w-auto max-w-full mx-auto my-auto items-center justify-items-center ${
@@ -311,36 +381,6 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
                     </div>
                   );
                 })}
-              </div>
-            </div>
-          ) : (
-            /* Victory celebration screen */
-            <div className="relative z-20 my-auto text-center py-8 animate-fade-in flex flex-col h-full items-center justify-center">
-              <div className="text-5xl sm:text-7xl mb-3 animate-bounce shrink-0">🎉</div>
-              <h3 className="text-2xl sm:text-4xl font-black text-slate-800 font-kids mb-2 shrink-0">
-                Bé Có Trí Nhớ Siêu Đỉnh!
-              </h3>
-              <p className="text-slate-600 font-semibold mb-6 text-sm sm:text-base px-2 shrink-0">
-                Bé đã tìm đúng toàn bộ các cặp từ vựng và hình ảnh sau <strong>{moves}</strong> lượt lật!
-              </p>
-
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-100 to-yellow-200 border-2 border-amber-300 px-6 py-2.5 rounded-2xl shadow-sm mb-6 shrink-0">
-                <Star className="w-6 h-6 sm:w-7 sm:h-7 text-amber-500 fill-amber-400" />
-                <span className="text-lg sm:text-xl font-black text-amber-950 font-kids">
-                  Thưởng Nóng: +5 Sao
-                </span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full px-4 shrink-0">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => initBoard(cardsPool)}
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto bg-gradient-to-r from-emerald-400 to-teal-500 text-white font-black text-sm sm:text-base px-6 py-3 rounded-full shadow-md border-2 border-emerald-300 cursor-pointer shrink-0"
-                >
-                  <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>Chơi Lại Ván Mới</span>
-                </motion.button>
               </div>
             </div>
           )}
