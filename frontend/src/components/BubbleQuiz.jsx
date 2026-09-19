@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Volume2, Sparkles, Star, Trophy, RefreshCw, X, ArrowLeft, Heart } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Volume2, Star, Trophy, RefreshCw, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundEffects } from '../services/soundEffects';
 import { speakWord } from '../services/speech';

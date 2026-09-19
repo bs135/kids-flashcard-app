@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Trophy, RefreshCw, ArrowLeft, Volume2, Star, Search } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Trophy, RefreshCw, ArrowLeft, Volume2, Search } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundEffects } from '../services/soundEffects';
 import { speakWord, stopSpeech } from '../services/speech';
@@ -34,7 +34,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   const [shakingCardId, setShakingCardId] = useState(null);
   const [currentPrompt, setCurrentPrompt] = useState('');
 
-  // Session Timer (45s)
+  // Total session countdown timer (30s)
   const [totalTimeLeft, setTotalTimeLeft] = useState(45);
   const totalTimerRef = useRef(null);
 
@@ -134,7 +134,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
     let distractors = pool.filter(c => c.id !== target.id);
     distractors = distractors.sort(() => 0.5 - Math.random());
 
-    // Pick 4 distractors (5 cards total)
+    // Pick 4 distractor cards (5 cards total)
     let selectedDistractors = distractors.slice(0, 4);
     while (selectedDistractors.length < 4 && pool.length > 1) {
       selectedDistractors.push(distractors[Math.floor(Math.random() * distractors.length)]);
@@ -160,10 +160,10 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
     setDisplayCards(jitteredCards);
     setCurrentPrompt(promptText);
 
-    // Hủy speech cũ còn sót
+    // Cancel any lingering speech
     stopSpeech();
     
-    // Đặt timeout nhẹ (200ms) để state UI ổn định và âm thanh không bị xung đột với tiếng sfx ting/pop
+    // Short delay (200ms) to stabilize UI state and prevent audio overlap with sound effects
     if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
     speakTimeoutRef.current = setTimeout(() => {
       speakWord(promptText);

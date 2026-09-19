@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Compass, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Compass, Sparkles, ArrowRight } from 'lucide-react';
 import { soundEffects } from '../services/soundEffects';
 
 export default function TopicMap({ topics = [], onSelectTopic, onSelectGame }) {
