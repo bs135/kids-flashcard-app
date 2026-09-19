@@ -189,12 +189,12 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
           <button
             key={topic.id}
             onClick={() => {
-              if (!isPlaying) {
+              if (!isPlaying || isWon) {
                 if (soundEffects.playPop) soundEffects.playPop();
                 setSelectedTopicId(topic.id);
               }
             }}
-            disabled={isPlaying}
+            disabled={isPlaying && !isWon}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-colors ${
               selectedTopicId === topic.id 
                 ? 'bg-sky-100 text-sky-700 border-2 border-sky-300' 
