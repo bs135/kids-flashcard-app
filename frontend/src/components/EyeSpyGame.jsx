@@ -25,6 +25,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
 
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
@@ -58,7 +59,6 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
           const list = data.cards || [];
           setCardsPool(list);
           cardsPoolRef.current = list;
-          startNewGame(list);
         }
       } catch (e) {
         console.error('Error loading cards for Eye Spy Game:', e);
@@ -73,6 +73,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
     if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
     stopSpeech();
 
+    setIsPlaying(false);
     setIsGameOver(true);
     setIsChecking(false);
 
@@ -99,6 +100,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   };
 
   const startNewGame = (pool) => {
+    setIsPlaying(true);
     stopSpeech();
     if (soundEffects.playPop) soundEffects.playPop();
     setScore(0);
@@ -221,14 +223,17 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
           <button
             key={t.id}
             onClick={() => {
-              soundEffects.playPop();
-              setSelectedTopicId(t.id);
+              if (!isPlaying) {
+                soundEffects.playPop();
+                setSelectedTopicId(t.id);
+              }
             }}
+            disabled={isPlaying}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-colors ${
               selectedTopicId === t.id 
                 ? 'bg-fuchsia-100 text-fuchsia-700 border-2 border-fuchsia-300'
                 : 'bg-slate-50 text-slate-600 border-2 border-transparent hover:bg-slate-100'
-              }`}
+              } ${isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {t.icon} {t.name_vi}
           </button>
@@ -239,7 +244,29 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
       <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col p-1.5 sm:p-3 relative">
         <div className="relative flex-1 min-h-0 w-full bg-gradient-to-b from-fuchsia-50 via-purple-50 to-white rounded-2xl sm:rounded-3xl border-3 sm:border-4 border-fuchsia-300 shadow-bouncy overflow-hidden p-1.5 sm:p-4 flex flex-col">
 
-          {(!isGameOver) ? (
+          {(!isPlaying && !isGameOver) && (
+            <div className="relative z-20 my-auto text-center py-2 sm:py-8 flex flex-col h-full items-center justify-center">
+              <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-4 rounded-3xl bg-gradient-to-tr from-fuchsia-400 to-pink-500 flex items-center justify-center text-3xl sm:text-5xl shadow-lg border-4 border-white animate-bounce shrink-0">
+                🔍
+              </div>
+              <h3 className="text-xl sm:text-4xl font-black text-slate-800 font-kids mb-1.5 sm:mb-2 shrink-0">
+                Sẵn sàng chưa bé ơi?
+              </h3>
+              <p className="text-slate-600 max-w-md mx-auto text-xs sm:text-base font-medium mb-4 sm:mb-6 px-2 shrink-0">
+                Lắng nghe từ tiếng Anh được đọc và tinh mắt tìm nhanh đồ vật đang ẩn giấu nhé!
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => startNewGame(cardsPoolRef.current)}
+                className="bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-sm sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3.5 rounded-full shadow-lg border-2 sm:border-3 border-amber-300 cursor-pointer shrink-0"
+              >
+                BẮT ĐẦU CHƠI NGAY 🚀
+              </motion.button>
+            </div>
+          )}
+
+          {(isPlaying && !isGameOver) && (
             <div className="flex flex-col h-full flex-1 min-h-0 relative z-20">
               {/* Target Prompt Box */}
               <div className="shrink-0 text-center my-1 sm:my-2 px-1 flex flex-col items-center gap-2">
@@ -310,7 +337,9 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
                 </div>
               </div>
             </div>
-          ) : (
+          )}
+          
+          {isGameOver && (
             /* Unified Game Over screen */
             <div className="relative z-20 my-auto text-center py-6 animate-fade-in flex flex-col h-full items-center justify-center">
               <div className="text-5xl sm:text-6xl mb-3 animate-bounce shrink-0">🎉</div>
@@ -349,11 +378,13 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
         <div className="text-slate-600 font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 truncate mr-2">
           <Search className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-500 shrink-0" /> <span className="truncate">Hãy chạm vào đúng hình bé nghe thấy!</span>
         </div>
-        <div className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-black text-xs sm:text-sm border-2 shadow-sm shrink-0 transition-colors ${
-          totalTimeLeft <= 10 ? 'bg-rose-100 border-rose-300 text-rose-600 animate-pulse' : 'bg-indigo-100 border-indigo-300 text-indigo-800'
+        <div className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border-2 shadow-sm font-extrabold text-xs sm:text-sm shrink-0 ${
+          totalTimeLeft <= 10 && isPlaying
+            ? 'bg-rose-100 border-rose-300 text-rose-700 animate-bounce' 
+            : 'bg-white border-slate-200 text-slate-700'
         }`}>
-          <span>⏳</span>
-          <span>{totalTimeLeft}s</span>
+          <span>⏱️</span>
+          <span>00:{totalTimeLeft < 10 ? `0${totalTimeLeft}` : totalTimeLeft}</span>
         </div>
       </div>
     </div>
