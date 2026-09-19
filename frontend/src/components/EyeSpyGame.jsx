@@ -34,10 +34,6 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   const [shakingCardId, setShakingCardId] = useState(null);
   const [currentPrompt, setCurrentPrompt] = useState('');
 
-  // Turn Timer (10s)
-  const [turnTimeLeft, setTurnTimeLeft] = useState(10);
-  const roundTimerRef = useRef(null);
-
   // Session Timer (45s)
   const [totalTimeLeft, setTotalTimeLeft] = useState(45);
   const totalTimerRef = useRef(null);
@@ -48,8 +44,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   useEffect(() => {
     return () => {
       stopSpeech();
-      if (roundTimerRef.current) clearInterval(roundTimerRef.current);
-      if (totalTimerRef.current) clearInterval(totalTimerRef.current);
+            if (totalTimerRef.current) clearInterval(totalTimerRef.current);
       if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
       if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
     };
@@ -75,28 +70,13 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
 
   const handleSessionTimeout = () => {
     if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-    if (roundTimerRef.current) clearInterval(roundTimerRef.current);
-    if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
+        if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
     if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
     stopSpeech();
 
     setIsGameOver(true);
     setIsChecking(false);
     try { if (soundEffects.playWin) soundEffects.playWin(); } catch (e) {}
-  };
-
-  const handleTimeout = () => {
-    if (roundTimerRef.current) clearInterval(roundTimerRef.current);
-
-    // 1. Tuyệt đối KHÔNG tăng điểm hay tăng số hình đã đúng
-    // 2. Phát âm thanh báo hết giờ
-    try { if (soundEffects.playWrong) soundEffects.playWrong(); } catch (e) {}
-
-    // 3. Tự động chuyển ngay sang từ & hình mới sau 400ms
-    if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
-    nextRoundTimeoutRef.current = setTimeout(() => {
-      nextRound(); // Gọi hàm bốc từ và sinh câu hỏi ngẫu nhiên mới
-    }, 400);
   };
 
   const startNewGame = (pool) => {
@@ -160,8 +140,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
     setDisplayCards(jitteredCards);
     setCurrentPrompt(promptText);
 
-    if (roundTimerRef.current) clearInterval(roundTimerRef.current);
-    setTurnTimeLeft(10);
+        setTurnTimeLeft(10);
     roundTimerRef.current = setInterval(() => {
       setTurnTimeLeft((prev) => {
         if (prev <= 1) {
@@ -184,8 +163,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
 
     if (card.id === targetCard.id) {
       setIsChecking(true);
-      if (roundTimerRef.current) clearInterval(roundTimerRef.current);
-      if (soundEffects.playCorrect) soundEffects.playCorrect();
+            if (soundEffects.playCorrect) soundEffects.playCorrect();
 
       setScore(s => s + 10);
       setCorrectCount(c => {
@@ -277,16 +255,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
             <div className="flex flex-col h-full flex-1 min-h-0 relative z-20">
               {/* Target Prompt Box */}
               <div className="shrink-0 text-center my-1 sm:my-2 px-1 flex flex-col items-center gap-2">
-                <div className="flex items-center justify-center w-full">
-                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-black text-xs sm:text-sm border-2 transition-colors ${
-                    totalTimeLeft <= 10 ? 'bg-rose-100 border-rose-300 text-rose-600 animate-pulse' : 'bg-indigo-100 border-indigo-300 text-indigo-800'
-                    }`}>
-                    <span>⏳ </span>
-                    <span>{totalTimeLeft}s</span>
-                  </div>
-                </div>
-
-                <div className="inline-flex flex-row items-center gap-2 sm:gap-4 bg-white/95 border-2 sm:border-3 border-fuchsia-300 px-2 sm:px-3 py-2 sm:py-3 rounded-full shadow-md max-w-full mx-auto">
+                <div className="inline-flex flex-row items-center gap-2 sm:gap-4 bg-white/95 border-2 sm:border-3 border-fuchsia-300 px-3 sm:px-6 py-2 sm:py-3 rounded-full shadow-md max-w-full mx-auto">
                   <button
                     onClick={() => {
                       soundEffects.playPop();
@@ -303,16 +272,10 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
                       {currentPrompt}
                     </div>
                     {targetCard && (
-                      <div className={`text-[10px] sm:text-xs font-bold uppercase tracking-wide ${turnTimeLeft === 0 ? 'text-rose-600' : 'text-fuchsia-600'}`}>
-                        {turnTimeLeft === 0 ? "Hết giờ, qua câu mới!" : `Bé tìm "${targetCard.meaning_vi}"!`}
+                      <div className="text-[10px] sm:text-xs font-bold uppercase tracking-wide text-fuchsia-600">
+                        Bé tìm "{targetCard.meaning_vi}"!
                       </div>
                     )}
-                  </div>
-
-                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 flex items-center justify-center font-black text-sm sm:text-base shadow-sm shrink-0 transition-colors ${
-                    turnTimeLeft <= 3 ? 'bg-rose-100 border-rose-300 text-rose-600 animate-pulse' : 'bg-amber-100 border-amber-300 text-amber-800'
-                  }`}>
-                    {turnTimeLeft}
                   </div>
                 </div>
               </div>
@@ -420,8 +383,11 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
         <div className="text-slate-600 font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 truncate mr-2">
           <Search className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-500 shrink-0" /> <span className="truncate">Hãy chạm vào đúng hình bé nghe thấy!</span>
         </div>
-        <div className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border-2 shadow-sm font-extrabold text-xs sm:text-sm shrink-0 bg-white border-fuchsia-200 text-fuchsia-800">
-          <span>✅ Đã tìm: {correctCount}/10</span>
+        <div className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-black text-xs sm:text-sm border-2 shadow-sm shrink-0 transition-colors ${
+          totalTimeLeft <= 10 ? 'bg-rose-100 border-rose-300 text-rose-600 animate-pulse' : 'bg-indigo-100 border-indigo-300 text-indigo-800'
+        }`}>
+          <span>⏳</span>
+          <span>{totalTimeLeft}s</span>
         </div>
       </div>
     </div>
