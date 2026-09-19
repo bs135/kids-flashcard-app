@@ -25,7 +25,6 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
 
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
-  const [isWon, setIsWon] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
@@ -70,13 +69,33 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
 
   const handleSessionTimeout = () => {
     if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-        if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
+    if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
     if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
     stopSpeech();
 
     setIsGameOver(true);
     setIsChecking(false);
+
+    setScore(currentScore => {
+      let stars = 0;
+      if (currentScore >= 100) stars = 3;
+      else if (currentScore >= 50) stars = 2;
+      else if (currentScore > 0) stars = 1;
+
+      if (stars > 0 && onEarnStar) {
+        onEarnStar(stars);
+      }
+      return currentScore;
+    });
+
     try { if (soundEffects.playWin) soundEffects.playWin(); } catch (e) {}
+    
+    confetti({
+      particleCount: 150,
+      spread: 80,
+      origin: { y: 0.6 },
+      colors: ['#FBBF24', '#34D399', '#60A5FA', '#F87171']
+    });
   };
 
   const startNewGame = (pool) => {
@@ -84,7 +103,6 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
     if (soundEffects.playPop) soundEffects.playPop();
     setScore(0);
     setCorrectCount(0);
-    setIsWon(false);
     setIsGameOver(false);
     setIsChecking(false);
 
@@ -151,41 +169,19 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   };
 
   const handleCardClick = (card) => {
-    if (isChecking || isWon || isGameOver) return;
+    if (isChecking || isGameOver) return;
 
     if (card.id === targetCard.id) {
       setIsChecking(true);
-            if (soundEffects.playCorrect) soundEffects.playCorrect();
+      if (soundEffects.playCorrect) soundEffects.playCorrect();
 
       setScore(s => s + 10);
-      setCorrectCount(c => {
-        const newCount = c + 1;
-        if (newCount >= 10) {
-          if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-          if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
-          if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
-          stopSpeech();
+      setCorrectCount(c => c + 1);
 
-          nextRoundTimeoutRef.current = setTimeout(() => {
-            setIsWon(true);
-            setIsChecking(false);
-            if (soundEffects.playWin) soundEffects.playWin();
-            confetti({
-              particleCount: 150,
-              spread: 80,
-              origin: { y: 0.6 },
-              colors: ['#FBBF24', '#34D399', '#60A5FA', '#F87171']
-            });
-            if (onEarnStar) onEarnStar(1);
-          }, 600);
-        } else {
-          if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
-          nextRoundTimeoutRef.current = setTimeout(() => {
-            nextRound();
-          }, 600);
-        }
-        return newCount;
-      });
+      if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
+      nextRoundTimeoutRef.current = setTimeout(() => {
+        nextRound();
+      }, 600);
     } else {
       if (soundEffects.playWrong) soundEffects.playWrong();
       setShakingCardId(card.uniqueKey);
@@ -243,7 +239,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
       <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col p-1.5 sm:p-3 relative">
         <div className="relative flex-1 min-h-0 w-full bg-gradient-to-b from-fuchsia-50 via-purple-50 to-white rounded-2xl sm:rounded-3xl border-3 sm:border-4 border-fuchsia-300 shadow-bouncy overflow-hidden p-1.5 sm:p-4 flex flex-col">
 
-          {(!isWon && !isGameOver) ? (
+          {(!isGameOver) ? (
             <div className="flex flex-col h-full flex-1 min-h-0 relative z-20">
               {/* Target Prompt Box */}
               <div className="shrink-0 text-center my-1 sm:my-2 px-1 flex flex-col items-center gap-2">
@@ -314,43 +310,21 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
                 </div>
               </div>
             </div>
-          ) : isGameOver ? (
-            /* Game Over screen */
-            <div className="relative z-20 my-auto text-center py-6 animate-fade-in flex flex-col h-full items-center justify-center">
-              <div className="text-5xl sm:text-6xl mb-3 shrink-0">⏰</div>
-              <h3 className="text-2xl sm:text-4xl font-black text-rose-600 font-kids mb-2 shrink-0">
-                Hết Giờ Rồi!
-              </h3>
-              <p className="text-slate-600 font-semibold mb-6 text-sm sm:text-base px-2 shrink-0">
-                Bé đã tìm đúng {correctCount}/10 đồ vật. Hãy thử lại để đạt 10/10 nhé!
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full px-4 shrink-0">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => startNewGame(cardsPoolRef.current)}
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto bg-gradient-to-r from-rose-500 to-red-500 text-white font-black text-sm sm:text-base px-6 py-3 rounded-full shadow-md border-2 border-rose-300 cursor-pointer shrink-0"
-                >
-                  <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>Chơi Lại</span>
-                </motion.button>
-              </div>
-            </div>
           ) : (
-            /* Victory celebration screen */
+            /* Unified Game Over screen */
             <div className="relative z-20 my-auto text-center py-6 animate-fade-in flex flex-col h-full items-center justify-center">
               <div className="text-5xl sm:text-6xl mb-3 animate-bounce shrink-0">🎉</div>
-              <h3 className="text-2xl sm:text-4xl font-black text-slate-800 font-kids mb-2 shrink-0">
-                Bé Mắt Tinh Quá!
+              <h3 className="text-2xl sm:text-4xl font-black text-fuchsia-600 font-kids mb-2 shrink-0">
+                Hết Giờ Rồi!
               </h3>
-              <p className="text-slate-600 font-semibold mb-6 text-sm sm:text-base px-2 shrink-0">
-                Bé đã xuất sắc tìm đúng 10/10 đồ vật!
+              <p className="text-slate-600 font-semibold mb-4 text-sm sm:text-base px-2 shrink-0">
+                Bé đã ghi được {score} điểm thật xuất sắc!
               </p>
 
-              <div className="inline-flex items-center gap-3 bg-fuchsia-100 border-2 border-fuchsia-300 px-6 py-2.5 rounded-2xl shadow-sm mb-6 shrink-0">
-                <Star className="w-6 h-6 sm:w-7 sm:h-7 text-amber-500 fill-amber-400" />
-                <span className="text-lg sm:text-xl font-black text-fuchsia-900 font-kids">
-                  Chiến Thắng!
+              <div className="inline-flex items-center gap-2 bg-amber-100 border-2 border-amber-300 px-6 py-2.5 rounded-2xl shadow-sm mb-6 shrink-0">
+                <Trophy className="w-7 h-7 text-amber-500" />
+                <span className="text-xl sm:text-2xl font-black text-amber-950 font-kids">
+                  Tổng Điểm: {score}
                 </span>
               </div>
 
