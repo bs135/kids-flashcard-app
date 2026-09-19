@@ -29,7 +29,7 @@ export default function App() {
 
   // Virtual Pet & Mini-Games state management
   const [isPetOpen, setIsPetOpen] = useState(false);
-  const [activeGame, setActiveGame] = useState(null); // 'bubble' | 'memory' | null
+const [activeGame, setActiveGame] = useState(null); // 'bubble' | 'memory' | 'audio_match' | 'eye_spy' | null
   const [toastMsg, setToastMsg] = useState('');
 
   useEffect(() => {

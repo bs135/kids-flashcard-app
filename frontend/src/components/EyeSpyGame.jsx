@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Trophy, RefreshCw, ArrowLeft, Volume2, Star, Search } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Trophy, RefreshCw, ArrowLeft, Volume2, Search } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundEffects } from '../services/soundEffects';
 import { speakWord, stopSpeech } from '../services/speech';
@@ -25,7 +25,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
 
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
-  const [isWon, setIsWon] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
@@ -34,12 +34,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   const [shakingCardId, setShakingCardId] = useState(null);
   const [currentPrompt, setCurrentPrompt] = useState('');
 
-  // Turn Timer (10s)
-  const [turnTimeLeft, setTurnTimeLeft] = useState(10);
-  const roundTimerRef = useRef(null);
-
-  // Session Timer (45s)
-  const [totalTimeLeft, setTotalTimeLeft] = useState(45);
+const [totalTimeLeft, setTotalTimeLeft] = useState(30);
   const totalTimerRef = useRef(null);
 
   const speakTimeoutRef = useRef(null);
@@ -48,8 +43,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   useEffect(() => {
     return () => {
       stopSpeech();
-      if (roundTimerRef.current) clearInterval(roundTimerRef.current);
-      if (totalTimerRef.current) clearInterval(totalTimerRef.current);
+            if (totalTimerRef.current) clearInterval(totalTimerRef.current);
       if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
       if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
     };
@@ -64,7 +58,6 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
           const list = data.cards || [];
           setCardsPool(list);
           cardsPoolRef.current = list;
-          startNewGame(list);
         }
       } catch (e) {
         console.error('Error loading cards for Eye Spy Game:', e);
@@ -75,41 +68,47 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
 
   const handleSessionTimeout = () => {
     if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-    if (roundTimerRef.current) clearInterval(roundTimerRef.current);
     if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
     if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
     stopSpeech();
 
+    setIsPlaying(false);
     setIsGameOver(true);
     setIsChecking(false);
+
+    setScore(currentScore => {
+      let stars = 0;
+      if (currentScore >= 100) stars = 3;
+      else if (currentScore >= 50) stars = 2;
+      else if (currentScore > 0) stars = 1;
+
+      if (stars > 0 && onEarnStar) {
+        onEarnStar(stars);
+      }
+      return currentScore;
+    });
+
     try { if (soundEffects.playWin) soundEffects.playWin(); } catch (e) {}
-  };
-
-  const handleTimeout = () => {
-    if (roundTimerRef.current) clearInterval(roundTimerRef.current);
-
-    // 1. Tuyệt đối KHÔNG tăng điểm hay tăng số hình đã đúng
-    // 2. Phát âm thanh báo hết giờ
-    try { if (soundEffects.playWrong) soundEffects.playWrong(); } catch (e) {}
-
-    // 3. Tự động chuyển ngay sang từ & hình mới sau 400ms
-    if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
-    nextRoundTimeoutRef.current = setTimeout(() => {
-      nextRound(); // Gọi hàm bốc từ và sinh câu hỏi ngẫu nhiên mới
-    }, 400);
+    
+    confetti({
+      particleCount: 150,
+      spread: 80,
+      origin: { y: 0.6 },
+      colors: ['#FBBF24', '#34D399', '#60A5FA', '#F87171']
+    });
   };
 
   const startNewGame = (pool) => {
+    setIsPlaying(true);
     stopSpeech();
-    soundEffects.playPop();
+    if (soundEffects.playPop) soundEffects.playPop();
     setScore(0);
     setCorrectCount(0);
-    setIsWon(false);
     setIsGameOver(false);
     setIsChecking(false);
 
     if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-    setTotalTimeLeft(45);
+    setTotalTimeLeft(30);
     totalTimerRef.current = setInterval(() => {
       setTotalTimeLeft((prev) => {
         if (prev <= 1) {
@@ -134,7 +133,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
     let distractors = pool.filter(c => c.id !== target.id);
     distractors = distractors.sort(() => 0.5 - Math.random());
 
-    // Pick 4 distractors (5 cards total)
+    // Pick 4 distractor cards (5 cards total)
     let selectedDistractors = distractors.slice(0, 4);
     while (selectedDistractors.length < 4 && pool.length > 1) {
       selectedDistractors.push(distractors[Math.floor(Math.random() * distractors.length)]);
@@ -160,62 +159,30 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
     setDisplayCards(jitteredCards);
     setCurrentPrompt(promptText);
 
-    if (roundTimerRef.current) clearInterval(roundTimerRef.current);
-    setTurnTimeLeft(10);
-    roundTimerRef.current = setInterval(() => {
-      setTurnTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(roundTimerRef.current);
-          handleTimeout();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
+    // Cancel any lingering speech
+    stopSpeech();
+    
+    // Short delay (200ms) to stabilize UI state and prevent audio overlap with sound effects
     if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
     speakTimeoutRef.current = setTimeout(() => {
       speakWord(promptText);
-    }, 300);
+    }, 200);
   };
 
   const handleCardClick = (card) => {
-    if (isChecking || isWon || isGameOver) return;
+    if (isChecking || isGameOver) return;
 
     if (card.id === targetCard.id) {
       setIsChecking(true);
-      if (roundTimerRef.current) clearInterval(roundTimerRef.current);
       if (soundEffects.playCorrect) soundEffects.playCorrect();
 
       setScore(s => s + 10);
-      setCorrectCount(c => {
-        const newCount = c + 1;
-        if (newCount >= 10) {
-          if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-          if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
-          if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
-          stopSpeech();
+      setCorrectCount(c => c + 1);
 
-          nextRoundTimeoutRef.current = setTimeout(() => {
-            setIsWon(true);
-            setIsChecking(false);
-            if (soundEffects.playWin) soundEffects.playWin();
-            confetti({
-              particleCount: 150,
-              spread: 80,
-              origin: { y: 0.6 },
-              colors: ['#FBBF24', '#34D399', '#60A5FA', '#F87171']
-            });
-            if (onEarnStar) onEarnStar(1);
-          }, 600);
-        } else {
-          if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
-          nextRoundTimeoutRef.current = setTimeout(() => {
-            nextRound();
-          }, 600);
-        }
-        return newCount;
-      });
+      if (nextRoundTimeoutRef.current) clearTimeout(nextRoundTimeoutRef.current);
+      nextRoundTimeoutRef.current = setTimeout(() => {
+        nextRound();
+      }, 600);
     } else {
       if (soundEffects.playWrong) soundEffects.playWrong();
       setShakingCardId(card.uniqueKey);
@@ -255,14 +222,17 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
           <button
             key={t.id}
             onClick={() => {
-              soundEffects.playPop();
-              setSelectedTopicId(t.id);
+              if (!isPlaying) {
+                soundEffects.playPop();
+                setSelectedTopicId(t.id);
+              }
             }}
+            disabled={isPlaying}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-colors ${
               selectedTopicId === t.id 
                 ? 'bg-fuchsia-100 text-fuchsia-700 border-2 border-fuchsia-300'
                 : 'bg-slate-50 text-slate-600 border-2 border-transparent hover:bg-slate-100'
-              }`}
+              } ${isPlaying ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {t.icon} {t.name_vi}
           </button>
@@ -273,20 +243,33 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
       <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col p-1.5 sm:p-3 relative">
         <div className="relative flex-1 min-h-0 w-full bg-gradient-to-b from-fuchsia-50 via-purple-50 to-white rounded-2xl sm:rounded-3xl border-3 sm:border-4 border-fuchsia-300 shadow-bouncy overflow-hidden p-1.5 sm:p-4 flex flex-col">
 
-          {(!isWon && !isGameOver) ? (
+          {(!isPlaying && !isGameOver) && (
+            <div className="relative z-20 my-auto text-center py-2 sm:py-8 flex flex-col h-full items-center justify-center">
+              <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-4 rounded-3xl bg-gradient-to-tr from-fuchsia-400 to-pink-500 flex items-center justify-center text-3xl sm:text-5xl shadow-lg border-4 border-white animate-bounce shrink-0">
+                🔍
+              </div>
+              <h3 className="text-xl sm:text-4xl font-black text-slate-800 font-kids mb-1.5 sm:mb-2 shrink-0">
+                Sẵn sàng chưa bé ơi?
+              </h3>
+              <p className="text-slate-600 max-w-md mx-auto text-xs sm:text-base font-medium mb-4 sm:mb-6 px-2 shrink-0">
+                Lắng nghe từ tiếng Anh được đọc và tinh mắt tìm nhanh đồ vật đang ẩn giấu nhé!
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+onClick={() => cardsPool.length > 0 && startNewGame(cardsPoolRef.current)}
+                className="bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-sm sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3.5 rounded-full shadow-lg border-2 sm:border-3 border-amber-300 cursor-pointer shrink-0"
+              >
+                BẮT ĐẦU CHƠI NGAY 🚀
+              </motion.button>
+            </div>
+          )}
+
+          {(isPlaying && !isGameOver) && (
             <div className="flex flex-col h-full flex-1 min-h-0 relative z-20">
               {/* Target Prompt Box */}
               <div className="shrink-0 text-center my-1 sm:my-2 px-1 flex flex-col items-center gap-2">
-                <div className="flex items-center justify-center w-full">
-                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-black text-xs sm:text-sm border-2 transition-colors ${
-                    totalTimeLeft <= 10 ? 'bg-rose-100 border-rose-300 text-rose-600 animate-pulse' : 'bg-indigo-100 border-indigo-300 text-indigo-800'
-                    }`}>
-                    <span>⏳ </span>
-                    <span>{totalTimeLeft}s</span>
-                  </div>
-                </div>
-
-                <div className="inline-flex flex-row items-center gap-2 sm:gap-4 bg-white/95 border-2 sm:border-3 border-fuchsia-300 px-2 sm:px-3 py-2 sm:py-3 rounded-full shadow-md max-w-full mx-auto">
+                <div className="inline-flex flex-row items-center gap-2 sm:gap-4 bg-white/95 border-2 sm:border-3 border-fuchsia-300 px-3 sm:px-6 py-2 sm:py-3 rounded-full shadow-md max-w-full mx-auto">
                   <button
                     onClick={() => {
                       soundEffects.playPop();
@@ -303,16 +286,10 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
                       {currentPrompt}
                     </div>
                     {targetCard && (
-                      <div className={`text-[10px] sm:text-xs font-bold uppercase tracking-wide ${turnTimeLeft === 0 ? 'text-rose-600' : 'text-fuchsia-600'}`}>
-                        {turnTimeLeft === 0 ? "Hết giờ, qua câu mới!" : `Bé tìm "${targetCard.meaning_vi}"!`}
+                      <div className="text-[10px] sm:text-xs font-bold uppercase tracking-wide text-fuchsia-600">
+                        Bé tìm "{targetCard.meaning_vi}"!
                       </div>
                     )}
-                  </div>
-
-                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 flex items-center justify-center font-black text-sm sm:text-base shadow-sm shrink-0 transition-colors ${
-                    turnTimeLeft <= 3 ? 'bg-rose-100 border-rose-300 text-rose-600 animate-pulse' : 'bg-amber-100 border-amber-300 text-amber-800'
-                  }`}>
-                    {turnTimeLeft}
                   </div>
                 </div>
               </div>
@@ -359,43 +336,23 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
                 </div>
               </div>
             </div>
-          ) : isGameOver ? (
-            /* Game Over screen */
-            <div className="relative z-20 my-auto text-center py-6 animate-fade-in flex flex-col h-full items-center justify-center">
-              <div className="text-5xl sm:text-6xl mb-3 shrink-0">⏰</div>
-              <h3 className="text-2xl sm:text-4xl font-black text-rose-600 font-kids mb-2 shrink-0">
-                Hết Giờ Rồi!
-              </h3>
-              <p className="text-slate-600 font-semibold mb-6 text-sm sm:text-base px-2 shrink-0">
-                Bé đã tìm đúng {correctCount}/10 đồ vật. Hãy thử lại để đạt 10/10 nhé!
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full px-4 shrink-0">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => startNewGame(cardsPoolRef.current)}
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto bg-gradient-to-r from-rose-500 to-red-500 text-white font-black text-sm sm:text-base px-6 py-3 rounded-full shadow-md border-2 border-rose-300 cursor-pointer shrink-0"
-                >
-                  <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>Chơi Lại</span>
-                </motion.button>
-              </div>
-            </div>
-          ) : (
-            /* Victory celebration screen */
+          )}
+          
+          {isGameOver && (
+            /* Unified Game Over screen */
             <div className="relative z-20 my-auto text-center py-6 animate-fade-in flex flex-col h-full items-center justify-center">
               <div className="text-5xl sm:text-6xl mb-3 animate-bounce shrink-0">🎉</div>
-              <h3 className="text-2xl sm:text-4xl font-black text-slate-800 font-kids mb-2 shrink-0">
-                Bé Mắt Tinh Quá!
+              <h3 className="text-2xl sm:text-4xl font-black text-fuchsia-600 font-kids mb-2 shrink-0">
+                Hết Giờ Rồi!
               </h3>
-              <p className="text-slate-600 font-semibold mb-6 text-sm sm:text-base px-2 shrink-0">
-                Bé đã xuất sắc tìm đúng 10/10 đồ vật!
+              <p className="text-slate-600 font-semibold mb-4 text-sm sm:text-base px-2 shrink-0">
+                Bé đã ghi được {score} điểm thật xuất sắc!
               </p>
 
-              <div className="inline-flex items-center gap-3 bg-fuchsia-100 border-2 border-fuchsia-300 px-6 py-2.5 rounded-2xl shadow-sm mb-6 shrink-0">
-                <Star className="w-6 h-6 sm:w-7 sm:h-7 text-amber-500 fill-amber-400" />
-                <span className="text-lg sm:text-xl font-black text-fuchsia-900 font-kids">
-                  Chiến Thắng!
+              <div className="inline-flex items-center gap-2 bg-amber-100 border-2 border-amber-300 px-6 py-2.5 rounded-2xl shadow-sm mb-6 shrink-0">
+                <Trophy className="w-7 h-7 text-amber-500" />
+                <span className="text-xl sm:text-2xl font-black text-amber-950 font-kids">
+                  Tổng Điểm: {score}
                 </span>
               </div>
 
@@ -420,8 +377,13 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
         <div className="text-slate-600 font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 truncate mr-2">
           <Search className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-500 shrink-0" /> <span className="truncate">Hãy chạm vào đúng hình bé nghe thấy!</span>
         </div>
-        <div className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border-2 shadow-sm font-extrabold text-xs sm:text-sm shrink-0 bg-white border-fuchsia-200 text-fuchsia-800">
-          <span>✅ Đã tìm: {correctCount}/10</span>
+        <div className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border-2 shadow-sm font-extrabold text-xs sm:text-sm shrink-0 ${
+          totalTimeLeft <= 10 && isPlaying
+            ? 'bg-rose-100 border-rose-300 text-rose-700 animate-bounce' 
+            : 'bg-white border-slate-200 text-slate-700'
+        }`}>
+          <span>⏱️</span>
+          <span>00:{totalTimeLeft < 10 ? `0${totalTimeLeft}` : totalTimeLeft}</span>
         </div>
       </div>
     </div>

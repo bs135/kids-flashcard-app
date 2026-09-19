@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Volume2, RotateCw, Sparkles, BookOpen } from 'lucide-react';
+import { Volume2, RotateCw, BookOpen } from 'lucide-react';
 import { speakWord, stopSpeech } from '../services/speech';
 import { soundEffects } from '../services/soundEffects';
 

@@ -5,7 +5,7 @@ export function generateQuestionPrompt(card, topicId = '') {
   const lowerWord = word.toLowerCase();
   const isColorTopic = topicId === 'colors' || card.topic_id === 'colors';
 
-  // 1. Nhóm màu sắc
+  // 1. Color group
   if (isColorTopic) {
     const colorTemplates = [
       `Find ${lowerWord}!`,
@@ -17,7 +17,7 @@ export function generateQuestionPrompt(card, topicId = '') {
     return pickRandom(colorTemplates);
   }
 
-  // 2. Nhóm danh từ số nhiều (kết thúc bằng s/es ngoại trừ từ đặc biệt)
+  // 2. Plural nouns group (ending in s/es excluding special cases)
   const isPlural = lowerWord.endsWith('s') && !['bus', 'glass'].includes(lowerWord);
   if (isPlural) {
     const pluralTemplates = [
@@ -30,7 +30,7 @@ export function generateQuestionPrompt(card, topicId = '') {
     return pickRandom(pluralTemplates);
   }
 
-  // 3. Danh từ số ít thông dụng
+  // 3. Common singular nouns
   const singularTemplates = [
     `Where is the ${lowerWord}?`,
     `Can you find the ${lowerWord}?`,
