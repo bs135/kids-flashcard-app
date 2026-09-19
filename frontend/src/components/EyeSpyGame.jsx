@@ -81,7 +81,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
 
   const startNewGame = (pool) => {
     stopSpeech();
-    soundEffects.playPop();
+    if (soundEffects.playPop) soundEffects.playPop();
     setScore(0);
     setCorrectCount(0);
     setIsWon(false);
@@ -89,7 +89,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
     setIsChecking(false);
 
     if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-    setTotalTimeLeft(45);
+    setTotalTimeLeft(30);
     totalTimerRef.current = setInterval(() => {
       setTotalTimeLeft((prev) => {
         if (prev <= 1) {
@@ -140,22 +140,14 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
     setDisplayCards(jitteredCards);
     setCurrentPrompt(promptText);
 
-        setTurnTimeLeft(10);
-    roundTimerRef.current = setInterval(() => {
-      setTurnTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(roundTimerRef.current);
-          handleTimeout();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
+    // Hủy speech cũ còn sót
+    stopSpeech();
+    
+    // Đặt timeout nhẹ (200ms) để state UI ổn định và âm thanh không bị xung đột với tiếng sfx ting/pop
     if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current);
     speakTimeoutRef.current = setTimeout(() => {
       speakWord(promptText);
-    }, 300);
+    }, 200);
   };
 
   const handleCardClick = (card) => {
