@@ -257,7 +257,7 @@ const [totalTimeLeft, setTotalTimeLeft] = useState(30);
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => startNewGame(cardsPoolRef.current)}
+onClick={() => cardsPool.length > 0 && startNewGame(cardsPoolRef.current)}
                 className="bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-sm sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3.5 rounded-full shadow-lg border-2 sm:border-3 border-amber-300 cursor-pointer shrink-0"
               >
                 BẮT ĐẦU CHƠI NGAY 🚀
