@@ -167,6 +167,8 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
     }
   };
 
+  const hasEnoughCards = cards.length >= 4;
+
   return (
     <MiniGameLayout
       title="Bong Bóng Từ Vựng"
@@ -189,6 +191,13 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
       disabledTopic={isPlaying && !isGameOver}
       isPlaying={isPlaying}
       isGameOver={isGameOver}
+      canStartGame={hasEnoughCards}
+      startUnavailableContent={
+        <div className="text-center p-6 bg-white rounded-3xl shadow-sm m-auto">
+          <p className="text-lg font-bold text-slate-500">Chủ đề này chưa đủ 4 thẻ để chơi.</p>
+          <p className="text-sm text-slate-400 mt-2">Vui lòng chọn chủ đề khác!</p>
+        </div>
+      }
       onStartGame={startGame}
       startIcon="🫧"
       startTitle="Bong Bóng Từ Vựng"
@@ -216,12 +225,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
         </div>
       }
     >
-      {cards.length < 4 ? (
-        <div className="text-center p-6 bg-white rounded-3xl shadow-sm m-auto">
-          <p className="text-lg font-bold text-slate-500">Chủ đề này chưa đủ 4 thẻ để chơi.</p>
-          <p className="text-sm text-slate-400 mt-2">Vui lòng chọn chủ đề khác!</p>
-        </div>
-      ) : (!isPlaying || !targetCard) ? null : (
+      {(!isPlaying || !targetCard) ? null : (
         <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center p-1 sm:p-2">
           <div className="flex flex-col h-full flex-1 min-h-0 relative z-20">
               {/* Target word pronunciation box */}

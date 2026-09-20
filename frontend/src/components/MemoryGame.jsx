@@ -189,6 +189,8 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
     } catch (e) {}
   };
 
+  const hasEnoughCards = cardsPool.length >= 4;
+
   return (
     <MiniGameLayout
       title="Lật Thẻ Trí Nhớ"
@@ -211,6 +213,13 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
       disabledTopic={isPlaying && !isWon}
       isPlaying={isPlaying}
       isGameOver={isWon}
+      canStartGame={hasEnoughCards}
+      startUnavailableContent={
+        <div className="text-center p-6 bg-white rounded-3xl shadow-sm m-auto">
+          <p className="text-lg font-bold text-slate-500">Chủ đề này chưa đủ thẻ để chơi.</p>
+          <p className="text-sm text-slate-400 mt-2">Vui lòng chọn chủ đề khác!</p>
+        </div>
+      }
       onStartGame={startGame}
       startIcon="🧩"
       startTitle="Lật Thẻ Trí Nhớ"
@@ -234,12 +243,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
         </div>
       }
     >
-      {cardsPool.length < 4 ? (
-        <div className="text-center p-6 bg-white rounded-3xl shadow-sm m-auto">
-          <p className="text-lg font-bold text-slate-500">Chủ đề này chưa đủ thẻ để chơi.</p>
-          <p className="text-sm text-slate-400 mt-2">Vui lòng chọn chủ đề khác!</p>
-        </div>
-      ) : (
+      {isPlaying ? (
         <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center p-1 sm:p-2">
           <div 
                 className={`grid gap-1.5 sm:gap-2.5 h-full max-h-full w-auto max-w-full mx-auto my-auto items-center justify-items-center ${
@@ -323,7 +327,8 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
                 })}
               </div>
         </div>
-      )}
+      ) : null
+      }
     </MiniGameLayout>
   );
 }

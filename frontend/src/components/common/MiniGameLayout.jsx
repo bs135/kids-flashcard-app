@@ -14,6 +14,8 @@ export default function MiniGameLayout({
   isPlaying = false,
   isGameOver = false,
   onStartGame,
+  canStartGame = true,
+  startUnavailableContent = null,
   startIcon = '🎮',
   startTitle,
   startDescription,
@@ -77,26 +79,31 @@ export default function MiniGameLayout({
       {/* Zone 2: Center Workspace (Start Screen / Game Body / Game Over) */}
       <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col items-center justify-center p-2 sm:p-4 relative">
         {!isPlaying && !isGameOver ? (
-          /* Màn hình chào chuẩn hóa */
-          <div className="relative z-20 my-auto text-center py-4 sm:py-8 animate-fade-in flex flex-col items-center justify-center">
-            <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-4 rounded-3xl bg-gradient-to-tr from-amber-400 to-yellow-400 flex items-center justify-center text-3xl sm:text-5xl shadow-lg border-4 border-white animate-bounce">
-              {startIcon}
+          canStartGame ? (
+            /* Màn hình chào chuẩn hóa */
+            <div className="relative z-20 my-auto text-center py-4 sm:py-8 animate-fade-in flex flex-col items-center justify-center">
+              <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-4 rounded-3xl bg-gradient-to-tr from-amber-400 to-yellow-400 flex items-center justify-center text-3xl sm:text-5xl shadow-lg border-4 border-white animate-bounce">
+                {startIcon}
+              </div>
+              <h3 className="text-2xl sm:text-4xl font-black text-slate-800 font-kids mb-1.5 sm:mb-2">
+                {startTitle || title}
+              </h3>
+              <p className="text-slate-600 max-w-md mx-auto text-xs sm:text-base font-medium mb-4 sm:mb-6 px-2">
+                {startDescription}
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => canStartGame && onStartGame && onStartGame()}
+                disabled={!canStartGame}
+                className="bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-sm sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3.5 rounded-full shadow-lg border-2 sm:border-3 border-amber-300 cursor-pointer"
+              >
+                BẮT ĐẦU CHƠI NGAY 🚀
+              </motion.button>
             </div>
-            <h3 className="text-2xl sm:text-4xl font-black text-slate-800 font-kids mb-1.5 sm:mb-2">
-              {startTitle || title}
-            </h3>
-            <p className="text-slate-600 max-w-md mx-auto text-xs sm:text-base font-medium mb-4 sm:mb-6 px-2">
-              {startDescription}
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onStartGame}
-              className="bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-sm sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3.5 rounded-full shadow-lg border-2 sm:border-3 border-amber-300 cursor-pointer"
-            >
-              BẮT ĐẦU CHƠI NGAY 🚀
-            </motion.button>
-          </div>
+          ) : (
+            startUnavailableContent
+          )
         ) : isGameOver ? (
           /* Màn hình kết thúc chuẩn hóa */
           <div className="relative z-20 my-auto text-center py-4 sm:py-8 animate-fade-in flex flex-col items-center justify-center">

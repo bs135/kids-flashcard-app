@@ -193,6 +193,8 @@ const [totalTimeLeft, setTotalTimeLeft] = useState(30);
     }
   };
 
+  const hasEnoughCards = cardsPool.length >= 5;
+
   return (
     <MiniGameLayout
       title="Ai Tinh Mắt"
@@ -215,6 +217,13 @@ const [totalTimeLeft, setTotalTimeLeft] = useState(30);
       disabledTopic={isPlaying && !isGameOver}
       isPlaying={isPlaying}
       isGameOver={isGameOver}
+      canStartGame={hasEnoughCards}
+      startUnavailableContent={
+        <div className="text-center p-6 bg-white rounded-3xl shadow-sm m-auto">
+          <p className="text-lg font-bold text-slate-500">Chủ đề này chưa đủ 5 thẻ để chơi.</p>
+          <p className="text-sm text-slate-400 mt-2">Vui lòng chọn chủ đề khác!</p>
+        </div>
+      }
       onStartGame={() => startNewGame(cardsPoolRef.current)}
       startIcon="👀"
       startTitle="Ai Tinh Mắt"
@@ -242,12 +251,7 @@ const [totalTimeLeft, setTotalTimeLeft] = useState(30);
         </div>
       }
     >
-      {cardsPoolRef.current.length < 5 ? (
-        <div className="text-center p-6 bg-white rounded-3xl shadow-sm m-auto">
-          <p className="text-lg font-bold text-slate-500">Chủ đề này chưa đủ 5 thẻ để chơi.</p>
-          <p className="text-sm text-slate-400 mt-2">Vui lòng chọn chủ đề khác!</p>
-        </div>
-      ) : !isPlaying ? null : (
+      {!isPlaying ? null : (
         <div className="flex-1 w-full h-full min-h-0 flex flex-col items-center justify-center p-1 sm:p-2">
           <div className="shrink-0 text-center my-1 sm:my-2 px-1 flex flex-col items-center gap-2">
                 <div className="inline-flex flex-row items-center gap-2 sm:gap-4 bg-white/95 border-2 sm:border-3 border-fuchsia-300 px-3 sm:px-6 py-2 sm:py-3 rounded-full shadow-md max-w-full mx-auto">

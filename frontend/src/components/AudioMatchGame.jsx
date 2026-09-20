@@ -162,6 +162,8 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
     }
   };
 
+  const hasEnoughCards = cardsPool.length >= 4;
+
   return (
     <MiniGameLayout
       title="Nghe Âm Đoán Hình"
@@ -184,6 +186,13 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
       disabledTopic={isPlaying && !isWon}
       isPlaying={isPlaying}
       isGameOver={isWon}
+      canStartGame={hasEnoughCards}
+      startUnavailableContent={
+        <div className="text-center p-6 bg-white rounded-3xl shadow-sm m-auto">
+          <p className="text-lg font-bold text-slate-500">Chủ đề này chưa đủ 4 thẻ để chơi.</p>
+          <p className="text-sm text-slate-400 mt-2">Vui lòng chọn chủ đề khác!</p>
+        </div>
+      }
       onStartGame={startGame}
       startIcon="🎧"
       startTitle="Nghe Âm Đoán Hình"
@@ -212,12 +221,7 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
         </div>
       }
     >
-      {cardsPool.length < 4 ? (
-        <div className="text-center p-6 bg-white rounded-3xl shadow-sm m-auto">
-          <p className="text-lg font-bold text-slate-500">Chủ đề này chưa đủ 4 thẻ để chơi.</p>
-          <p className="text-sm text-slate-400 mt-2">Vui lòng chọn chủ đề khác!</p>
-        </div>
-      ) : (
+      {isPlaying ? (
         <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center p-1 sm:p-2">
           <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full h-full max-h-full items-stretch">
             {/* Left Column (Audio) */}
@@ -296,7 +300,8 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
             </div>
           </div>
         </div>
-      )}
+      ) : null
+      }
     </MiniGameLayout>
   );
 }
