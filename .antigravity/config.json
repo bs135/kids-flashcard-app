@@ -18,6 +18,7 @@
         "terminal": {
             "policy": "whitelist",
             "allowedCommands": [
+                "^(ls|dir|Get-ChildItem)(\\s+.*)?$",
                 "^npm (test|run|install|ci)(\\s+[a-zA-Z0-9_\\-]+)*$",
                 "^git (status|diff|log|branch)(\\s+[a-zA-Z0-9_\\-\\./~]+)*$",
                 "^npx (eslint|prettier|tsc)(\\s+[a-zA-Z0-9_\\-\\./]+)*$",
