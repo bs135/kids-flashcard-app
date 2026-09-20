@@ -1,7 +1,7 @@
 import MiniGameLayout from './common/MiniGameLayout';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Volume2, Star, Trophy, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Volume2, Star, Trophy, RefreshCw, ArrowLeft, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundEffects } from '../services/soundEffects';
 import { speakWord } from '../services/speech';
@@ -189,11 +189,11 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
       disabledTopic={isPlaying && !isGameOver}
       isPlaying={isPlaying}
       isGameOver={isGameOver}
-      onStartGame={startNewGame}
+      onStartGame={startGame}
       startIcon="🫧"
       startTitle="Bong Bóng Từ Vựng"
       startDescription="Nghe từ vựng và chọn đúng bong bóng tương ứng nhé. Cùng xem bé nổ được bao nhiêu bong bóng nào!"
-      onRestartGame={() => startNewGame()}
+      onRestartGame={() => startGame()}
       gameOverTitle="Hết Giờ Rồi!"
       gameOverSubtitle={`Bé đã ghi được ${score} điểm thật xuất sắc!`}
       gameOverContent={
@@ -216,7 +216,12 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
         </div>
       }
     >
-      {(!isPlaying || !targetCard) ? null : (
+      {cards.length < 4 ? (
+        <div className="text-center p-6 bg-white rounded-3xl shadow-sm m-auto">
+          <p className="text-lg font-bold text-slate-500">Chủ đề này chưa đủ 4 thẻ để chơi.</p>
+          <p className="text-sm text-slate-400 mt-2">Vui lòng chọn chủ đề khác!</p>
+        </div>
+      ) : (!isPlaying || !targetCard) ? null : (
         <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center p-1 sm:p-2">
           <div className="flex flex-col h-full flex-1 min-h-0 relative z-20">
               {/* Target word pronunciation box */}
@@ -246,7 +251,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
               {/* Bubble floating area */}
               <div className="relative flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden p-1 sm:p-2">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-6 items-center justify-center h-full max-h-full aspect-[4/3] sm:aspect-[16/7] w-auto max-w-full px-1 sm:px-6 py-1">
-                  {bubbles.map((b) => {
+                  {(bubbles || []).map((b) => {
                     const isShaking = shakingBubbleId === b.id;
 
                     return (
