@@ -66,7 +66,7 @@ export default function MiniGameLayout({
                       : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                   } ${disabledTopic ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {t.name_vi}
+                  {t.icon} {t.name_vi}
                 </button>
               );
             })}
