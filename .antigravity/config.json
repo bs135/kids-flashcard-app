@@ -18,10 +18,10 @@
         "terminal": {
             "policy": "whitelist",
             "allowedCommands": [
-                "^npm (test|run|install|ci)( .*)?$",
-                "^git (status|diff|log|branch)( .*)?$",
-                "^npx (eslint|prettier|tsc)( .*)?$",
-                "^python\\s+.*\\.gemini[\\\\/]antigravity[\\\\/].*"
+                "^npm (test|run|install|ci)(\\s+[a-zA-Z0-9_\\-]+)*$",
+                "^git (status|diff|log|branch)(\\s+[a-zA-Z0-9_\\-\\./]+)*$",
+                "^npx (eslint|prettier|tsc)(\\s+[a-zA-Z0-9_\\-\\./]+)*$",
+                "^python\\s+[a-zA-Z0-9_\\-\\\\./]+\\.gemini[\\\\/]antigravity[\\\\/][a-zA-Z0-9_\\-\\\\./]+$"
             ],
             "blockedCommands": [
                 "^git commit",

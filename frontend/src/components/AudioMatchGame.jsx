@@ -168,7 +168,7 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
     <MiniGameLayout
       theme="indigo"
       title="Nghe Âm Đoán Hình"
-      icon={<Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-sky-500" />}
+      icon={<Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-500" />}
       onBack={onBack}
       scoreBadge={
         <div className="flex items-center gap-1.5 sm:gap-2 bg-amber-100 text-amber-800 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-bold shadow-sm">

@@ -288,7 +288,7 @@ const [totalTimeLeft, setTotalTimeLeft] = useState(45);
                     const isCorrect = isChecking && c.id === targetCard?.id;
 
                     return (
-                      <motion.div
+                      <motion.button
                         key={c.uniqueKey}
                         animate={
                           isShaking
@@ -316,7 +316,7 @@ const [totalTimeLeft, setTotalTimeLeft] = useState(45);
                           className="w-[75%] h-[75%] object-contain pointer-events-none drop-shadow-sm"
                           loading="eager"
                         />
-                      </motion.div>
+                      </motion.button>
                     );
                   })}
                 </div>

@@ -58,7 +58,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
     pickNextQuestion();
   };
 
-  // 25-second countdown timer
+  // 45-second countdown timer
   useEffect(() => {
     if (isPlaying && timeLeft > 0) {
       timerRef.current = setInterval(() => {

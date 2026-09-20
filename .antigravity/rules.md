@@ -3,7 +3,7 @@
 ## 1. Environment & Shell Conventions
 - Operating System: Windows 11 / 10
 - Default Shell: PowerShell (pwsh / powershell.exe)
-- Workspace Root: C:\Users\BS\work\repos\kids-flashcard-app
+- Workspace Root: (dynamically determined based on environment)
 - Never invoke Unix-specific syntax or POSIX commands (e.g., do not use `export`, `grep`, `sed`, `head`, `tail`).
 - When path separators are needed in terminal commands, use standard Windows or double backslashes/quotes appropriately.
 

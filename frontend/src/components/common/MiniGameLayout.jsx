@@ -7,29 +7,25 @@ const THEMES = {
     outerBorder: 'border-amber-200',
     selectedTopic: 'bg-amber-100 text-amber-900 border-amber-300',
     startIconBg: 'bg-gradient-to-tr from-amber-400 to-yellow-400',
-    button: 'bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 border-amber-300',
-    alertBadge: 'bg-amber-50 border-amber-200 text-amber-800'
+    button: 'bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 border-amber-300'
   },
   sky: {
     outerBorder: 'border-sky-200',
     selectedTopic: 'bg-sky-100 text-sky-900 border-sky-300',
     startIconBg: 'bg-gradient-to-tr from-sky-400 to-cyan-400',
-    button: 'bg-gradient-to-r from-sky-400 to-cyan-400 hover:from-sky-500 hover:to-cyan-500 text-sky-950 border-sky-300',
-    alertBadge: 'bg-sky-50 border-sky-200 text-sky-800'
+    button: 'bg-gradient-to-r from-sky-400 to-cyan-400 hover:from-sky-500 hover:to-cyan-500 text-sky-950 border-sky-300'
   },
   fuchsia: {
     outerBorder: 'border-fuchsia-200',
     selectedTopic: 'bg-fuchsia-100 text-fuchsia-900 border-fuchsia-300',
     startIconBg: 'bg-gradient-to-tr from-fuchsia-400 to-pink-500',
-    button: 'bg-gradient-to-r from-fuchsia-400 to-pink-500 hover:from-fuchsia-500 hover:to-pink-600 text-white border-fuchsia-300',
-    alertBadge: 'bg-fuchsia-50 border-fuchsia-200 text-fuchsia-800'
+    button: 'bg-gradient-to-r from-fuchsia-400 to-pink-500 hover:from-fuchsia-500 hover:to-pink-600 text-white border-fuchsia-300'
   },
   indigo: {
     outerBorder: 'border-indigo-200',
     selectedTopic: 'bg-indigo-100 text-indigo-900 border-indigo-300',
     startIconBg: 'bg-gradient-to-tr from-indigo-400 to-violet-500',
-    button: 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white border-indigo-300',
-    alertBadge: 'bg-indigo-50 border-indigo-200 text-indigo-800'
+    button: 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white border-indigo-300'
   }
 };
 
