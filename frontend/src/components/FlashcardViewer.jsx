@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Home, CheckCircle2, RotateCcw, Award, Shuffle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, RotateCcw, Award, Shuffle } from 'lucide-react';
 import Flashcard from './Flashcard';
 import { soundEffects } from '../services/soundEffects';
 

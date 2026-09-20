@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, X, ShieldAlert, Check } from 'lucide-react';
+import { Lock, X, ShieldAlert } from 'lucide-react';
 import { soundEffects } from '../services/soundEffects';
 
 export default function ParentalGateModal({ isOpen, onClose, onSuccess }) {
