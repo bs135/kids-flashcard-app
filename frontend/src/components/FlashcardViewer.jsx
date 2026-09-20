@@ -6,36 +6,42 @@ import Flashcard from './Flashcard';
 import { soundEffects } from '../services/soundEffects';
 
 export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEarnStar }) {
-  // Manage random 5-card deck for each study session
+  // Manage random 10-card deck for each study session
   const [activeCards, setActiveCards] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [maxIndexReached, setMaxIndexReached] = useState(0);
 
-  // Randomly selects 5 cards from card pool
+  // Randomly selects 10 cards from card pool
   const pickRandomCards = (sourceCards) => {
     if (!sourceCards || sourceCards.length === 0) return [];
     const shuffled = [...sourceCards].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 5);
+    return shuffled.slice(0, 10);
   };
 
-  // Initialize 5-card session when topic or card pool changes
+  // Initialize 10-card session when topic or card pool changes
   useEffect(() => {
     setActiveCards(pickRandomCards(cards));
     setCurrentIndex(0);
+    setMaxIndexReached(0);
     setIsFlipped(false);
+    setHasInteracted(false);
     setIsCompleted(false);
   }, [cards, topic?.id]);
 
   const currentCard = activeCards[currentIndex];
   const progressPercent = activeCards.length > 0 ? Math.round(((currentIndex + 1) / activeCards.length) * 100) : 0;
 
-  // Shuffle a new session (5 random cards)
+  // Shuffle a new session (10 random cards)
   const handleShuffleNewSession = () => {
     soundEffects.playPop();
     setActiveCards(pickRandomCards(cards));
     setCurrentIndex(0);
+    setMaxIndexReached(0);
     setIsFlipped(false);
+    setHasInteracted(false);
     setIsCompleted(false);
   };
 
@@ -43,11 +49,16 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
   const handleNext = () => {
     soundEffects.playPop();
     setIsFlipped(false);
+    setHasInteracted(false);
 
     if (currentIndex < activeCards.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+      setCurrentIndex(prev => {
+        const nextIdx = prev + 1;
+        setMaxIndexReached(m => Math.max(m, nextIdx));
+        return nextIdx;
+      });
     } else {
-      // Child completed all 5 cards in current session
+      // Child completed all 10 cards in current session
       triggerCompletion();
     }
   };
@@ -57,6 +68,7 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
     if (currentIndex > 0) {
       soundEffects.playPop();
       setIsFlipped(false);
+      setHasInteracted(false);
       setCurrentIndex(prev => prev - 1);
     }
   };
@@ -82,10 +94,12 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
     handleShuffleNewSession();
   };
 
+  const canGoNext = hasInteracted || currentIndex < maxIndexReached;
+
   return (
     <div className="w-full h-full flex flex-col justify-between overflow-hidden">
       {/* Top Section: Navigation bar & Progress bar */}
-      <div className="shrink-0 mb-1 sm:mb-2">
+      <div className="shrink-0 mb-1 sm:mb-2 px-2 sm:px-4">
         {/* Top navigation bar */}
         <div className="flex items-center justify-between gap-1.5 sm:gap-3 mb-1 sm:mb-2">
           {/* Map navigation button */}
@@ -113,7 +127,7 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
             <button
               onClick={handleShuffleNewSession}
               className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 bg-white border-2 border-slate-200 hover:border-purple-400 text-purple-600 rounded-xl shadow-sm transition-all hover:scale-110 active:scale-95 cursor-pointer"
-              title="Xáo trộn 5 thẻ mới"
+              title="Xáo trộn 10 thẻ mới"
             >
               <Shuffle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
@@ -152,7 +166,7 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
                   Bé Giỏi Quá!
                 </h3>
                 <p className="text-xs sm:text-base font-semibold text-slate-600">
-                  Bé đã hoàn thành 5 thẻ từ vựng chủ đề <strong>{topic?.name_vi}</strong>!
+                  Bé đã hoàn thành 10 thẻ từ vựng chủ đề <strong>{topic?.name_vi}</strong>!
                 </p>
               </div>
 
@@ -171,7 +185,7 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
                   className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white font-black px-5 sm:px-6 py-2.5 sm:py-3.5 rounded-2xl shadow-lg transition-transform active:scale-95 text-xs sm:text-base"
                 >
                   <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>Học 5 Thẻ Mới</span>
+                  <span>Học 10 Thẻ Mới</span>
                 </button>
 
                 <button
@@ -199,16 +213,21 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
               <Flashcard
                 card={currentCard}
                 isFlipped={isFlipped}
-                onFlip={() => setIsFlipped(!isFlipped)}
+                onFlip={() => {
+                  setIsFlipped(!isFlipped);
+                  setHasInteracted(true);
+                }}
+                onAudioPlay={() => setHasInteracted(true)}
               />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
+
       {/* Bottom Section: Navigation Prev/Next Buttons (pinned safely at bottom) */}
       {!isCompleted && (
-        <div className="shrink-0 pt-1 sm:pt-2 pb-1 z-10">
+        <div className="shrink-0 pt-1 sm:pt-2 pb-1 z-10 px-2 sm:px-4">
           <div className="flex items-center justify-between gap-2.5 sm:gap-4">
             <button
               onClick={handlePrev}
@@ -225,7 +244,12 @@ export default function FlashcardViewer({ topic, cards = [], onBackToHome, onEar
 
             <button
               onClick={handleNext}
-              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white py-2 sm:py-3.5 rounded-2xl font-black text-xs sm:text-base shadow-bouncy active:shadow-bouncy-active transition-all"
+              disabled={!canGoNext}
+              className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3.5 rounded-2xl font-black text-xs sm:text-base transition-all ${
+                !canGoNext
+                  ? 'bg-slate-300 text-slate-500 opacity-50 cursor-not-allowed pointer-events-none'
+                  : 'bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white shadow-bouncy active:shadow-bouncy-active hover:scale-105'
+              }`}
             >
               <span>{currentIndex === activeCards.length - 1 ? 'Hoàn Thành' : 'Thẻ Tiếp Theo'}</span>
               <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
