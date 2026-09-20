@@ -193,6 +193,7 @@ export default function MemoryGame({ topics = [], initialTopic = null, onBack, o
 
   return (
     <MiniGameLayout
+      theme="amber"
       title="Lật Thẻ Trí Nhớ"
       icon="🧩"
       onBack={onBack}

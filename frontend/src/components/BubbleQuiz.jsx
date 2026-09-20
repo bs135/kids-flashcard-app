@@ -171,6 +171,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
 
   return (
     <MiniGameLayout
+      theme="sky"
       title="Bong Bóng Từ Vựng"
       icon={<Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-sky-500" />}
       onBack={onBack}

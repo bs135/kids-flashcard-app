@@ -2,7 +2,39 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 
+const THEMES = {
+  amber: {
+    outerBorder: 'border-amber-200',
+    selectedTopic: 'bg-amber-100 text-amber-900 border-amber-300',
+    startIconBg: 'bg-gradient-to-tr from-amber-400 to-yellow-400',
+    button: 'bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 border-amber-300',
+    alertBadge: 'bg-amber-50 border-amber-200 text-amber-800'
+  },
+  sky: {
+    outerBorder: 'border-sky-200',
+    selectedTopic: 'bg-sky-100 text-sky-900 border-sky-300',
+    startIconBg: 'bg-gradient-to-tr from-sky-400 to-cyan-400',
+    button: 'bg-gradient-to-r from-sky-400 to-cyan-400 hover:from-sky-500 hover:to-cyan-500 text-sky-950 border-sky-300',
+    alertBadge: 'bg-sky-50 border-sky-200 text-sky-800'
+  },
+  fuchsia: {
+    outerBorder: 'border-fuchsia-200',
+    selectedTopic: 'bg-fuchsia-100 text-fuchsia-900 border-fuchsia-300',
+    startIconBg: 'bg-gradient-to-tr from-fuchsia-400 to-pink-500',
+    button: 'bg-gradient-to-r from-fuchsia-400 to-pink-500 hover:from-fuchsia-500 hover:to-pink-600 text-white border-fuchsia-300',
+    alertBadge: 'bg-fuchsia-50 border-fuchsia-200 text-fuchsia-800'
+  },
+  indigo: {
+    outerBorder: 'border-indigo-200',
+    selectedTopic: 'bg-indigo-100 text-indigo-900 border-indigo-300',
+    startIconBg: 'bg-gradient-to-tr from-indigo-400 to-violet-500',
+    button: 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white border-indigo-300',
+    alertBadge: 'bg-indigo-50 border-indigo-200 text-indigo-800'
+  }
+};
+
 export default function MiniGameLayout({
+  theme = 'amber',
   title,
   icon,
   onBack,
@@ -27,8 +59,10 @@ export default function MiniGameLayout({
   timerBadge,
   children
 }) {
+  const currentTheme = THEMES[theme] || THEMES.amber;
+
   return (
-    <div className="flex flex-col h-full w-full max-w-4xl mx-auto bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border-4 border-amber-200 overflow-hidden">
+    <div className={`flex flex-col h-full w-full max-w-4xl mx-auto bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border-4 ${currentTheme.outerBorder} overflow-hidden`}>
       {/* Zone 1: Top Bar (Header + Topic Selector) */}
       <div className="shrink-0 bg-white/80 border-b border-slate-100 p-2 sm:p-3">
         {/* Line 1: Back Button, Title, Score/Badges */}
@@ -64,7 +98,7 @@ export default function MiniGameLayout({
                   onClick={() => onSelectTopic && onSelectTopic(t.id)}
                   className={`px-3 py-1 rounded-full text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all border shadow-xs cursor-pointer ${
                     isSelected
-                      ? 'bg-amber-100 text-amber-900 border-amber-300 scale-105'
+                      ? `${currentTheme.selectedTopic} scale-105`
                       : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                   } ${disabledTopic ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
@@ -82,7 +116,7 @@ export default function MiniGameLayout({
           canStartGame ? (
             /* Màn hình chào chuẩn hóa */
             <div className="relative z-20 my-auto text-center py-4 sm:py-8 animate-fade-in flex flex-col items-center justify-center">
-              <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-4 rounded-3xl bg-gradient-to-tr from-amber-400 to-yellow-400 flex items-center justify-center text-3xl sm:text-5xl shadow-lg border-4 border-white animate-bounce">
+              <div className={`w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-4 rounded-3xl ${currentTheme.startIconBg} flex items-center justify-center text-3xl sm:text-5xl shadow-lg border-4 border-white animate-bounce`}>
                 {startIcon}
               </div>
               <h3 className="text-2xl sm:text-4xl font-black text-slate-800 font-kids mb-1.5 sm:mb-2">
@@ -96,7 +130,7 @@ export default function MiniGameLayout({
                 whileTap={{ scale: 0.95 }}
                 onClick={() => canStartGame && onStartGame && onStartGame()}
                 disabled={!canStartGame}
-                className="bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-sm sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3.5 rounded-full shadow-lg border-2 sm:border-3 border-amber-300 cursor-pointer"
+                className={`${currentTheme.button} font-black text-sm sm:text-lg px-6 sm:px-8 py-2.5 sm:py-3.5 rounded-full shadow-lg border-2 sm:border-3 cursor-pointer`}
               >
                 BẮT ĐẦU CHƠI NGAY 🚀
               </motion.button>
@@ -119,7 +153,7 @@ export default function MiniGameLayout({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onRestartGame}
-              className="bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-sm sm:text-base px-6 py-2.5 rounded-full shadow-md border-2 border-amber-300 cursor-pointer mt-2"
+              className={`${currentTheme.button} font-black text-sm sm:text-base px-6 py-2.5 rounded-full shadow-md border-2 cursor-pointer mt-2`}
             >
               CHƠI LẠI VÁN MỚI 🔄
             </motion.button>

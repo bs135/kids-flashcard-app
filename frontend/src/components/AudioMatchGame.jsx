@@ -166,6 +166,7 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
 
   return (
     <MiniGameLayout
+      theme="indigo"
       title="Nghe Âm Đoán Hình"
       icon={<Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-sky-500" />}
       onBack={onBack}
