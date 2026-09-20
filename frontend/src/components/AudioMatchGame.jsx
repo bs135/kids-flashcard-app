@@ -1,7 +1,7 @@
 import MiniGameLayout from './common/MiniGameLayout';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Volume2, Star } from 'lucide-react';
+import { Volume2, Star, Trophy } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundEffects } from '../services/soundEffects';
 import { speakWord, stopSpeech } from '../services/speech';
@@ -202,25 +202,32 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
       gameOverTitle="Hoàn Hảo!"
       gameOverSubtitle="Bé đã nghe và nối đúng tất cả!"
       gameOverContent={
-        <div className="flex justify-center gap-2 mb-4 sm:mb-6 mt-4">
-          {[1, 2, 3].map(star => (
-            <motion.div
-              key={star}
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: star * 0.15, type: 'spring' }}
-            >
-              <Star className="w-10 h-10 sm:w-12 sm:h-12 text-amber-400 fill-amber-400 drop-shadow-md" />
-            </motion.div>
-          ))}
+        <div className="flex flex-col items-center">
+          {/* Hiển thị sao chúc mừng */}
+          <div className="flex justify-center gap-2 mb-3 mt-2">
+            {[1, 2, 3].map(star => (
+              <motion.div
+                key={star}
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: star * 0.15, type: 'spring' }}
+              >
+                <Star className="w-10 h-10 sm:w-12 sm:h-12 text-amber-400 fill-amber-400 drop-shadow-md"/>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Khối huy hiệu Tổng Điểm */}
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-100 to-purple-100 border-2 border-indigo-300 px-6 py-2 rounded-2xl shadow-sm mb-4">
+            <Trophy className="w-6 h-6 sm:w-7 sm:h-7 text-indigo-600"/>
+            <span className="text-lg sm:text-xl font-black text-indigo-950 font-kids">
+              Tổng Điểm: {score}
+            </span>
+          </div>
         </div>
       }
       hintText="Chạm loa để nghe, chạm hình để nối!"
-      timerBadge={
-        <div className="font-kids font-bold text-amber-600 text-lg sm:text-2xl">
-          Điểm: {score}
-        </div>
-      }
+      timerBadge={null}
     >
       {isPlaying ? (
         <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center p-1 sm:p-2">

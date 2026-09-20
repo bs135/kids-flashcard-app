@@ -35,7 +35,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   const [shakingCardId, setShakingCardId] = useState(null);
   const [currentPrompt, setCurrentPrompt] = useState('');
 
-const [totalTimeLeft, setTotalTimeLeft] = useState(30);
+const [totalTimeLeft, setTotalTimeLeft] = useState(45);
   const totalTimerRef = useRef(null);
 
   const speakTimeoutRef = useRef(null);
@@ -109,7 +109,7 @@ const [totalTimeLeft, setTotalTimeLeft] = useState(30);
     setIsChecking(false);
 
     if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-    setTotalTimeLeft(30);
+    setTotalTimeLeft(45);
     totalTimerRef.current = setInterval(() => {
       setTotalTimeLeft((prev) => {
         if (prev <= 1) {
