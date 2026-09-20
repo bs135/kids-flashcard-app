@@ -4,7 +4,7 @@ import { Volume2, RotateCw, BookOpen } from 'lucide-react';
 import { speakWord, stopSpeech } from '../services/speech';
 import { soundEffects } from '../services/soundEffects';
 
-export default function Flashcard({ card, isFlipped, onFlip }) {
+export default function Flashcard({ card, isFlipped, onFlip, onAudioPlay }) {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
   if (!card) return null;
@@ -12,6 +12,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
   const handleAudioPlay = async (e) => {
     e.stopPropagation();
     soundEffects.playPop();
+    if (onAudioPlay) onAudioPlay();
     setIsPlayingAudio(true);
     await speakWord(card.word, card.audio_url);
     setIsPlayingAudio(false);
@@ -130,6 +131,7 @@ export default function Flashcard({ card, isFlipped, onFlip }) {
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                if (onAudioPlay) onAudioPlay();
                 stopSpeech();
                 speakWord(card.example_en);
               }}
