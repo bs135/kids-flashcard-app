@@ -25,7 +25,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
   const [targetCard, setTargetCard] = useState(null);
   const [bubbles, setBubbles] = useState([]);
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(25);
+  const [timeLeft, setTimeLeft] = useState(45);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [shakingBubbleId, setShakingBubbleId] = useState(null);
@@ -52,13 +52,13 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
   const startGame = () => {
     soundEffects.playPop();
     setScore(0);
-    setTimeLeft(25);
+    setTimeLeft(45);
     setIsGameOver(false);
     setIsPlaying(true);
     pickNextQuestion();
   };
 
-  // 25-second countdown timer
+  // 45-second countdown timer
   useEffect(() => {
     if (isPlaying && timeLeft > 0) {
       timerRef.current = setInterval(() => {
@@ -171,6 +171,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
 
   return (
     <MiniGameLayout
+      theme="sky"
       title="Bong Bóng Từ Vựng"
       icon={<Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-sky-500" />}
       onBack={onBack}

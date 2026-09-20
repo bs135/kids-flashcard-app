@@ -1,0 +1,36 @@
+{
+    "permissions": {
+        "fileSystem": {
+            "autoApprove": {
+                "read": true,
+                "write": true,
+                "allowedPaths": [
+                    "."
+                ],
+                "deniedPaths": [
+                    ".env",
+                    ".env.*",
+                    "node_modules/**",
+                    ".git/**"
+                ]
+            }
+        },
+        "terminal": {
+            "policy": "whitelist",
+            "allowedCommands": [
+                "^npm (test|run|install|ci)(\\s+[a-zA-Z0-9_\\-]+)*$",
+                "^git (status|diff|log|branch)(\\s+[a-zA-Z0-9_\\-\\./~]+)*$",
+                "^npx (eslint|prettier|tsc)(\\s+[a-zA-Z0-9_\\-\\./]+)*$",
+                "^python\\s+[a-zA-Z0-9_\\-\\\\./]+\\.gemini[\\\\/]antigravity[\\\\/][a-zA-Z0-9_\\-\\\\./]+$"
+            ],
+            "blockedCommands": [
+                "^git commit",
+                "^git push",
+                "^git reset --hard",
+                "^git clean -f",
+                "^(Remove-Item|rmdir|rd|del|erase)( .*)?",
+                "^format"
+            ]
+        }
+    }
+}

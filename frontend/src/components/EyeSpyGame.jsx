@@ -35,7 +35,7 @@ export default function EyeSpyGame({ topics = [], initialTopic = null, onBack, o
   const [shakingCardId, setShakingCardId] = useState(null);
   const [currentPrompt, setCurrentPrompt] = useState('');
 
-const [totalTimeLeft, setTotalTimeLeft] = useState(30);
+const [totalTimeLeft, setTotalTimeLeft] = useState(45);
   const totalTimerRef = useRef(null);
 
   const speakTimeoutRef = useRef(null);
@@ -109,7 +109,7 @@ const [totalTimeLeft, setTotalTimeLeft] = useState(30);
     setIsChecking(false);
 
     if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-    setTotalTimeLeft(30);
+    setTotalTimeLeft(45);
     totalTimerRef.current = setInterval(() => {
       setTotalTimeLeft((prev) => {
         if (prev <= 1) {
@@ -197,6 +197,7 @@ const [totalTimeLeft, setTotalTimeLeft] = useState(30);
 
   return (
     <MiniGameLayout
+      theme="fuchsia"
       title="Ai Tinh Mắt"
       icon={<Search className="w-5 h-5 sm:w-6 sm:h-6 text-fuchsia-500" />}
       onBack={onBack}
@@ -287,7 +288,7 @@ const [totalTimeLeft, setTotalTimeLeft] = useState(30);
                     const isCorrect = isChecking && c.id === targetCard?.id;
 
                     return (
-                      <motion.div
+                      <motion.button
                         key={c.uniqueKey}
                         animate={
                           isShaking
@@ -315,7 +316,7 @@ const [totalTimeLeft, setTotalTimeLeft] = useState(30);
                           className="w-[75%] h-[75%] object-contain pointer-events-none drop-shadow-sm"
                           loading="eager"
                         />
-                      </motion.div>
+                      </motion.button>
                     );
                   })}
                 </div>
