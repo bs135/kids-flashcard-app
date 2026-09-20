@@ -19,7 +19,7 @@ const THEMES = {
     outerBorder: 'border-fuchsia-200',
     selectedTopic: 'bg-fuchsia-100 text-fuchsia-900 border-fuchsia-300',
     startIconBg: 'bg-gradient-to-tr from-fuchsia-400 to-pink-500',
-    button: 'bg-gradient-to-r from-fuchsia-400 to-pink-500 hover:from-fuchsia-500 hover:to-pink-600 text-white border-fuchsia-300'
+    button: 'bg-gradient-to-r from-fuchsia-400 to-pink-500 hover:from-fuchsia-500 hover:to-pink-600 text-fuchsia-950 border-fuchsia-300'
   },
   indigo: {
     outerBorder: 'border-indigo-200',
@@ -110,7 +110,7 @@ export default function MiniGameLayout({
       <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col items-center justify-center p-2 sm:p-4 relative">
         {!isPlaying && !isGameOver ? (
           canStartGame ? (
-            /* Màn hình chào chuẩn hóa */
+            /* Standardized Start Screen */
             <div className="relative z-20 my-auto text-center py-4 sm:py-8 animate-fade-in flex flex-col items-center justify-center">
               <div className={`w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-4 rounded-3xl ${currentTheme.startIconBg} flex items-center justify-center text-3xl sm:text-5xl shadow-lg border-4 border-white animate-bounce`}>
                 {startIcon}
@@ -135,7 +135,7 @@ export default function MiniGameLayout({
             startUnavailableContent
           )
         ) : isGameOver ? (
-          /* Màn hình kết thúc chuẩn hóa */
+          /* Standardized Game Over Screen */
           <div className="relative z-20 my-auto text-center py-4 sm:py-8 animate-fade-in flex flex-col items-center justify-center">
             <div className="text-4xl sm:text-6xl mb-2 sm:mb-3">🎉</div>
             <h3 className="text-2xl sm:text-4xl font-black text-slate-800 font-kids mb-1.5 sm:mb-2">
@@ -155,7 +155,7 @@ export default function MiniGameLayout({
             </motion.button>
           </div>
         ) : (
-          /* Nội dung Gameplay độc lập của từng game */
+          /* Game-specific Gameplay Content */
           children
         )}
       </div>

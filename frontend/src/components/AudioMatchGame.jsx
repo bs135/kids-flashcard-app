@@ -203,7 +203,7 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
       gameOverSubtitle="Bé đã nghe và nối đúng tất cả!"
       gameOverContent={
         <div className="flex flex-col items-center">
-          {/* Hiển thị sao chúc mừng */}
+          {/* Display congratulatory stars */}
           <div className="flex justify-center gap-2 mb-3 mt-2">
             {[1, 2, 3].map(star => (
               <motion.div
@@ -217,7 +217,7 @@ export default function AudioMatchGame({ topics = [], initialTopic = null, onBac
             ))}
           </div>
 
-          {/* Khối huy hiệu Tổng Điểm */}
+          {/* Total Score badge block */}
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-100 to-purple-100 border-2 border-indigo-300 px-6 py-2 rounded-2xl shadow-sm mb-4">
             <Trophy className="w-6 h-6 sm:w-7 sm:h-7 text-indigo-600"/>
             <span className="text-lg sm:text-xl font-black text-indigo-950 font-kids">
