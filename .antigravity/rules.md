@@ -18,6 +18,10 @@
   `npm run build` (inside the frontend directory or root matching package.json).
 - Never run destructive commands without an explicit request (e.g., `git reset --hard`, `Remove-Item -Recurse`, `rmdir /s /q`).
 - Do not commit or push source code to Git automatically (`git commit`, `git push`) unless explicitly instructed by the user.
+- Git Commit Convention (when requested):
+  - Always write Git commit messages strictly in ENGLISH.
+  - Follow the SemVer / Conventional Commits format (`type(scope): brief summary`).
+  - Structure must include both a clear Title and an explanatory Body (using bullet points or concise paragraphs explaining the "why" and "what").
 - Always report and communicate results in VIETNAMESE (Tiếng Việt).
 
 ## 4. Coding Standards (Frontend)
