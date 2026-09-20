@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Star, Award, Volume2 } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { soundEffects } from '../services/soundEffects';
 
 export default function Header({ 

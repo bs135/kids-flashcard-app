@@ -1,7 +1,7 @@
 import MiniGameLayout from './common/MiniGameLayout';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Volume2, Star, Trophy, RefreshCw, ArrowLeft, Sparkles } from 'lucide-react';
+import { Volume2, Star, Trophy, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundEffects } from '../services/soundEffects';
 import { speakWord } from '../services/speech';
