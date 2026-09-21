@@ -16,13 +16,14 @@
             }
         },
         "terminal": {
+            "autoApprove": true,
             "policy": "whitelist",
             "allowedCommands": [
                 "^(ls|dir|Get-ChildItem)(\\s+.*)?$",
-                "^npm (test|run|install|ci)(\\s+[a-zA-Z0-9_\\-]+)*$",
-                "^git (status|diff|log|branch)(\\s+[a-zA-Z0-9_\\-\\./~]+)*$",
-                "^npx (eslint|prettier|tsc)(\\s+[a-zA-Z0-9_\\-\\./]+)*$",
-                "^python\\s+[a-zA-Z0-9_\\-\\\\./]+\\.gemini[\\\\/]antigravity[\\\\/][a-zA-Z0-9_\\-\\\\./]+$"
+                "^npm (test|run|install|ci)(\\s+.*)?$",
+                "^git (status|diff|log|branch|show|fetch)(\\s+.*)?$",
+                "^npx (eslint|prettier|tsc)(\\s+.*)?$",
+                "^python\\s+.*\\.gemini[\\\\/]antigravity[\\\\/].*"
             ],
             "blockedCommands": [
                 "^git commit",
