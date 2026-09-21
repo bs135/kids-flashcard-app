@@ -286,12 +286,14 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
     // Combine bubbles and shuffle options
     const currentOptions = [randomTarget, ...distractors].sort(() => 0.5 - Math.random());
 
-    const bubbleColors = [
-      'from-pink-400 to-rose-400 border-pink-300 shadow-pink-200',
-      'from-sky-400 to-blue-500 border-sky-300 shadow-sky-200',
-      'from-amber-400 to-yellow-400 border-amber-300 shadow-amber-200',
-      'from-emerald-400 to-teal-500 border-emerald-300 shadow-emerald-200'
-    ];
+    const bubbleColors = selectedTopicId === 'colors'
+      ? ['from-white to-slate-100 border-slate-200 shadow-slate-100']
+      : [
+          'from-pink-400 to-rose-400 border-pink-300 shadow-pink-200',
+          'from-sky-400 to-blue-500 border-sky-300 shadow-sky-200',
+          'from-amber-400 to-yellow-400 border-amber-300 shadow-amber-200',
+          'from-emerald-400 to-teal-500 border-emerald-300 shadow-emerald-200'
+        ];
 
     const { width: containerWidth, height: containerHeight } = getContainerDimensions();
     const isMobile = containerWidth < 640;
