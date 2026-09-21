@@ -51,8 +51,18 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
 
   const timerRef = useRef(null);
   const playAreaRef = useRef(null);
-  const containerDimensionsRef = useRef({ width: 0, height: 0 });
+  const popTimerRef = useRef(null);
+  const shakeTimerRef = useRef(null);
+  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
   const isProcessingRef = useRef(false);
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      if (popTimerRef.current) clearTimeout(popTimerRef.current);
+      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+    };
+  }, []);
 
   // Measure and track play area dimensions
   useEffect(() => {
@@ -62,19 +72,28 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
       if (playAreaRef.current) {
         const { clientWidth, clientHeight } = playAreaRef.current;
         if (clientWidth > 0 && clientHeight > 0) {
-          containerDimensionsRef.current = { width: clientWidth, height: clientHeight };
+          setContainerDimensions(prev => {
+            if (prev.width !== clientWidth || prev.height !== clientHeight) {
+              return { width: clientWidth, height: clientHeight };
+            }
+            return prev;
+          });
         }
       }
     };
 
-    updateDimensions();
+    // Use a small delay for initial measurement to ensure DOM is ready
+    const startTimeout = setTimeout(updateDimensions, 50);
 
     const resizeObserver = new ResizeObserver(() => {
       updateDimensions();
     });
 
     resizeObserver.observe(playAreaRef.current);
-    return () => resizeObserver.disconnect();
+    return () => {
+      clearTimeout(startTimeout);
+      resizeObserver.disconnect();
+    };
   }, [isPlaying]);
 
   // Helper to safely get the current play area dimensions
@@ -85,13 +104,13 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
         height: playAreaRef.current.clientHeight
       };
     }
-    if (containerDimensionsRef.current.width > 0) {
-      return containerDimensionsRef.current;
+    if (containerDimensions.width > 0) {
+      return containerDimensions;
     }
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-    const fallbackWidth = isMobile
-      ? Math.min(window.innerWidth - 24, 420)
-      : Math.min(window.innerWidth - 64, 820);
+    const fallbackWidth = typeof window !== 'undefined'
+      ? (isMobile ? Math.min(window.innerWidth - 24, 420) : Math.min(window.innerWidth - 64, 820))
+      : 820;
     const fallbackHeight = isMobile ? 360 : 460;
     return { width: fallbackWidth, height: fallbackHeight };
   };
@@ -162,6 +181,92 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
     } catch (e) {}
   };
 
+  // Calculate bubble positioning and animation based on screen size
+  const computeBubbleGeometry = (card, idx, q, color, containerW, containerH, isMobile) => {
+    const safePadding = isMobile ? 10 : 16;
+    
+    // Scale and size
+    const baseSize = isMobile
+      ? Math.max(72, Math.min(84, Math.floor(Math.min(containerW, containerH) * 0.22)))
+      : Math.max(100, Math.min(122, Math.floor(Math.min(containerW, containerH) * 0.25)));
+    const scale = Number((1.0 + Math.random() * 0.5).toFixed(2));
+    const size = Math.round(baseSize * scale);
+    
+    // Center padding to ensure quadrants do not overlap in the middle
+    const centerPadding = isMobile ? 20 : 32;
+    const halfW = containerW / 2;
+    const halfH = containerH / 2;
+    
+    // Compute strictly disjoint quadrant bounding boxes
+    let qMinX, qMaxX, qMinY, qMaxY;
+    if (q === 0) { // Top-Left
+      qMinX = safePadding;
+      qMaxX = Math.max(qMinX, halfW - size - centerPadding);
+      qMinY = safePadding;
+      qMaxY = Math.max(qMinY, halfH - size - centerPadding);
+    } else if (q === 1) { // Top-Right
+      qMinX = halfW + centerPadding;
+      qMaxX = Math.max(qMinX, containerW - size - safePadding);
+      qMinY = safePadding;
+      qMaxY = Math.max(qMinY, halfH - size - centerPadding);
+    } else if (q === 2) { // Bottom-Left
+      qMinX = safePadding;
+      qMaxX = Math.max(qMinX, halfW - size - centerPadding);
+      qMinY = halfH + centerPadding;
+      qMaxY = Math.max(qMinY, containerH - size - safePadding);
+    } else { // Bottom-Right
+      qMinX = halfW + centerPadding;
+      qMaxX = Math.max(qMinX, containerW - size - safePadding);
+      qMinY = halfH + centerPadding;
+      qMaxY = Math.max(qMinY, containerH - size - safePadding);
+    }
+
+    // Anchor position
+    const initialX = Math.round(qMinX + Math.random() * (qMaxX - qMinX));
+    const initialY = Math.round(qMinY + Math.random() * (qMaxY - qMinY));
+
+    // Constrain drift so bubbles NEVER leave their disjoint quadrant box
+    const maxDriftX = isMobile ? 26 : 42;
+    const maxDriftY = isMobile ? 22 : 36;
+    
+    const roomLeft = Math.max(0, initialX - qMinX);
+    const roomRight = Math.max(0, qMaxX - initialX);
+    const roomTop = Math.max(0, initialY - qMinY);
+    const roomBottom = Math.max(0, qMaxY - initialY);
+
+    const driftLeft = Math.min(roomLeft * 0.9, maxDriftX);
+    const driftRight = Math.min(roomRight * 0.9, maxDriftX);
+    const driftTop = Math.min(roomTop * 0.9, maxDriftY);
+    const driftBottom = Math.min(roomBottom * 0.9, maxDriftY);
+
+    const inwardX = (q === 0 || q === 2) ? 1 : -1;
+    const inwardY = (q === 0 || q === 1) ? 1 : -1;
+    
+    const dx1 = Math.round(inwardX * (0.4 + Math.random() * 0.6) * (inwardX > 0 ? driftRight : driftLeft));
+    const dx2 = Math.round(-inwardX * (0.3 + Math.random() * 0.5) * (inwardX > 0 ? driftLeft : driftRight));
+    
+    const dy1 = Math.round(inwardY * (0.4 + Math.random() * 0.6) * (inwardY > 0 ? driftBottom : driftTop));
+    const dy2 = Math.round(-inwardY * (0.3 + Math.random() * 0.5) * (inwardY > 0 ? driftTop : driftBottom));
+
+    return {
+      id: `${card.id}-${Date.now()}-${idx}`,
+      card,
+      q, // Save quadrant to recompute later
+      color,
+      scale,
+      size,
+      initialX,
+      initialY,
+      xOffsets: [0, dx1, dx2],
+      yOffsets: [0, dy1, dy2],
+      floatDurationX: Number((6.0 + Math.random() * 3.0).toFixed(2)),
+      floatDurationY: Number((6.2 + Math.random() * 2.8).toFixed(2)),
+      floatDurationRotate: Number((5.5 + Math.random() * 2.5).toFixed(2)),
+      floatDelay: Number((Math.random() * 0.6).toFixed(2)),
+      floatRotate: Math.floor(Math.random() * 8 + 4) * (Math.random() > 0.5 ? 1 : -1)
+    };
+  };
+
   // Generate new question and 4 floating bubbles with randomized sizes
   const pickNextQuestion = () => {
     if (!cards || cards.length === 0) return;
@@ -190,108 +295,47 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
 
     const { width: containerWidth, height: containerHeight } = getContainerDimensions();
     const isMobile = containerWidth < 640;
-    const safePadding = isMobile ? 10 : 16;
 
-    // Calculate responsive base size for bubbles
-    const baseSize = isMobile
-      ? Math.max(72, Math.min(84, Math.floor(Math.min(containerWidth, containerHeight) * 0.22)))
-      : Math.max(100, Math.min(122, Math.floor(Math.min(containerWidth, containerHeight) * 0.25)));
-
-    // Shuffle quadrant assignments [0, 1, 2, 3] to distribute bubbles across screen
-    const quadrantIndices = [0, 1, 2, 3].sort(() => 0.5 - Math.random());
-    const halfW = containerWidth / 2;
-    const halfH = containerHeight / 2;
+    // Fisher-Yates shuffle for quadrants
+    const quadrantIndices = [0, 1, 2, 3];
+    for (let i = quadrantIndices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [quadrantIndices[i], quadrantIndices[j]] = [quadrantIndices[j], quadrantIndices[i]];
+    }
 
     const generatedBubbles = currentOptions.map((card, idx) => {
-      // Random scale between 1.0 and 1.5
-      const scale = Number((1.0 + Math.random() * 0.5).toFixed(2));
-      const size = Math.round(baseSize * scale);
-
-      // Quadrants: 0: Top-Left, 1: Top-Right, 2: Bottom-Left, 3: Bottom-Right
       const q = quadrantIndices[idx % 4];
-
-      let qMinX, qMaxX, qMinY, qMaxY;
-      if (q === 0) {
-        // Top-Left
-        qMinX = safePadding;
-        qMaxX = Math.max(qMinX, halfW - size - safePadding);
-        qMinY = safePadding;
-        qMaxY = Math.max(qMinY, halfH - size - safePadding);
-      } else if (q === 1) {
-        // Top-Right
-        qMinX = halfW + safePadding;
-        qMaxX = Math.max(qMinX, containerWidth - size - safePadding);
-        qMinY = safePadding;
-        qMaxY = Math.max(qMinY, halfH - size - safePadding);
-      } else if (q === 2) {
-        // Bottom-Left
-        qMinX = safePadding;
-        qMaxX = Math.max(qMinX, halfW - size - safePadding);
-        qMinY = halfH + safePadding;
-        qMaxY = Math.max(qMinY, containerHeight - size - safePadding);
-      } else {
-        // Bottom-Right
-        qMinX = halfW + safePadding;
-        qMaxX = Math.max(qMinX, containerWidth - size - safePadding);
-        qMinY = halfH + safePadding;
-        qMaxY = Math.max(qMinY, containerHeight - size - safePadding);
-      }
-
-      // Initial anchor position within quadrant
-      const initialX = Math.round(qMinX + Math.random() * (qMaxX - qMinX));
-      const initialY = Math.round(qMinY + Math.random() * (qMaxY - qMinY));
-
-      // Calculate safe drift offsets so bubble never escapes safe area
-      const roomLeft = Math.max(0, initialX - safePadding);
-      const roomRight = Math.max(0, containerWidth - size - safePadding - initialX);
-      const roomTop = Math.max(0, initialY - safePadding);
-      const roomBottom = Math.max(0, containerHeight - size - safePadding - initialY);
-
-      const maxDriftX = isMobile ? 26 : 42;
-      const maxDriftY = isMobile ? 22 : 36;
-
-      const driftLeft = Math.min(roomLeft * 0.75, maxDriftX);
-      const driftRight = Math.min(roomRight * 0.75, maxDriftX);
-      const driftTop = Math.min(roomTop * 0.75, maxDriftY);
-      const driftBottom = Math.min(roomBottom * 0.75, maxDriftY);
-
-      // Inward direction bias for organic gentle drifting
-      const inwardX = (q === 0 || q === 2) ? 1 : -1;
-      const inwardY = (q === 0 || q === 1) ? 1 : -1;
-
-      const dx1 = Math.round(inwardX * (0.4 + Math.random() * 0.6) * (inwardX > 0 ? driftRight : driftLeft));
-      const dx2 = Math.round(-inwardX * (0.3 + Math.random() * 0.5) * (inwardX > 0 ? driftLeft : driftRight));
-
-      const dy1 = Math.round(inwardY * (0.4 + Math.random() * 0.6) * (inwardY > 0 ? driftBottom : driftTop));
-      const dy2 = Math.round(-inwardY * (0.3 + Math.random() * 0.5) * (inwardY > 0 ? driftTop : driftBottom));
-
-      // Gentle floating duration between 6.0s and 9.0s
-      const floatDurationX = Number((6.0 + Math.random() * 3.0).toFixed(2));
-      const floatDurationY = Number((6.2 + Math.random() * 2.8).toFixed(2));
-      const floatDurationRotate = Number((5.5 + Math.random() * 2.5).toFixed(2));
-      const floatDelay = Number((Math.random() * 0.6).toFixed(2));
-      const floatRotate = Math.floor(Math.random() * 8 + 4) * (Math.random() > 0.5 ? 1 : -1);
-
-      return {
-        id: `${card.id}-${Date.now()}-${idx}`,
-        card,
-        color: bubbleColors[idx % bubbleColors.length],
-        scale,
-        size,
-        initialX,
-        initialY,
-        xOffsets: [0, dx1, dx2],
-        yOffsets: [0, dy1, dy2],
-        floatDurationX,
-        floatDurationY,
-        floatDurationRotate,
-        floatDelay,
-        floatRotate
-      };
+      const color = bubbleColors[idx % bubbleColors.length];
+      return computeBubbleGeometry(card, idx, q, color, containerWidth, containerHeight, isMobile);
     });
 
     setBubbles(generatedBubbles);
   };
+
+  // Recompute layout dynamically when container size changes
+  useEffect(() => {
+    if (!bubbles || bubbles.length === 0 || containerDimensions.width === 0) return;
+
+    setBubbles(prevBubbles => {
+      const { width: containerWidth, height: containerHeight } = containerDimensions;
+      const isMobile = containerWidth < 640;
+
+      return prevBubbles.map((b, idx) => {
+        // Keep the original id, card, color, q, and animations so it seamlessly transitions
+        const newGeo = computeBubbleGeometry(b.card, idx, b.q, b.color, containerWidth, containerHeight, isMobile);
+        return {
+          ...b,
+          size: newGeo.size,
+          scale: newGeo.scale,
+          initialX: newGeo.initialX,
+          initialY: newGeo.initialY,
+          xOffsets: newGeo.xOffsets,
+          yOffsets: newGeo.yOffsets
+        };
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [containerDimensions]);
 
   // Handle kid clicking a bubble
   const handleBubbleClick = (bubble) => {
@@ -307,7 +351,8 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
       onEarnStar(1);
 
       // Wait 520ms for full cartoon pop, shockwave, and splash particles before picking next question
-      setTimeout(() => {
+      if (popTimerRef.current) clearTimeout(popTimerRef.current);
+      popTimerRef.current = setTimeout(() => {
         setBubbles(prev => prev.filter(b => b.id !== bubble.id));
         setPoppingBubbleId(null);
         isProcessingRef.current = false;
@@ -317,7 +362,9 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
       // Wrong -> shake bubble gently at place and play wrong sound
       soundEffects.playWrong();
       setShakingBubbleId(bubble.id);
-      setTimeout(() => {
+      
+      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+      shakeTimerRef.current = setTimeout(() => {
         setShakingBubbleId(null);
       }, 450);
     }
@@ -460,7 +507,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
                       {/* 1. Instant Pop Flash Burst */}
                       {isPopping && (
                         <motion.div
-                          className="absolute inset-0 rounded-full bg-white pointer-events-none z-25 shadow-[0_0_30px_rgba(255,255,255,1)]"
+                          className="absolute inset-0 rounded-full bg-white pointer-events-none z-[25] shadow-[0_0_30px_rgba(255,255,255,1)]"
                           initial={{ scale: 0.8, opacity: 0 }}
                           animate={{
                             scale: [0.8, 1.4, 0],
@@ -540,7 +587,16 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
                       })}
 
                       {/* 4. Inner bubble with touch interaction, wobble and juicy cartoon pop burst */}
-                      <motion.div
+                      <motion.button
+                        type="button"
+                        disabled={isProcessingRef.current || poppingBubbleId !== null}
+                        aria-disabled={isProcessingRef.current || poppingBubbleId !== null}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                            e.preventDefault();
+                            handleBubbleClick(b);
+                          }
+                        }}
                         whileHover={{ scale: 1.06 }}
                         whileTap={{ scale: 0.92 }}
                         animate={
@@ -569,7 +625,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
                             : { duration: 0.2 }
                         }
                         onClick={() => handleBubbleClick(b)}
-                        className={`w-full h-full rounded-full bg-gradient-to-br ${b.color} border-3 sm:border-4 flex items-center justify-center shadow-lg cursor-pointer select-none overflow-hidden relative`}
+                        className={`w-full h-full rounded-full bg-gradient-to-br ${b.color} border-[3px] sm:border-4 flex items-center justify-center shadow-lg cursor-pointer focus:outline-none focus:ring-4 focus:ring-white/50 select-none overflow-hidden relative`}
                       >
                         {/* Bubble shine highlight reflection */}
                         <div
@@ -590,7 +646,7 @@ export default function BubbleQuiz({ topics = [], initialTopic = null, allCards 
                             loading="eager"
                           />
                         </div>
-                      </motion.div>
+                      </motion.button>
                     </motion.div>
                   );
                 })}
