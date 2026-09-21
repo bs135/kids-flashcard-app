@@ -87,6 +87,7 @@ export default function MiniGameLayout({
             className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1"
             onWheel={(e) => {
               if (e.deltaY !== 0 && e.deltaX === 0 && !e.shiftKey) {
+                e.preventDefault();
                 e.currentTarget.scrollLeft += e.deltaY;
               }
             }}
