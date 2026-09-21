@@ -25,7 +25,7 @@
 }
 
 @layer utilities {
-  /* Hỗ trợ Perspective cho hiệu ứng lật thẻ 3D */
+  /* Support Perspective for 3D card flip effect */
   .perspective-1000 {
     perspective: 1000px;
   }
@@ -40,18 +40,43 @@
     transform: rotateY(180deg);
   }
 
-  /* Hide scrollbar for Chrome, Safari and Opera */
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
+  /* Touch devices (phones, tablets): Completely hide scrollbar */
+  @media (pointer: coarse) {
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none; /* IE, Edge */
+      scrollbar-width: none;    /* Firefox */
+    }
   }
-  /* Hide scrollbar for IE, Edge and Firefox */
-  .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+
+  /* Desktop with mouse: Custom ultra-thin scrollbar */
+  @media (pointer: fine) {
+    .no-scrollbar::-webkit-scrollbar {
+      height: 4px; /* Ultra-thin horizontal scrollbar */
+      width: 4px;  /* Vertical scrollbar if any */
+    }
+    .no-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .no-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1; /* slate-300 */
+      border-radius: 9999px;
+    }
+    .no-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8; /* slate-400 */
+    }
+    
+    /* Firefox support on Desktop */
+    .no-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 transparent;
+    }
   }
 }
 
-/* Tùy biến thanh cuộn mềm mại */
+/* Custom soft scrollbar */
 ::-webkit-scrollbar {
   width: 10px;
 }

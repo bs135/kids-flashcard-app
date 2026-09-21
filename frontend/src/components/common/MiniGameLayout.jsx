@@ -83,7 +83,15 @@ export default function MiniGameLayout({
 
         {/* Line 2: Topic Selector Bar */}
         {topics.length > 0 && (
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1">
+          <div 
+            className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1"
+            onWheel={(e) => {
+              if (e.deltaY !== 0 && e.deltaX === 0 && !e.shiftKey) {
+                e.preventDefault();
+                e.currentTarget.scrollLeft += e.deltaY;
+              }
+            }}
+          >
             <span className="text-xs sm:text-sm font-bold text-slate-500 shrink-0 mr-1">Chủ đề:</span>
             {topics.map((t) => {
               const isSelected = t.id === selectedTopicId;
@@ -160,7 +168,7 @@ export default function MiniGameLayout({
         )}
       </div>
 
-      {/* Zone 3: Bottom Bar (Hướng dẫn góc trái + Đồng hồ/Lượt góc phải) */}
+      {/* Zone 3: Bottom Bar (Hint on left + Timer/Turns on right) */}
       <div className="shrink-0 p-2.5 sm:p-3 bg-white/80 border-t border-slate-100 flex items-center justify-between gap-2">
         <div className="text-slate-600 font-medium text-xs sm:text-sm flex items-center gap-1.5 truncate">
           <span>💡</span>
