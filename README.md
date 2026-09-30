@@ -200,6 +200,7 @@ docker compose logs -f
 - Flashcard resources
   - [Totcards](https://www.totcards.com)
   - [Kids Flashcards](https://kids-flashcards.com)
+- Logo icon from [SVGRepo](https://www.svgrepo.com).
 
 ---
 
