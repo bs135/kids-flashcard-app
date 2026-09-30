@@ -1,6 +1,7 @@
 import React from 'react';
 import { Star } from 'lucide-react';
 import { soundEffects } from '../services/soundEffects';
+import appLogo from '../assets/logo.svg';
 
 export default function Header({ 
   stars = 0, 
@@ -21,8 +22,12 @@ export default function Header({
           }}
           className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group select-none shrink-0"
         >
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-tr from-amber-400 to-yellow-300 rounded-2xl flex items-center justify-center shadow-md transform group-hover:scale-105 transition-transform">
-            <span className="text-lg sm:text-xl">🌟</span>
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-tr from-pink-100 to-amber-100 border-2 border-pink-200/80 rounded-2xl flex items-center justify-center shadow-sm p-0.5 sm:p-1 transform group-hover:scale-105 group-hover:rotate-3 transition-transform overflow-hidden">
+            <img 
+              src={appLogo} 
+              alt="Kids Flashcards Diplodocus Logo" 
+              className="w-full h-full object-contain filter drop-shadow-sm pointer-events-none select-none" 
+            />
           </div>
           {/* App title is hidden on small mobile screens (< 640px) to prevent pushing right-side action buttons */}
           <div className="hidden sm:block min-w-0">

@@ -194,6 +194,16 @@ docker compose logs -f
 
 ---
 
+## 📜 Acknowledgements
+
+- This project was developed with the assistance of AI.
+- Flashcard resources
+  - [Totcards](https://www.totcards.com)
+  - [Kids Flashcards](https://kids-flashcards.com)
+- Logo icon from [SVGRepo](https://www.svgrepo.com).
+
+---
+
 ## 📄 License
 
 This project is licensed under the **MIT License**. Contributions and source code are open to the educational community.
